@@ -1,0 +1,11 @@
+URL: http://code.google.com/p/google-collections/
+Version: r127
+License: Apache 2
+Description: "Google Collections Library". Multimap, immutable collections, etc.
+
+This project will eventually hold Guava-libraries, a superset of Google
+Collections.
+
+This APIs in this library are not included on the device. They may, however, be
+included in test cases etc.
+
