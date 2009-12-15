@@ -54,7 +54,7 @@ public class ImmutableListMultimap<K, V>
   // Casting is safe because the multimap will never hold any elements.
   @SuppressWarnings("unchecked")
   public static <K, V> ImmutableListMultimap<K, V> of() {
-    return (ImmutableListMultimap<K, V>) EmptyImmutableListMultimap.INSTANCE;
+    return (ImmutableListMultimap) EmptyImmutableListMultimap.INSTANCE;
   }
 
   /**

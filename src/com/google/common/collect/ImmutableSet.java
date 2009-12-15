@@ -73,7 +73,7 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E>
   // Casting to any type is safe because the set will never hold any elements.
   @SuppressWarnings({"unchecked"})
   public static <E> ImmutableSet<E> of() {
-    return (ImmutableSet<E>) EmptyImmutableSet.INSTANCE;
+    return (ImmutableSet) EmptyImmutableSet.INSTANCE;
   }
 
   /**

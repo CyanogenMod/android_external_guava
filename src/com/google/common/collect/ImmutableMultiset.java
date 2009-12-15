@@ -50,7 +50,7 @@ public class ImmutableMultiset<E> extends ImmutableCollection<E>
    */
   @SuppressWarnings("unchecked") // all supported methods are covariant
   public static <E> ImmutableMultiset<E> of() {
-    return (ImmutableMultiset<E>) EmptyImmutableMultiset.INSTANCE;
+    return (ImmutableMultiset) EmptyImmutableMultiset.INSTANCE;
   }
 
   /**
