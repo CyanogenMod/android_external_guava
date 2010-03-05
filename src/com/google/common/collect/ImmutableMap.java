@@ -46,6 +46,7 @@ import javax.annotation.Nullable;
  * @see ImmutableSet
  * @author Jesse Wilson
  * @author Kevin Bourrillion
+ * @since 2010.01.04 <b>stable</b> (imported from Google Collections Library)
  */
 @GwtCompatible(serializable = true)
 @SuppressWarnings("serial") // we're overriding default serialization
@@ -58,7 +59,7 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
   // Casting to any type is safe because the set will never hold any elements.
   @SuppressWarnings("unchecked")
   public static <K, V> ImmutableMap<K, V> of() {
-    return (ImmutableMap) EmptyImmutableMap.INSTANCE;
+    return (ImmutableMap<K, V>) EmptyImmutableMap.INSTANCE;
   }
 
   /**

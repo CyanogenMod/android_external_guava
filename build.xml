@@ -1,186 +1,56 @@
 <?xml version="1.0"?>
 
-<!--
-
-  You must:
-   * have JAVA_HOME set to a recent JDK 6 installation
-   * have JAVA5_HOME set to a JDK 1.5.0 (_0) installation
-   * have unzipped $JAVA_HOME/src.zip to $JAVA_HOME/src
-   * specify -Dversion=1.0-rc1 (for example) on the ant command line
-
--->
-
-<project name="google-collections" default="compile">
-
-  <property environment="env"/>
-  <property file="build.properties"/>
+<project name="guava" default="compile">
 
   <!-- can be overridden at the command line with -Dversion=
        or in IDEA, in the ant properties dialog -->
   <property name="version" value="snapshot"/>
 
   <target name="compile" description="Compile Java source.">
-    <mkdir dir="${build.dir}/classes"/>
-    <javac
-      srcdir="${src.dir}"
-      destdir="${build.dir}/classes"
-      debug="on"
-      target="1.5"
-      bootclasspath="${env.JAVA5_HOME}/lib/rt.jar"
-      extdirs=""
-    >
-      <compilerarg value="-Xlint:all"/>
+    <mkdir dir="build/classes"/>
+
+    <property environment="env"/>
+    <property name="java5bootclasspath" value="${env.JAVA5_HOME}/jre/lib/rt.jar"/>
+
+    <available file="${java5bootclasspath}" property="isJava5HomeSetRight"/>
+    <fail unless="isJava5HomeSetRight" 
+          message="JAVA5_HOME must be set to a valid JDK 1.5 installation, containing a jre/lib/rt.jar file"/>
+
+    <!-- why does this still allow @Override on interface impl? -->
+    <javac srcdir="src"
+         debug="on"
+         destdir="build/classes"
+         source="1.5"
+         target="1.5"
+         bootclasspath="${java5bootclasspath}"
+         extdirs="">
       <classpath>
-        <pathelement location="${lib.dir}/jsr305.jar"/>
+        <pathelement location="lib/jsr305.jar"/>
       </classpath>
     </javac>
-
-<!-- uncomment when GWT support is official
-    <javac
-      srcdir="${gwt.dir}"
-      destdir="${build.dir}/classes"
-      debug="on"
-      target="1.5"
-      bootclasspath="${env.JAVA5_HOME}/lib/rt.jar"
-      extdirs=""
-    >
-      <include name="${gwt.serializers}"/>
-      <compilerarg value="-Xlint:all"/>
-      <classpath>
-        <pathelement location="${build.dir}/dist/google-collect-${version}/google-collect-${version}.jar"/>
-        <pathelement location="${lib.dir}/jsr305.jar"/>
-        <pathelement location="${lib.dir}/gwt-servlet.jar"/>
-      </classpath>
-    </javac>
--->
-  </target>
-
-  <target name="testfw" description="Compile test framework.">
-    <mkdir dir="${build.dir}/testfwclasses"/>
-    <javac
-      srcdir="${testfw.dir}"
-      destdir="${build.dir}/testfwclasses"
-      debug="on"
-      target="1.5"
-      bootclasspath="${env.JAVA5_HOME}/lib/rt.jar"
-      extdirs=""
-    >
-      <compilerarg value="-Xlint:all"/>
-      <classpath>
-        <pathelement location="${lib.dir}/junit.jar"/>
-      </classpath>
-    </javac>
-  </target>
-
-  <target name="test.compile"
-      depends="dist,testfw"
-      description="Compile test source.">
-    <mkdir dir="${build.dir}/test"/>
-    <javac srcdir="${test.dir}"
-      destdir="${build.dir}/test"
-      debug="on"
-    >
-      <compilerarg value="-Xlint:all"/>
-      <classpath>
-        <pathelement location="${build.dir}/dist/google-collect-${version}/google-collect-${version}.jar"/>
-        <pathelement location="${build.dir}/testfwclasses"/>
-        <pathelement location="${lib.dir}/junit.jar"/>
-        <pathelement location="${lib.dir}/tl4j-1.1.0.jar"/>
-        <pathelement location="${lib.dir}/jsr305.jar"/>
-        <pathelement location="${lib.dir}/easymock-2.4.jar"/>
-        <pathelement location="${lib.dir}/easymockclassextension-2.4.jar"/>
-      </classpath>
-    </javac>
-  </target>
-
-  <target name="test"
-      depends="test.compile"
-      description="Execute JUnit tests.">
-    <java fork="true"
-        classname="junit.textui.TestRunner"
-        failonerror="true"
-        taskname="junit">
-      <classpath>
-        <pathelement location="${build.dir}/test"/>
-        <pathelement location="${build.dir}/dist/google-collect-${version}/google-collect-${version}.jar"/>
-        <pathelement location="${build.dir}/testfwclasses"/>
-        <pathelement location="${lib.dir}/junit.jar"/>
-        <pathelement location="${lib.dir}/tl4j-1.1.0.jar"/>
-        <pathelement location="${lib.dir}/jsr305.jar"/>
-        <pathelement location="${lib.dir}/easymock-2.4.jar"/>
-        <pathelement location="${lib.dir}/easymockclassextension-2.4.jar"/>
-        <pathelement location="${lib.dir}/cglib-nodep-2.2.jar"/>
-      </classpath>
-      <arg value="com.google.common.collect.CollectTestSuite"/>
-    </java>
   </target>
 
   <target name="clean"
       description="Remove generated files.">
-    <delete dir="${build.dir}"/>
-  </target>
-
-  <target name="jar" depends="compile" description="Build jars.">
-    <mkdir dir="${build.dir}/dist/google-collect-${version}"/>
-    <jar jarfile="${build.dir}/dist/google-collect-${version}/google-collect-${version}.jar">
-      <fileset dir="${build.dir}/classes"/>
-    </jar>
-  </target>
-
-  <target name="jargwt" description="Build GWT jar.">
-    <mkdir dir="${build.dir}/dist/google-collect-${version}"/>
-    <jar jarfile="${build.dir}/dist/google-collect-${version}/google-collect-gwt-${version}.jar">
-      <fileset dir="${gwt.dir}"/>
-      <fileset dir="${src.dir}">
-        <and>
-          <contains text="@GwtCompatible"/>
-          <not>
-            <contains text="emulated = true"/>
-          </not>
-        </and>
-      </fileset>
-    </jar>
-  </target>
-
-  <target name="jarsrc" description="Build jar of source.">
-    <mkdir dir="${build.dir}/dist/google-collect-${version}"/>
-    <jar jarfile="${build.dir}/dist/google-collect-${version}/src-${version}.zip">
-      <fileset dir="${src.dir}"/>
-<!-- uncomment when GWT support is official 
-      <fileset dir="${gwt.dir}">
-        <include name="${gwt.serializers}"/>
-      </fileset>
--->
-    </jar>
-  </target>
-
-  <target name="dist" depends="jar, jarsrc, javadoc"
-       description="Build entire distribution.">
-    <copy toDir="${build.dir}/dist/google-collect-${version}" file="COPYING"/>
-    <copy toDir="${build.dir}/dist/google-collect-${version}">
-      <fileset dir="${build.dir}" includes="javadoc/**/*"/>
-    </copy>
-
-    <zip destfile="${build.dir}/google-collect-${version}.zip"
-      basedir="${build.dir}/dist"/>
+    <delete dir="build"/>
   </target>
 
   <target name="javadoc"
       description="Generate Javadocs.">
-    <delete dir="${build.dir}/javadoc"/>
-    <mkdir dir="${build.dir}/javadoc"/>
-    <javadoc packagenames="com.google.common.annotations,com.google.common.base,com.google.common.collect"
-         destdir="${build.dir}/javadoc"
+    <delete dir="build/javadoc"/>
+    <mkdir dir="build/javadoc"/>
+    <javadoc packagenames="com.google.common.annotations,com.google.common.base,com.google.common.collect,com.google.common.io,com.google.common.primitives,com.google.common.util.concurrent"
+         destdir="build/javadoc"
          use="true"
          author="true"
          protected="true"
-         windowtitle="Google Collections Library ${version}">
+         windowtitle="Guava Libraries ${version}">
       <sourcepath>
-        <pathelement location="${src.dir}"/>
-        <pathelement location="${env.JAVA_HOME}/src"/>
+        <pathelement location="src"/>
       </sourcepath>
+      <!-- workaround for http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6442982 -->
       <classpath>
-        <pathelement location="${lib.dir}/jsr305.jar"/>
+        <pathelement location="lib/jsr305.jar"/>
       </classpath>
       <link href="http://jsr-305.googlecode.com/svn/trunk/javadoc"/>
       <link href="http://java.sun.com/javase/6/docs/api"/>

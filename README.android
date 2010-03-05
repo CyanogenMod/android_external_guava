@@ -1,11 +1,10 @@
-URL: http://code.google.com/p/google-collections/
-Version: r127
+URL: http://code.google.com/p/guava-libraries/source/checkout
+Version: r11
 License: Apache 2
-Description: "Google Collections Library". Multimap, immutable collections, etc.
+Description: "Guava: Google Core Libraries for Java 1.5"
+Local Modifications: No local modifications
 
-This project will eventually hold Guava-libraries, a superset of Google
-Collections.
+Guava-libraries are a grab bag of utility libraries published by Google as
+open source, including among other things the Google collections libraries.
 
-This APIs in this library are not included on the device. They may, however, be
-included in test cases etc.
-
+This code is built as a static library.

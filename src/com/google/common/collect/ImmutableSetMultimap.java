@@ -47,6 +47,7 @@ import javax.annotation.Nullable;
  * are guaranteed to be immutable.
  *
  * @author Mike Ward
+ * @since 2010.01.04 <b>stable</b> (imported from Google Collections Library)
  */
 @GwtCompatible(serializable = true)
 public class ImmutableSetMultimap<K, V>
@@ -57,7 +58,7 @@ public class ImmutableSetMultimap<K, V>
   // Casting is safe because the multimap will never hold any elements.
   @SuppressWarnings("unchecked")
   public static <K, V> ImmutableSetMultimap<K, V> of() {
-    return (ImmutableSetMultimap) EmptyImmutableSetMultimap.INSTANCE;
+    return (ImmutableSetMultimap<K, V>) EmptyImmutableSetMultimap.INSTANCE;
   }
 
   /**
