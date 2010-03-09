@@ -64,7 +64,9 @@ public abstract class ImmutableList<E> extends ImmutableCollection<E>
   // Casting to any type is safe because the list will never hold any elements.
   @SuppressWarnings("unchecked")
   public static <E> ImmutableList<E> of() {
-    return (ImmutableList<E>) EmptyImmutableList.INSTANCE;
+    // BEGIN android-changed
+    return (ImmutableList) EmptyImmutableList.INSTANCE;
+    // END android-changed
   }
 
   /**

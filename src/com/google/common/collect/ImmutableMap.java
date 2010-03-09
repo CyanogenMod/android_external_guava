@@ -59,7 +59,9 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
   // Casting to any type is safe because the set will never hold any elements.
   @SuppressWarnings("unchecked")
   public static <K, V> ImmutableMap<K, V> of() {
-    return (ImmutableMap<K, V>) EmptyImmutableMap.INSTANCE;
+    // BEGIN android-changed
+    return (ImmutableMap) EmptyImmutableMap.INSTANCE;
+    // END android-changed
   }
 
   /**
