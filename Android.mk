@@ -24,3 +24,12 @@ include $(BUILD_STATIC_JAVA_LIBRARY)
 
 # Include this library in the build server's output directory
 $(call dist-for-goals, droid, $(LOCAL_BUILT_MODULE):guava.jar)
+
+# Also build a host-side library
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := $(call all-java-files-under, src)
+LOCAL_MODULE := guavalib
+LOCAL_STATIC_JAVA_LIBRARIES := jsr305lib
+
+include $(BUILD_HOST_JAVA_LIBRARY)
