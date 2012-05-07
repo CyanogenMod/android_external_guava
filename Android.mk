@@ -16,8 +16,8 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := guava
-LOCAL_SDK_VERSION := 8
-LOCAL_SRC_FILES := $(call all-java-files-under, src)
+LOCAL_SDK_VERSION := 9
+LOCAL_SRC_FILES := $(call all-java-files-under, guava/src)
 LOCAL_STATIC_JAVA_LIBRARIES := jsr305
 
 include $(BUILD_STATIC_JAVA_LIBRARY)
@@ -28,7 +28,7 @@ $(call dist-for-goals, dist_files, $(LOCAL_BUILT_MODULE):guava.jar)
 # Also build a host-side library
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES := $(call all-java-files-under, src)
+LOCAL_SRC_FILES := $(call all-java-files-under, guava/src)
 LOCAL_MODULE := guavalib
 LOCAL_STATIC_JAVA_LIBRARIES := jsr305lib
 
