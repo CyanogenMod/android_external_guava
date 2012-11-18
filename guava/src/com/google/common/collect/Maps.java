@@ -227,7 +227,7 @@ public final class Maps {
    */
   public static <K, V> TreeMap<K, V> newTreeMap(
       @Nullable Comparator<? super K> comparator) {
-    // Ideally, the extra type parameter "C" shouldn't be necessary. It is a
+    // Ideally, the "? super" shouldn't be necessary. It is a
     // work-around of a compiler type inference quirk that prevents the
     // following code from being compiled:
     // Comparator<Class<?>> comparator = null;
