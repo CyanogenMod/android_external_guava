@@ -22,9 +22,6 @@ LOCAL_STATIC_JAVA_LIBRARIES := jsr305
 
 include $(BUILD_STATIC_JAVA_LIBRARY)
 
-# Include this library in the build server's output directory
-$(call dist-for-goals, dist_files, $(LOCAL_BUILT_MODULE):guava.jar)
-
 # Also build a host-side library
 include $(CLEAR_VARS)
 
