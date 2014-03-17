@@ -9,5 +9,5 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':external:jsr305')
+    compile project(':jsr305')
 }
