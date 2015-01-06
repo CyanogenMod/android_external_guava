@@ -226,9 +226,9 @@ public class UnsignedBytesTest extends TestCase {
   public void testLexicographicalComparatorDefaultChoice() {
     Comparator<byte[]> defaultComparator =
         UnsignedBytes.lexicographicalComparator();
-    Comparator<byte[]> unsafeComparator =
-        UnsignedBytes.LexicographicalComparatorHolder.UnsafeComparator.INSTANCE;
-    assertSame(defaultComparator, unsafeComparator);
+    Comparator<byte[]> pureJavaComparator =
+        UnsignedBytes.LexicographicalComparatorHolder.PureJavaComparator.INSTANCE;
+    assertSame(defaultComparator, pureJavaComparator);
   }
 
   public void testLexicographicalComparator() {
