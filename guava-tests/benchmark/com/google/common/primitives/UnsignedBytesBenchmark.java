@@ -36,7 +36,6 @@ public class UnsignedBytesBenchmark extends SimpleBenchmark {
   private byte[] ba3;
   private byte[] ba4;
   private Comparator<byte[]> javaImpl;
-  private Comparator<byte[]> unsafeImpl;
 
   // 4, 8, 64, 1K, 1M, 1M (unaligned), 64M, 64M (unaligned)
   //@Param({"4", "8", "64", "1024", "1048576", "1048577", "6710884", "6710883"})
@@ -56,8 +55,6 @@ public class UnsignedBytesBenchmark extends SimpleBenchmark {
     ba4[ba1.length - 1] = (byte) 42;
 
     javaImpl = UnsignedBytes.lexicographicalComparatorJavaImpl();
-    unsafeImpl =
-        UnsignedBytes.LexicographicalComparatorHolder.UnsafeComparator.INSTANCE;
   }
 
   public void timeLongEqualJava(int reps) {
@@ -68,25 +65,9 @@ public class UnsignedBytesBenchmark extends SimpleBenchmark {
     }
   }
 
-  public void timeLongEqualUnsafe(int reps) {
-    for (int i = 0; i < reps; ++i) {
-      if (unsafeImpl.compare(ba1, ba2) != 0) {
-        throw new Error(); // deoptimization
-      }
-    }
-  }
-
   public void timeDiffLastJava(int reps) {
     for (int i = 0; i < reps; ++i) {
       if (javaImpl.compare(ba3, ba4) == 0) {
-        throw new Error(); // deoptimization
-      }
-    }
-  }
-
-  public void timeDiffLastUnsafe(int reps) {
-    for (int i = 0; i < reps; ++i) {
-      if (unsafeImpl.compare(ba3, ba4) == 0) {
         throw new Error(); // deoptimization
       }
     }
