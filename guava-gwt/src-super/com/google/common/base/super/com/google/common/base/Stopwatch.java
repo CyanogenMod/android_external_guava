@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
  *   doSomething();
  *   stopwatch.{@link #stop stop}(); // optional
  *
- *   long millis = stopwatch.{@link #elapsedMillis elapsedMillis}();
+ *   long millis = stopwatch.elapsed(MILLISECONDS);
  *
  *   log.info("that took: " + stopwatch); // formatted string like "12.3 ms"
  * </pre>
@@ -68,7 +68,7 @@ import java.util.concurrent.TimeUnit;
  * @since 10.0
  */
 @Beta
-@GwtCompatible(emulated=true)
+@GwtCompatible(emulated = true)
 public final class Stopwatch {
   private final Ticker ticker;
   private boolean isRunning;
@@ -88,7 +88,7 @@ public final class Stopwatch {
    * source.
    */
   public Stopwatch(Ticker ticker) {
-    this.ticker = checkNotNull(ticker);
+    this.ticker = checkNotNull(ticker, "ticker");
   }
 
   /**
@@ -107,7 +107,8 @@ public final class Stopwatch {
    * @throws IllegalStateException if the stopwatch is already running.
    */
   public Stopwatch start() {
-    checkState(!isRunning);
+    checkState(!isRunning,
+        "This stopwatch is already running; it cannot be started more than once.");
     isRunning = true;
     startTick = ticker.read();
     return this;
@@ -122,7 +123,8 @@ public final class Stopwatch {
    */
   public Stopwatch stop() {
     long tick = ticker.read();
-    checkState(isRunning);
+    checkState(isRunning,
+        "This stopwatch is already stopped; it cannot be stopped more than once.");
     isRunning = false;
     elapsedNanos += tick - startTick;
     return this;
@@ -151,18 +153,40 @@ public final class Stopwatch {
    * <p>Note that the overhead of measurement can be more than a microsecond, so
    * it is generally not useful to specify {@link TimeUnit#NANOSECONDS}
    * precision here.
+   *
+   * @since 14.0 (since 10.0 as {@code elapsedTime()})
    */
-  public long elapsedTime(TimeUnit desiredUnit) {
+  public long elapsed(TimeUnit desiredUnit) {
     return desiredUnit.convert(elapsedNanos(), NANOSECONDS);
   }
 
   /**
    * Returns the current elapsed time shown on this stopwatch, expressed
-   * in milliseconds, with any fraction rounded down. This is identical to
-   * {@code elapsedTime(TimeUnit.MILLISECONDS}.
+   * in the desired time unit, with any fraction rounded down.
+   *
+   * <p>Note that the overhead of measurement can be more than a microsecond, so
+   * it is generally not useful to specify {@link TimeUnit#NANOSECONDS}
+   * precision here.
+   *
+   * @deprecated Use {@link Stopwatch#elapsed(TimeUnit)} instead. This method is
+   *     scheduled to be removed in Guava release 16.0.
    */
+  @Deprecated
+  public long elapsedTime(TimeUnit desiredUnit) {
+    return elapsed(desiredUnit);
+  }
+
+  /**
+   * Returns the current elapsed time shown on this stopwatch, expressed
+   * in milliseconds, with any fraction rounded down. This is identical to
+   * {@code elapsed(TimeUnit.MILLISECONDS)}.
+   *
+   * @deprecated Use {@code stopwatch.elapsed(MILLISECONDS)} instead. This
+   *     method is scheduled to be removed in Guava release 16.0.
+   */
+  @Deprecated
   public long elapsedMillis() {
-    return elapsedTime(MILLISECONDS);
+    return elapsed(MILLISECONDS);
   }
 
   private static TimeUnit chooseUnit(long nanos) {

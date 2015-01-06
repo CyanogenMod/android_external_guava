@@ -16,7 +16,10 @@
 
 package com.google.common.eventbus;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.annotations.Beta;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 
@@ -46,7 +49,7 @@ public class AsyncEventBus extends EventBus {
    */
   public AsyncEventBus(String identifier, Executor executor) {
     super(identifier);
-    this.executor = executor;
+    this.executor = checkNotNull(executor);
   }
 
   /**
@@ -58,11 +61,11 @@ public class AsyncEventBus extends EventBus {
    *        been posted to this event bus.
    */
   public AsyncEventBus(Executor executor) {
-    this.executor = executor;
+    this.executor = checkNotNull(executor);
   }
 
   @Override
-  protected void enqueueEvent(Object event, EventHandler handler) {
+  void enqueueEvent(Object event, EventHandler handler) {
     eventsToDispatch.offer(new EventWithHandler(event, handler));
   }
 
@@ -70,6 +73,7 @@ public class AsyncEventBus extends EventBus {
    * Dispatch {@code events} in the order they were posted, regardless of
    * the posting thread.
    */
+  @SuppressWarnings("deprecation") // only deprecated for external subclasses
   @Override
   protected void dispatchQueuedEvents() {
     while (true) {
@@ -86,14 +90,15 @@ public class AsyncEventBus extends EventBus {
    * Calls the {@link #executor} to dispatch {@code event} to {@code handler}.
    */
   @Override
-  protected void dispatch(final Object event, final EventHandler handler) {
-    executor.execute(new Runnable() {
+  void dispatch(final Object event, final EventHandler handler) {
+    checkNotNull(event);
+    checkNotNull(handler);
+    executor.execute(
+        new Runnable() {
           @Override
-          @SuppressWarnings("synthetic-access")
           public void run() {
             AsyncEventBus.super.dispatch(event, handler);
           }
         });
   }
-
 }

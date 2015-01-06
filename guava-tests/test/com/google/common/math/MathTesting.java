@@ -40,8 +40,8 @@ import java.math.RoundingMode;
 
 /**
  * Exhaustive input sets for every integral type.
- * 
- * @author lowasser@google.com (Louis Wasserman)
+ *
+ * @author Louis Wasserman
  */
 @GwtCompatible
 public class MathTesting {
@@ -52,8 +52,8 @@ public class MathTesting {
       FLOOR, CEILING, HALF_EVEN, HALF_UP, HALF_DOWN);
 
   // Exponents to test for the pow() function.
-  static final ImmutableList<Integer> EXPONENTS = ImmutableList.of(0, 1, 2, 3, 4, 5, 6, 7, 10, 15,
-      20, 25, 30, 40, 70);
+  static final ImmutableList<Integer> EXPONENTS = ImmutableList.of(0, 1, 2, 3, 4, 7, 10, 15,
+      20, 25, 40, 70);
 
   /* Helper function to make a Long value from an Integer. */
   private static final Function<Integer, Long> TO_LONG = new Function<Integer, Long>() {
@@ -110,23 +110,23 @@ public class MathTesting {
     ImmutableSet.Builder<Integer> intValues = ImmutableSet.builder();
     // Add boundary values manually to avoid over/under flow (this covers 2^N for 0 and 31).
     intValues.add(Integer.MAX_VALUE - 1, Integer.MAX_VALUE);
-    // Add values up to 64. This covers cases like "square of a prime" and such.
-    for (int i = 1; i <= 64; i++) {
+    // Add values up to 40. This covers cases like "square of a prime" and such.
+    for (int i = 1; i <= 40; i++) {
       intValues.add(i);
     }
     // Now add values near 2^N for lots of values of N.
-    for (int exponent : asList(2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 23, 24, 25)) {
+    for (int exponent : asList(2, 3, 4, 9, 15, 16, 17, 24, 25, 30)) {
       int x = 1 << exponent;
       intValues.add(x, x + 1, x - 1);
     }
     intValues.add(9999).add(10000).add(10001).add(1000000); // near powers of 10
     intValues.add(5792).add(5793); // sqrt(2^25) rounded up and down
     POSITIVE_INTEGER_CANDIDATES = intValues.build();
-    NEGATIVE_INTEGER_CANDIDATES =
-        Iterables.concat(Iterables.transform(POSITIVE_INTEGER_CANDIDATES, NEGATE_INT),
-            ImmutableList.of(Integer.MIN_VALUE));
-    NONZERO_INTEGER_CANDIDATES =
-        Iterables.concat(POSITIVE_INTEGER_CANDIDATES, NEGATIVE_INTEGER_CANDIDATES);
+    NEGATIVE_INTEGER_CANDIDATES = ImmutableList.copyOf(Iterables.concat(
+        Iterables.transform(POSITIVE_INTEGER_CANDIDATES, NEGATE_INT),
+        ImmutableList.of(Integer.MIN_VALUE)));
+    NONZERO_INTEGER_CANDIDATES = ImmutableList.copyOf(
+        Iterables.concat(POSITIVE_INTEGER_CANDIDATES, NEGATIVE_INTEGER_CANDIDATES));
     ALL_INTEGER_CANDIDATES = Iterables.concat(NONZERO_INTEGER_CANDIDATES, ImmutableList.of(0));
   }
 
@@ -202,9 +202,13 @@ public class MathTesting {
 
   static final ImmutableSet<Double> INTEGRAL_DOUBLE_CANDIDATES;
   static final ImmutableSet<Double> FRACTIONAL_DOUBLE_CANDIDATES;
+  static final Iterable<Double> INFINITIES = Doubles.asList(
+      Double.POSITIVE_INFINITY,
+      Double.NEGATIVE_INFINITY);
   static final Iterable<Double> FINITE_DOUBLE_CANDIDATES;
   static final Iterable<Double> POSITIVE_FINITE_DOUBLE_CANDIDATES;
   static final Iterable<Double> ALL_DOUBLE_CANDIDATES;
+  static final Iterable<Double> DOUBLE_CANDIDATES_EXCEPT_NAN;
   static {
     ImmutableSet.Builder<Double> integralBuilder = ImmutableSet.builder();
     ImmutableSet.Builder<Double> fractionalBuilder = ImmutableSet.builder();
@@ -246,8 +250,8 @@ public class MathTesting {
             return input.doubleValue() > 0.0;
           }
         });
+    DOUBLE_CANDIDATES_EXCEPT_NAN = Iterables.concat(FINITE_DOUBLE_CANDIDATES, INFINITIES);
     ALL_DOUBLE_CANDIDATES =
-        Iterables.concat(FINITE_DOUBLE_CANDIDATES,
-            asList(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NaN));
+        Iterables.concat(DOUBLE_CANDIDATES_EXCEPT_NAN, asList(Double.NaN));
   }
 }

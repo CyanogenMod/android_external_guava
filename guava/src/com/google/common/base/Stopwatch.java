@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
  *   doSomething();
  *   stopwatch.{@link #stop stop}(); // optional
  *
- *   long millis = stopwatch.{@link #elapsedMillis elapsedMillis}();
+ *   long millis = stopwatch.elapsed(MILLISECONDS);
  *
  *   log.info("that took: " + stopwatch); // formatted string like "12.3 ms"
  * </pre>
@@ -69,7 +69,7 @@ import java.util.concurrent.TimeUnit;
  * @since 10.0
  */
 @Beta
-@GwtCompatible(emulated=true)
+@GwtCompatible(emulated = true)
 public final class Stopwatch {
   private final Ticker ticker;
   private boolean isRunning;
@@ -89,7 +89,7 @@ public final class Stopwatch {
    * source.
    */
   public Stopwatch(Ticker ticker) {
-    this.ticker = checkNotNull(ticker);
+    this.ticker = checkNotNull(ticker, "ticker");
   }
 
   /**
@@ -108,7 +108,8 @@ public final class Stopwatch {
    * @throws IllegalStateException if the stopwatch is already running.
    */
   public Stopwatch start() {
-    checkState(!isRunning);
+    checkState(!isRunning,
+        "This stopwatch is already running; it cannot be started more than once.");
     isRunning = true;
     startTick = ticker.read();
     return this;
@@ -123,7 +124,8 @@ public final class Stopwatch {
    */
   public Stopwatch stop() {
     long tick = ticker.read();
-    checkState(isRunning);
+    checkState(isRunning,
+        "This stopwatch is already stopped; it cannot be stopped more than once.");
     isRunning = false;
     elapsedNanos += tick - startTick;
     return this;
@@ -152,23 +154,44 @@ public final class Stopwatch {
    * <p>Note that the overhead of measurement can be more than a microsecond, so
    * it is generally not useful to specify {@link TimeUnit#NANOSECONDS}
    * precision here.
+   *
+   * @since 14.0 (since 10.0 as {@code elapsedTime()})
    */
-  public long elapsedTime(TimeUnit desiredUnit) {
+  public long elapsed(TimeUnit desiredUnit) {
     return desiredUnit.convert(elapsedNanos(), NANOSECONDS);
   }
 
   /**
    * Returns the current elapsed time shown on this stopwatch, expressed
-   * in milliseconds, with any fraction rounded down. This is identical to
-   * {@code elapsedTime(TimeUnit.MILLISECONDS}.
+   * in the desired time unit, with any fraction rounded down.
+   *
+   * <p>Note that the overhead of measurement can be more than a microsecond, so
+   * it is generally not useful to specify {@link TimeUnit#NANOSECONDS}
+   * precision here.
+   *
+   * @deprecated Use {@link Stopwatch#elapsed(TimeUnit)} instead. This method is
+   *     scheduled to be removed in Guava release 16.0.
    */
-  public long elapsedMillis() {
-    return elapsedTime(MILLISECONDS);
+  @Deprecated
+  public long elapsedTime(TimeUnit desiredUnit) {
+    return elapsed(desiredUnit);
   }
 
   /**
-   * Returns a string representation of the current elapsed time; equivalent to
-   * {@code toString(4)} (four significant figures).
+   * Returns the current elapsed time shown on this stopwatch, expressed
+   * in milliseconds, with any fraction rounded down. This is identical to
+   * {@code elapsed(TimeUnit.MILLISECONDS)}.
+   *
+   * @deprecated Use {@code stopwatch.elapsed(MILLISECONDS)} instead. This
+   *     method is scheduled to be removed in Guava release 16.0.
+   */
+  @Deprecated
+  public long elapsedMillis() {
+    return elapsed(MILLISECONDS);
+  }
+
+  /**
+   * Returns a string representation of the current elapsed time.
    */
   @GwtIncompatible("String.format()")
   @Override public String toString() {
@@ -178,9 +201,13 @@ public final class Stopwatch {
   /**
    * Returns a string representation of the current elapsed time, choosing an
    * appropriate unit and using the specified number of significant figures.
-   * For example, at the instant when {@code elapsedTime(NANOSECONDS)} would
+   * For example, at the instant when {@code elapsed(NANOSECONDS)} would
    * return {1234567}, {@code toString(4)} returns {@code "1.235 ms"}.
+   *
+   * @deprecated Use {@link #toString()} instead. This method is scheduled
+   *     to be removed in Guava release 15.0.
    */
+  @Deprecated
   @GwtIncompatible("String.format()")
   public String toString(int significantDigits) {
     long nanos = elapsedNanos();

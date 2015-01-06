@@ -19,10 +19,12 @@ package com.google.common.collect.testing;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.SetFeature;
+import com.google.common.collect.testing.testers.CollectionIteratorTester;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.AbstractSet;
 import java.util.Collection;
@@ -35,6 +37,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -63,6 +66,8 @@ public class TestsForSetsInJavaUtil {
     suite.addTest(testsForCheckedSet());
     suite.addTest(testsForAbstractSet());
     suite.addTest(testsForBadlyCollidingHashSet());
+    suite.addTest(testsForConcurrentSkipListSetNatural());
+    suite.addTest(testsForConcurrentSkipListSetWithComparator());
 
     return suite;
   }
@@ -89,7 +94,8 @@ public class TestsForSetsInJavaUtil {
     return Collections.emptySet();
   }
   protected Collection<Method> suppressForCopyOnWriteArraySet() {
-    return Collections.emptySet();
+    return Collections.singleton(CollectionIteratorTester
+        .getIteratorKnownOrderRemoveSupportedMethod());
   }
   protected Collection<Method> suppressForUnmodifiableSet() {
     return Collections.emptySet();
@@ -98,6 +104,12 @@ public class TestsForSetsInJavaUtil {
     return Collections.emptySet();
   }
   protected Collection<Method> suppressForAbstractSet() {
+    return Collections.emptySet();
+  }
+  protected Collection<Method> suppressForConcurrentSkipListSetNatural() {
+    return Collections.emptySet();
+  }
+  protected Collection<Method> suppressForConcurrentSkipListSetWithComparator() {
     return Collections.emptySet();
   }
 
@@ -110,7 +122,7 @@ public class TestsForSetsInJavaUtil {
           })
         .named("emptySet")
         .withFeatures(
-            CollectionFeature.NONE,
+            CollectionFeature.SERIALIZABLE,
             CollectionSize.ZERO)
         .suppressing(suppressForEmptySet())
         .createTestSuite();
@@ -125,7 +137,7 @@ public class TestsForSetsInJavaUtil {
           })
         .named("singleton")
         .withFeatures(
-            CollectionFeature.NONE,
+            CollectionFeature.SERIALIZABLE,
             CollectionFeature.ALLOWS_NULL_VALUES,
             CollectionSize.ONE)
         .suppressing(suppressForSingletonSet())
@@ -142,7 +154,9 @@ public class TestsForSetsInJavaUtil {
         .named("HashSet")
         .withFeatures(
             SetFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
             CollectionFeature.ALLOWS_NULL_VALUES,
+            CollectionFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
             CollectionSize.ANY)
         .suppressing(suppressForHashSet())
         .createTestSuite();
@@ -158,8 +172,10 @@ public class TestsForSetsInJavaUtil {
         .named("LinkedHashSet")
         .withFeatures(
             SetFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
             CollectionFeature.ALLOWS_NULL_VALUES,
             CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
             CollectionSize.ANY)
         .suppressing(suppressForLinkedHashSet())
         .createTestSuite();
@@ -177,6 +193,7 @@ public class TestsForSetsInJavaUtil {
         .named("EnumSet")
         .withFeatures(
             SetFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
             CollectionFeature.KNOWN_ORDER,
             CollectionFeature.RESTRICTS_ELEMENTS,
             CollectionSize.ANY)
@@ -194,7 +211,9 @@ public class TestsForSetsInJavaUtil {
         .named("TreeSet, natural")
         .withFeatures(
             SetFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
             CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
             CollectionSize.ANY)
         .suppressing(suppressForTreeSetNatural())
         .createTestSuite();
@@ -213,8 +232,10 @@ public class TestsForSetsInJavaUtil {
         .named("TreeSet, with comparator")
         .withFeatures(
             SetFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
             CollectionFeature.ALLOWS_NULL_VALUES,
             CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
             CollectionSize.ANY)
         .suppressing(suppressForTreeSetWithComparator())
         .createTestSuite();
@@ -231,6 +252,7 @@ public class TestsForSetsInJavaUtil {
         .named("CopyOnWriteArraySet")
         .withFeatures(
             SetFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
             CollectionFeature.ALLOWS_NULL_VALUES,
             CollectionFeature.KNOWN_ORDER,
             CollectionSize.ANY)
@@ -250,6 +272,7 @@ public class TestsForSetsInJavaUtil {
         .named("unmodifiableSet/HashSet")
         .withFeatures(
             CollectionFeature.NONE,
+            CollectionFeature.SERIALIZABLE,
             CollectionFeature.ALLOWS_NULL_VALUES,
             CollectionSize.ANY)
         .suppressing(suppressForUnmodifiableSet())
@@ -268,6 +291,7 @@ public class TestsForSetsInJavaUtil {
         .named("checkedSet/HashSet")
         .withFeatures(
             SetFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
             CollectionFeature.ALLOWS_NULL_VALUES,
             CollectionFeature.RESTRICTS_ELEMENTS,
             CollectionSize.ANY)
@@ -317,6 +341,43 @@ public class TestsForSetsInJavaUtil {
         .createTestSuite();
   }
 
+  public Test testsForConcurrentSkipListSetNatural() {
+    return SetTestSuiteBuilder
+        .using(new TestStringSortedSetGenerator() {
+            @Override public SortedSet<String> create(String[] elements) {
+              return new ConcurrentSkipListSet<String>(MinimalCollection.of(elements));
+            }
+          })
+        .named("ConcurrentSkipListSet, natural")
+        .withFeatures(
+            SetFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
+            CollectionFeature.KNOWN_ORDER,
+            CollectionSize.ANY)
+        .suppressing(suppressForConcurrentSkipListSetNatural())
+        .createTestSuite();
+  }
+
+  public Test testsForConcurrentSkipListSetWithComparator() {
+    return SetTestSuiteBuilder
+        .using(new TestStringSortedSetGenerator() {
+            @Override public SortedSet<String> create(String[] elements) {
+              SortedSet<String> set
+                  = new ConcurrentSkipListSet<String>(arbitraryNullFriendlyComparator());
+              Collections.addAll(set, elements);
+              return set;
+            }
+          })
+        .named("ConcurrentSkipListSet, with comparator")
+        .withFeatures(
+            SetFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
+            CollectionFeature.KNOWN_ORDER,
+            CollectionSize.ANY)
+        .suppressing(suppressForConcurrentSkipListSetWithComparator())
+        .createTestSuite();
+  }
+
   private static String[] dedupe(String[] elements) {
     Set<String> tmp = new LinkedHashSet<String>();
     Collections.addAll(tmp, elements);
@@ -324,11 +385,14 @@ public class TestsForSetsInJavaUtil {
   }
 
   static <T> Comparator<T> arbitraryNullFriendlyComparator() {
-    return new Comparator<T>() {
-      @Override
-      public int compare(T left, T right) {
-        return String.valueOf(left).compareTo(String.valueOf(right));
-      }
-    };
+    return new NullFriendlyComparator<T>();
+  }
+  
+  private static final class NullFriendlyComparator<T>
+      implements Comparator<T>, Serializable {
+    @Override
+    public int compare(T left, T right) {
+      return String.valueOf(left).compareTo(String.valueOf(right));
+    }
   }
 }

@@ -16,6 +16,8 @@
 
 package com.google.common.io;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.annotations.Beta;
 
 import java.io.OutputStream;
@@ -25,8 +27,11 @@ import java.io.OutputStream;
  *
  * @author Spencer Kimball
  * @since 1.0
+ * @deprecated Use {@link ByteStreams#nullOutputStream} instead. This class is
+ *     scheduled to be removed in Guava release 15.0.
  */
 @Beta
+@Deprecated
 public final class NullOutputStream extends OutputStream {
   /** Discards the specified byte. */
   @Override public void write(int b) {
@@ -34,5 +39,6 @@ public final class NullOutputStream extends OutputStream {
 
   /** Discards the specified byte array. */
   @Override public void write(byte[] b, int off, int len) {
+    checkNotNull(b);
   }
 }

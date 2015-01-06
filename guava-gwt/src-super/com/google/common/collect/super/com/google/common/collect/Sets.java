@@ -19,15 +19,10 @@ package com.google.common.collect;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.base.Function;
-import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2.FilteredCollection;
-import com.google.common.math.IntMath;
 
 import java.io.Serializable;
 import java.util.AbstractSet;
@@ -50,7 +45,11 @@ import javax.annotation.Nullable;
 
 /**
  * Static utility methods pertaining to {@link Set} instances. Also see this
- * class's counterparts {@link Lists} and {@link Maps}.
+ * class's counterparts {@link Lists}, {@link Maps} and {@link Queues}.
+ *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/CollectionUtilitiesExplained#Sets">
+ * {@code Sets}</a>.
  *
  * @author Kevin Bourrillion
  * @author Jared Levy
@@ -60,6 +59,22 @@ import javax.annotation.Nullable;
 @GwtCompatible(emulated = true)
 public final class Sets {
   private Sets() {}
+
+  /**
+   * {@link AbstractSet} substitute without the potentially-quadratic
+   * {@code removeAll} implementation.
+   */
+  abstract static class ImprovedAbstractSet<E> extends AbstractSet<E> {
+    @Override
+    public boolean removeAll(Collection<?> c) {
+      return removeAllImpl(this, c);
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+      return super.retainAll(checkNotNull(c)); // GWT compatibility
+    }
+  }
 
   /**
    * Returns an immutable set instance containing the given enum elements.
@@ -76,7 +91,7 @@ public final class Sets {
   @GwtCompatible(serializable = true)
   public static <E extends Enum<E>> ImmutableSet<E> immutableEnumSet(
       E anElement, E... otherElements) {
-    return new ImmutableEnumSet<E>(EnumSet.of(anElement, otherElements));
+    return ImmutableEnumSet.asImmutable(EnumSet.of(anElement, otherElements));
   }
 
   /**
@@ -94,20 +109,25 @@ public final class Sets {
   @GwtCompatible(serializable = true)
   public static <E extends Enum<E>> ImmutableSet<E> immutableEnumSet(
       Iterable<E> elements) {
-    Iterator<E> iterator = elements.iterator();
-    if (!iterator.hasNext()) {
-      return ImmutableSet.of();
+    if (elements instanceof ImmutableEnumSet) {
+      return (ImmutableEnumSet<E>) elements;
+    } else if (elements instanceof Collection) {
+      Collection<E> collection = (Collection<E>) elements;
+      if (collection.isEmpty()) {
+        return ImmutableSet.of();
+      } else {
+        return ImmutableEnumSet.asImmutable(EnumSet.copyOf(collection));
+      }
+    } else {
+      Iterator<E> itr = elements.iterator();
+      if (itr.hasNext()) {
+        EnumSet<E> enumSet = EnumSet.of(itr.next());
+        Iterators.addAll(enumSet, itr);
+        return ImmutableEnumSet.asImmutable(enumSet);
+      } else {
+        return ImmutableSet.of();
+      }
     }
-    if (elements instanceof EnumSet) {
-      EnumSet<E> enumSetClone = EnumSet.copyOf((EnumSet<E>) elements);
-      return new ImmutableEnumSet<E>(enumSetClone);
-    }
-    E first = iterator.next();
-    EnumSet<E> set = EnumSet.of(first);
-    while (iterator.hasNext()) {
-      set.add(iterator.next());
-    }
-    return new ImmutableEnumSet<E>(set);
   }
 
   /**
@@ -118,20 +138,6 @@ public final class Sets {
    */
   public static <E extends Enum<E>> EnumSet<E> newEnumSet(Iterable<E> iterable,
       Class<E> elementType) {
-    /*
-     * TODO(cpovirk): noneOf() and addAll() will both throw
-     * NullPointerExceptions when appropriate. However, NullPointerTester will
-     * fail on this method because it passes in Class.class instead of an enum
-     * type. This means that, when iterable is null but elementType is not,
-     * noneOf() will throw a ClassCastException before addAll() has a chance to
-     * throw a NullPointerException. NullPointerTester considers this a failure.
-     * Ideally the test would be fixed, but it would require a special case for
-     * Class<E> where E extends Enum. Until that happens (if ever), leave
-     * checkNotNull() here. For now, contemplate the irony that checking
-     * elementType, the problem argument, is harmful, while checking iterable,
-     * the innocent bystander, is effective.
-     */
-    checkNotNull(iterable);
     EnumSet<E> set = EnumSet.noneOf(elementType);
     Iterables.addAll(set, iterable);
     return set;
@@ -566,6 +572,11 @@ public final class Sets {
    * <p><b>Note:</b> The returned view performs better when {@code set1} is the
    * smaller of the two sets. If you have reason to believe one of your sets
    * will generally be smaller than the other, pass it first.
+   *
+   * <p>Further, note that the current implementation is not suitable for nested
+   * {@code union} views, i.e. the following should be avoided when in a loop:
+   * {@code union = Sets.union(union, anotherSet);}, since iterating over the resulting
+   * set has a cubic complexity to the depth of the nesting.
    */
   public static <E> SetView<E> union(
       final Set<? extends E> set1, final Set<? extends E> set2) {
@@ -796,9 +807,12 @@ public final class Sets {
    *
    * @since 11.0
    */
-  @Beta
-  @SuppressWarnings("unchecked")
   public static <E> SortedSet<E> filter(
+      SortedSet<E> unfiltered, Predicate<? super E> predicate) {
+    return Platform.setsFilterSortedSet(unfiltered, predicate);
+  }
+
+  static <E> SortedSet<E> filterSortedIgnoreNavigable(
       SortedSet<E> unfiltered, Predicate<? super E> predicate) {
     if (unfiltered instanceof FilteredSet) {
       // Support clear(), removeAll(), and retainAll() when filtering a filtered
@@ -814,19 +828,11 @@ public final class Sets {
         checkNotNull(unfiltered), checkNotNull(predicate));
   }
 
-  private static class FilteredSortedSet<E> extends FilteredCollection<E>
+  private static class FilteredSortedSet<E> extends FilteredSet<E>
       implements SortedSet<E> {
 
     FilteredSortedSet(SortedSet<E> unfiltered, Predicate<? super E> predicate) {
       super(unfiltered, predicate);
-    }
-
-    @Override public boolean equals(@Nullable Object object) {
-      return equalsImpl(this, object);
-    }
-
-    @Override public int hashCode() {
-      return hashCodeImpl(this);
     }
 
     @Override
@@ -889,12 +895,22 @@ public final class Sets {
    * <li>{@code ImmutableList.of(2, "C")}
    * </ul>
    *
-   * The order in which these lists are returned is not guaranteed, however the
-   * position of an element inside a tuple always corresponds to the position of
-   * the set from which it came in the input list. Note that if any input set is
-   * empty, the Cartesian product will also be empty. If no sets at all are
-   * provided (an empty list), the resulting Cartesian product has one element,
-   * an empty list (counter-intuitive, but mathematically consistent).
+   * The result is guaranteed to be in the "traditional", lexicographical
+   * order for Cartesian products that you would get from nesting for loops:
+   * <pre>   {@code
+   *
+   *   for (B b0 : sets.get(0)) {
+   *     for (B b1 : sets.get(1)) {
+   *       ...
+   *       ImmutableList<B> tuple = ImmutableList.of(b0, b1, ...);
+   *       // operate on tuple
+   *     }
+   *   }}</pre>
+   *
+   * Note that if any input set is empty, the Cartesian product will also be
+   * empty. If no sets at all are provided (an empty list), the resulting
+   * Cartesian product has one element, an empty list (counter-intuitive, but
+   * mathematically consistent).
    *
    * <p><i>Performance notes:</i> while the cartesian product of sets of size
    * {@code m, n, p} is a set of size {@code m x n x p}, its actual memory
@@ -920,8 +936,7 @@ public final class Sets {
         return ImmutableSet.of();
       }
     }
-    CartesianSet<B> cartesianSet = new CartesianSet<B>(sets);
-    return cartesianSet;
+    return CartesianSet.create(sets);
   }
 
   /**
@@ -945,12 +960,22 @@ public final class Sets {
    * <li>{@code ImmutableList.of(2, "C")}
    * </ul>
    *
-   * The order in which these lists are returned is not guaranteed, however the
-   * position of an element inside a tuple always corresponds to the position of
-   * the set from which it came in the input list. Note that if any input set is
-   * empty, the Cartesian product will also be empty. If no sets at all are
-   * provided, the resulting Cartesian product has one element, an empty list
-   * (counter-intuitive, but mathematically consistent).
+   * The result is guaranteed to be in the "traditional", lexicographical
+   * order for Cartesian products that you would get from nesting for loops:
+   * <pre>   {@code
+   *
+   *   for (B b0 : sets.get(0)) {
+   *     for (B b1 : sets.get(1)) {
+   *       ...
+   *       ImmutableList<B> tuple = ImmutableList.of(b0, b1, ...);
+   *       // operate on tuple
+   *     }
+   *   }}</pre>
+   *
+   * Note that if any input set is empty, the Cartesian product will also be
+   * empty. If no sets at all are provided (an empty list), the resulting
+   * Cartesian product has one element, an empty list (counter-intuitive, but
+   * mathematically consistent).
    *
    * <p><i>Performance notes:</i> while the cartesian product of sets of size
    * {@code m, n, p} is a set of size {@code m x n x p}, its actual memory
@@ -974,73 +999,51 @@ public final class Sets {
     return cartesianProduct(Arrays.asList(sets));
   }
 
-  private static class CartesianSet<B> extends AbstractSet<List<B>> {
-    final ImmutableList<Axis> axes;
-    final int size;
+  private static final class CartesianSet<E>
+      extends ForwardingCollection<List<E>> implements Set<List<E>> {
+    private transient final ImmutableList<ImmutableSet<E>> axes;
+    private transient final CartesianList<E> delegate;
 
-    CartesianSet(List<? extends Set<? extends B>> sets) {
-      int dividend = 1;
-      ImmutableList.Builder<Axis> builder = ImmutableList.builder();
-      try {
-        for (Set<? extends B> set : sets) {
-          Axis axis = new Axis(set, dividend);
-          builder.add(axis);
-          dividend = IntMath.checkedMultiply(dividend, axis.size());
+    static <E> Set<List<E>> create(List<? extends Set<? extends E>> sets) {
+      ImmutableList.Builder<ImmutableSet<E>> axesBuilder =
+          new ImmutableList.Builder<ImmutableSet<E>>(sets.size());
+      for (Set<? extends E> set : sets) {
+        ImmutableSet<E> copy = ImmutableSet.copyOf(set);
+        if (copy.isEmpty()) {
+          return ImmutableSet.of();
         }
-      } catch (ArithmeticException overflow) {
-        throw new IllegalArgumentException("cartesian product too big");
+        axesBuilder.add(copy);
       }
-      this.axes = builder.build();
-      size = dividend;
-    }
-
-    @Override public int size() {
-      return size;
-    }
-
-    @Override public UnmodifiableIterator<List<B>> iterator() {
-      return new UnmodifiableIterator<List<B>>() {
-        int index;
+      final ImmutableList<ImmutableSet<E>> axes = axesBuilder.build();
+      ImmutableList<List<E>> listAxes = new ImmutableList<List<E>>() {
 
         @Override
-        public boolean hasNext() {
-          return index < size;
+        public int size() {
+          return axes.size();
         }
 
         @Override
-        public List<B> next() {
-          if (!hasNext()) {
-            throw new NoSuchElementException();
-          }
+        public List<E> get(int index) {
+          return axes.get(index).asList();
+        }
 
-          Object[] tuple = new Object[axes.size()];
-          for (int i = 0 ; i < tuple.length; i++) {
-            tuple[i] = axes.get(i).getForIndex(index);
-          }
-          index++;
-
-          @SuppressWarnings("unchecked") // only B's are put in here
-          List<B> result = (ImmutableList<B>) ImmutableList.copyOf(tuple);
-          return result;
+        @Override
+        boolean isPartialView() {
+          return true;
         }
       };
+      return new CartesianSet<E>(axes, new CartesianList<E>(listAxes));
     }
 
-    @Override public boolean contains(Object element) {
-      if (!(element instanceof List<?>)) {
-        return false;
-      }
-      List<?> tuple = (List<?>) element;
-      int dimensions = axes.size();
-      if (tuple.size() != dimensions) {
-        return false;
-      }
-      for (int i = 0; i < dimensions; i++) {
-        if (!axes.get(i).contains(tuple.get(i))) {
-          return false;
-        }
-      }
-      return true;
+    private CartesianSet(
+        ImmutableList<ImmutableSet<E>> axes, CartesianList<E> delegate) {
+      this.axes = axes;
+      this.delegate = delegate;
+    }
+
+    @Override
+    protected Collection<List<E>> delegate() {
+      return delegate;
     }
 
     @Override public boolean equals(@Nullable Object object) {
@@ -1053,56 +1056,26 @@ public final class Sets {
       return super.equals(object);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       // Warning: this is broken if size() == 0, so it is critical that we
       // substitute an empty ImmutableSet to the user in place of this
 
       // It's a weird formula, but tests prove it works.
-      int adjust = size - 1;
+      int adjust = size() - 1;
       for (int i = 0; i < axes.size(); i++) {
         adjust *= 31;
+        adjust = ~~adjust;
+        // in GWT, we have to deal with integer overflow carefully
       }
-      return axes.hashCode() + adjust;
-    }
+      int hash = 1;
+      for (Set<E> axis : axes) {
+        hash = 31 * hash + (size() / axis.size() * axis.hashCode());
 
-    private class Axis {
-      final ImmutableSet<? extends B> choices;
-      final ImmutableList<? extends B> choicesList;
-      final int dividend;
-
-      Axis(Set<? extends B> set, int dividend) {
-        choices = ImmutableSet.copyOf(set);
-        choicesList = choices.asList();
-        this.dividend = dividend;
+        hash = ~~hash;
       }
-
-      int size() {
-        return choices.size();
-      }
-
-      B getForIndex(int index) {
-        return choicesList.get(index / dividend % size());
-      }
-
-      boolean contains(Object target) {
-        return choices.contains(target);
-      }
-
-      @Override public boolean equals(Object obj) {
-        if (obj instanceof CartesianSet.Axis) {
-          CartesianSet.Axis that = (CartesianSet.Axis) obj;
-          return this.choices.equals(that.choices);
-          // dividends must be equal or we wouldn't have gotten this far
-        }
-        return false;
-      }
-
-      @Override public int hashCode() {
-        // Because Axis instances are not exposed, we can
-        // opportunistically choose whatever bizarre formula happens
-        // to make CartesianSet.hashCode() as simple as possible.
-        return size / choices.size() * choices.hashCode();
-      }
+      hash += adjust;
+      return ~~hash;
     }
   }
 
@@ -1240,6 +1213,9 @@ public final class Sets {
     int hashCode = 0;
     for (Object o : s) {
       hashCode += o != null ? o.hashCode() : 0;
+
+      hashCode = ~~hashCode;
+      // Needed to deal with unusual integer overflow in GWT.
     }
     return hashCode;
   }
@@ -1266,117 +1242,47 @@ public final class Sets {
   }
 
   /**
-   * Creates a view of Set<B> for a Set<A>, given a bijection between A and B.
-   * (Modelled for now as InvertibleFunction<A, B>, can't be Converter<A, B>
-   * because that's not in Guava, though both designs are less than optimal).
-   * Note that the bijection is treated as undefined for values not in the
-   * given Set<A> - it doesn't have to define a true bijection for those.
-   *
-   * <p>Note that the returned Set's contains method is unsafe -
-   * you *must* pass an instance of B to it, since the bijection
-   * can only invert B's (not any Object) back to A, so we can
-   * then delegate the call to the original Set<A>.
-   */
-  static <A, B> Set<B> transform(
-      Set<A> set, InvertibleFunction<A, B> bijection) {
-    return new TransformedSet<A, B>(
-        Preconditions.checkNotNull(set, "set"),
-        Preconditions.checkNotNull(bijection, "bijection")
-    );
-  }
-
-  /**
-   * Stop-gap measure since there is no bijection related type in Guava.
-   */
-  abstract static class InvertibleFunction<A, B> implements Function<A, B> {
-    abstract A invert(B b);
-
-    public InvertibleFunction<B, A> inverse() {
-      return new InvertibleFunction<B, A>() {
-        @Override public A apply(B b) {
-          return InvertibleFunction.this.invert(b);
-        }
-
-        @Override B invert(A a) {
-          return InvertibleFunction.this.apply(a);
-        }
-
-        // Not required per se, but just for good karma.
-        @Override public InvertibleFunction<A, B> inverse() {
-          return InvertibleFunction.this;
-        }
-      };
-    }
-  }
-
-  private static class TransformedSet<A, B> extends AbstractSet<B> {
-    final Set<A> delegate;
-    final InvertibleFunction<A, B> bijection;
-
-    TransformedSet(Set<A> delegate, InvertibleFunction<A, B> bijection) {
-      this.delegate = delegate;
-      this.bijection = bijection;
-    }
-
-    @Override public Iterator<B> iterator() {
-      return Iterators.transform(delegate.iterator(), bijection);
-    }
-
-    @Override public int size() {
-      return delegate.size();
-    }
-
-    @SuppressWarnings("unchecked") // unsafe, passed object *must* be B
-    @Override public boolean contains(Object o) {
-      B b = (B) o;
-      A a = bijection.invert(b);
-      /*
-       * Mathematically, Converter<A, B> defines a bijection between ALL A's
-       * on ALL B's. Here we concern ourselves with a subset
-       * of this relation: we only want the part that is defined by a *subset*
-       * of all A's (defined by that Set<A> delegate), and the image
-       * of *that* on B (which is this set). We don't care whether
-       * the converter is *not* a bijection for A's that are not in Set<A>
-       * or B's not in this Set<B>.
-       *
-       * We only want to return true if and only f the user passes a B instance
-       * that is contained in precisely in the image of Set<A>.
-       *
-       * The first test is whether the inverse image of this B is indeed
-       * in Set<A>. But we don't know whether that B belongs in this Set<B>
-       * or not; if not, the converter is free to return
-       * anything it wants, even an element of Set<A> (and this relationship
-       * is not part of the Set<A> <--> Set<B> bijection), and we must not
-       * be confused by that. So we have to do a final check to see if the
-       * image of that A is really equivalent to the passed B, which proves
-       * that the given B belongs indeed in the image of Set<A>.
-       */
-      return delegate.contains(a) && Objects.equal(bijection.apply(a), o);
-    }
-
-    @Override public boolean add(B b) {
-      return delegate.add(bijection.invert(b));
-    }
-
-    @SuppressWarnings("unchecked") // unsafe, passed object *must* be B
-    @Override public boolean remove(Object o) {
-      return contains(o) && delegate.remove(bijection.invert((B) o));
-    }
-
-    @Override public void clear() {
-      delegate.clear();
-    }
-  }
-
-  /**
    * Remove each element in an iterable from a set.
    */
-  static boolean removeAllImpl(Set<?> set, Iterable<?> iterable) {
-    // TODO(jlevy): Have ForwardingSet.standardRemoveAll() call this method.
+  static boolean removeAllImpl(Set<?> set, Iterator<?> iterator) {
     boolean changed = false;
-    for (Object o : iterable) {
-      changed |= set.remove(o);
+    while (iterator.hasNext()) {
+      changed |= set.remove(iterator.next());
     }
     return changed;
+  }
+
+  static boolean removeAllImpl(Set<?> set, Collection<?> collection) {
+    checkNotNull(collection); // for GWT
+    if (collection instanceof Multiset) {
+      collection = ((Multiset<?>) collection).elementSet();
+    }
+    /*
+     * AbstractSet.removeAll(List) has quadratic behavior if the list size
+     * is just less than the set's size.  We augment the test by
+     * assuming that sets have fast contains() performance, and other
+     * collections don't.  See
+     * http://code.google.com/p/guava-libraries/issues/detail?id=1013
+     */
+    if (collection instanceof Set && collection.size() > set.size()) {
+      Iterator<?> setIterator = set.iterator();
+      boolean changed = false;
+      while (setIterator.hasNext()) {
+        if (collection.contains(setIterator.next())) {
+          changed = true;
+          setIterator.remove();
+        }
+      }
+      return changed;
+    } else {
+      return removeAllImpl(set, collection.iterator());
+    }
+  }
+
+  /**
+   * Used to avoid http://bugs.sun.com/view_bug.do?bug_id=6558557
+   */
+  static <T> SortedSet<T> cast(Iterable<T> iterable) {
+    return (SortedSet<T>) iterable;
   }
 }

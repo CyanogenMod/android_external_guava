@@ -16,6 +16,14 @@
 
 package com.google.common.collect;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Maps.EntryTransformer;
+
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.SortedSet;
+
 /**
  * Minimal GWT emulation of {@code com.google.common.collect.Platform}.
  *
@@ -29,24 +37,32 @@ class Platform {
     return GwtPlatform.clone(array);
   }
 
-  // TODO: Fix System.arraycopy in GWT so that it isn't necessary.
-  static void unsafeArrayCopy(
-      Object[] src, int srcPos, Object[] dest, int destPos, int length) {
-    for (int i = 0; i < length; i++) {
-      dest[destPos + i] = src[srcPos + i];
-    }
-  }
-
-  static <T> T[] newArray(Class<T> type, int length) {
-    throw new UnsupportedOperationException(
-        "Platform.newArray is not supported in GWT yet.");
-  }
-
   static <T> T[] newArray(T[] reference, int length) {
     return GwtPlatform.newArray(reference, length);
   }
 
   static MapMaker tryWeakKeys(MapMaker mapMaker) {
     return mapMaker;
+  }
+
+  static <K, V1, V2> SortedMap<K, V2> mapsTransformEntriesSortedMap(
+      SortedMap<K, V1> fromMap,
+      EntryTransformer<? super K, ? super V1, V2> transformer) {
+    return Maps.transformEntriesIgnoreNavigable(fromMap, transformer);
+  }
+
+  static <K, V> SortedMap<K, V> mapsAsMapSortedSet(
+      SortedSet<K> set, Function<? super K, V> function) {
+    return Maps.asMapSortedIgnoreNavigable(set, function);
+  }
+
+  static <E> SortedSet<E> setsFilterSortedSet(
+      SortedSet<E> unfiltered, Predicate<? super E> predicate) {
+    return Sets.filterSortedIgnoreNavigable(unfiltered, predicate);
+  }
+  
+  static <K, V> SortedMap<K, V> mapsFilterSortedMap(
+      SortedMap<K, V> unfiltered, Predicate<? super Map.Entry<K, V>> predicate) {
+    return Maps.filterSortedIgnoreNavigable(unfiltered, predicate);
   }
 }

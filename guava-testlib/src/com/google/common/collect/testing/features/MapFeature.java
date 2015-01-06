@@ -16,6 +16,7 @@
 
 package com.google.common.collect.testing.features;
 
+import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.Helpers;
 
 import java.lang.annotation.Inherited;
@@ -33,6 +34,7 @@ import java.util.Set;
  */
 // Enum values use constructors with generic varargs.
 @SuppressWarnings("unchecked")
+@GwtCompatible
 public enum MapFeature implements Feature<Map> {
   /**
    * The map does not throw {@code NullPointerException} on calls such as
@@ -44,9 +46,8 @@ public enum MapFeature implements Feature<Map> {
   RESTRICTS_KEYS,
   RESTRICTS_VALUES,
   SUPPORTS_PUT,
-  SUPPORTS_PUT_ALL,
   SUPPORTS_REMOVE,
-  SUPPORTS_CLEAR,
+  FAILS_FAST_ON_CONCURRENT_MODIFICATION,
   /**
    * Indicates that the constructor or factory method of a map, usually an
    * immutable map, throws an {@link IllegalArgumentException} when presented
@@ -56,16 +57,8 @@ public enum MapFeature implements Feature<Map> {
 
   GENERAL_PURPOSE(
       SUPPORTS_PUT,
-      SUPPORTS_PUT_ALL,
-      SUPPORTS_REMOVE,
-      SUPPORTS_CLEAR
-  ),
-
-  /** Features supported by maps where only removal is allowed. */
-  REMOVE_OPERATIONS(
-      SUPPORTS_REMOVE,
-      SUPPORTS_CLEAR
-    );
+      SUPPORTS_REMOVE
+  );
 
   private final Set<Feature<? super Map>> implied;
 
