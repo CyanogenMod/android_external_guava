@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Google Inc.
+ * Copyright (C) 2009 The Guava Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.google.common.collect;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 
 import java.util.Comparator;
@@ -35,10 +34,13 @@ import javax.annotation.Nullable;
  * it has no public or protected constructors. Thus, instances of this class are
  * guaranteed to be immutable.
  *
- * @author gak@google.com (Gregory Kick)
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/ImmutableCollectionsExplained">
+ * immutable collections</a>.
+ *
+ * @author Gregory Kick
  * @since 11.0
  */
-@Beta
 @GwtCompatible
 // TODO(gak): make serializable
 public abstract class ImmutableTable<R, C, V> implements Table<R, C, V> {
@@ -70,7 +72,7 @@ public abstract class ImmutableTable<R, C, V> implements Table<R, C, V> {
    */
   public static final <R, C, V> ImmutableTable<R, C, V> copyOf(
       Table<? extends R, ? extends C, ? extends V> table) {
-    if (table instanceof ImmutableTable<?, ?, ?>) {
+    if (table instanceof ImmutableTable) {
       @SuppressWarnings("unchecked")
       ImmutableTable<R, C, V> parameterizedTable
           = (ImmutableTable<R, C, V>) table;
@@ -104,7 +106,7 @@ public abstract class ImmutableTable<R, C, V> implements Table<R, C, V> {
 
   /**
    * Returns a new builder. The generated builder is equivalent to the builder
-   * created by the {@link Builder#Builder()} constructor.
+   * created by the {@link Builder#ImmutableTable.Builder()} constructor.
    */
   public static final <R, C, V> Builder<R, C, V> builder() {
     return new Builder<R, C, V>();
@@ -254,8 +256,8 @@ public abstract class ImmutableTable<R, C, V> implements Table<R, C, V> {
   /**
    * {@inheritDoc}
    *
-   * <p>The value {@code Map<R, V>}s in the returned map are
-   * {@link ImmutableMap}s as well.
+   * <p>The value {@code Map<R, V>} instances in the returned map are
+   * {@link ImmutableMap} instances as well.
    */
   @Override public abstract ImmutableMap<C, Map<R, V>> columnMap();
 
@@ -271,8 +273,8 @@ public abstract class ImmutableTable<R, C, V> implements Table<R, C, V> {
   /**
    * {@inheritDoc}
    *
-   * <p>The value {@code Map<C, V>}s in the returned map are
-   * {@link ImmutableMap}s as well.
+   * <p>The value {@code Map<C, V>} instances in the returned map are
+   * {@link ImmutableMap} instances as well.
    */
   @Override public abstract ImmutableMap<R, Map<C, V>> rowMap();
 
@@ -280,8 +282,9 @@ public abstract class ImmutableTable<R, C, V> implements Table<R, C, V> {
    * Guaranteed to throw an exception and leave the table unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
-  @Override public final void clear() {
+  @Deprecated @Override public final void clear() {
     throw new UnsupportedOperationException();
   }
 
@@ -289,8 +292,9 @@ public abstract class ImmutableTable<R, C, V> implements Table<R, C, V> {
    * Guaranteed to throw an exception and leave the table unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
-  @Override public final V put(R rowKey, C columnKey, V value) {
+  @Deprecated @Override public final V put(R rowKey, C columnKey, V value) {
     throw new UnsupportedOperationException();
   }
 
@@ -298,8 +302,9 @@ public abstract class ImmutableTable<R, C, V> implements Table<R, C, V> {
    * Guaranteed to throw an exception and leave the table unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
-  @Override public final void putAll(
+  @Deprecated @Override public final void putAll(
       Table<? extends R, ? extends C, ? extends V> table) {
     throw new UnsupportedOperationException();
   }
@@ -308,15 +313,16 @@ public abstract class ImmutableTable<R, C, V> implements Table<R, C, V> {
    * Guaranteed to throw an exception and leave the table unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
-  @Override public final V remove(Object rowKey, Object columnKey) {
+  @Deprecated @Override public final V remove(Object rowKey, Object columnKey) {
     throw new UnsupportedOperationException();
   }
 
   @Override public boolean equals(@Nullable Object obj) {
     if (obj == this) {
       return true;
-    } else if (obj instanceof Table<?, ?, ?>) {
+    } else if (obj instanceof Table) {
       Table<?, ?, ?> that = (Table<?, ?, ?>) obj;
       return this.cellSet().equals(that.cellSet());
     } else {

@@ -16,6 +16,8 @@
 
 package com.google.common.collect.testing;
 
+import com.google.common.annotations.GwtCompatible;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,6 +35,7 @@ import java.util.List;
  *
  * @author George van den Driessche
  */
+@GwtCompatible
 public abstract class AbstractContainerTester<C, E>
     extends AbstractTester<OneSizeTestContainerGenerator<C, E>> {
   protected SampleElements<E> samples;
@@ -110,7 +113,7 @@ public abstract class AbstractContainerTester<C, E>
   }
 
   protected void expectUnchanged() {
-    expectContents(getSampleElements());
+    expectContents(getOrderedElements());
   }
 
   /**
@@ -121,7 +124,7 @@ public abstract class AbstractContainerTester<C, E>
    * of each given element has increased by one since the test collection was
    * created, and the number of occurrences of all other elements has not
    * changed.
-   * 
+   *
    * <p>Note: This means that a test like the following will fail if
    * {@code collection} is a {@code Set}:
    *
@@ -167,6 +170,12 @@ public abstract class AbstractContainerTester<C, E>
   protected E[] createSamplesArray() {
     E[] array = getSubjectGenerator().createArray(getNumElements());
     getSampleElements().toArray(array);
+    return array;
+  }
+
+  protected E[] createOrderedArray() {
+    E[] array = getSubjectGenerator().createArray(getNumElements());
+    getOrderedElements().toArray(array);
     return array;
   }
 

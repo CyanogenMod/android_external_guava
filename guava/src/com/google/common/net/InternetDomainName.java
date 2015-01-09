@@ -73,7 +73,7 @@ import javax.annotation.Nullable;
  * @since 5.0
  */
 @Beta
-@GwtCompatible(emulated = true)
+@GwtCompatible
 public final class InternetDomainName {
 
   private static final CharMatcher DOTS_MATCHER =
@@ -146,11 +146,13 @@ public final class InternetDomainName {
       name = name.substring(0, name.length() - 1);
     }
 
-    checkArgument(name.length() <= MAX_LENGTH, "Domain name too long: '%s':", name);
+    checkArgument(name.length() <= MAX_LENGTH,
+        "Domain name too long: '%s':", name);
     this.name = name;
 
     this.parts = ImmutableList.copyOf(DOT_SPLITTER.split(name));
-    checkArgument(parts.size() <= MAX_PARTS, "Domain has too many parts: '%s'", name);
+    checkArgument(parts.size() <= MAX_PARTS,
+        "Domain has too many parts: '%s'", name);
     checkArgument(validateSyntax(parts), "Not a valid domain name: '%s'", name);
 
     this.publicSuffixIndex = findPublicSuffix();
@@ -192,7 +194,7 @@ public final class InternetDomainName {
    *
    * @param domain A domain name (not IP address)
    * @throws IllegalArgumentException if {@code name} is not syntactically valid
-   *     according to {@link #isValidLenient}
+   *     according to {@link #isValid}
    * @since 8.0 (previously named {@code from})
    * @deprecated Use {@link #from(String)}
    */

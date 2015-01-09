@@ -16,50 +16,97 @@
 
 package com.google.common.eventbus;
 
+import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
+import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.UncheckedExecutionException;
+
 import java.lang.reflect.Method;
+import java.util.Set;
 
 /**
- * A {@link HandlerFindingStrategy} for collecting all event handler methods
- * that are marked with the {@link Subscribe} annotation.
+ * A {@link HandlerFindingStrategy} for collecting all event handler methods that are marked with
+ * the {@link Subscribe} annotation.
  *
  * @author Cliff Biffle
+ * @author Louis Wasserman
  */
 class AnnotatedHandlerFinder implements HandlerFindingStrategy {
+  /**
+   * A thread-safe cache that contains the mapping from each class to all methods in that class and
+   * all super-classes, that are annotated with {@code @Subscribe}. The cache is shared across all
+   * instances of this class; this greatly improves performance if multiple EventBus instances are
+   * created and objects of the same class are registered on all of them.
+   */
+  private static final LoadingCache<Class<?>, ImmutableList<Method>> handlerMethodsCache =
+      CacheBuilder.newBuilder()
+          .weakKeys()
+          .build(new CacheLoader<Class<?>, ImmutableList<Method>>() {
+            @Override
+            public ImmutableList<Method> load(Class<?> concreteClass) throws Exception {
+              return getAnnotatedMethodsInternal(concreteClass);
+            }
+          });
 
   /**
    * {@inheritDoc}
    *
-   * This implementation finds all methods marked with a {@link Subscribe}
-   * annotation.
+   * This implementation finds all methods marked with a {@link Subscribe} annotation.
    */
   @Override
   public Multimap<Class<?>, EventHandler> findAllHandlers(Object listener) {
-    Multimap<Class<?>, EventHandler> methodsInListener =
-        HashMultimap.create();
-    Class clazz = listener.getClass();
-    while (clazz != null) {
-      for (Method method : clazz.getMethods()) {
-        Subscribe annotation = method.getAnnotation(Subscribe.class);
-
-        if (annotation != null) {
-          Class<?>[] parameterTypes = method.getParameterTypes();
-          if (parameterTypes.length != 1) {
-            throw new IllegalArgumentException(
-                "Method " + method + " has @Subscribe annotation, but requires " +
-                parameterTypes.length + " arguments.  Event handler methods " +
-                "must require a single argument.");
-          }
-          Class<?> eventType = parameterTypes[0];
-          EventHandler handler = makeHandler(listener, method);
-
-          methodsInListener.put(eventType, handler);
-        }
-      }
-      clazz = clazz.getSuperclass();
+    Multimap<Class<?>, EventHandler> methodsInListener = HashMultimap.create();
+    Class<?> clazz = listener.getClass();
+    for (Method method : getAnnotatedMethods(clazz)) {
+      Class<?>[] parameterTypes = method.getParameterTypes();
+      Class<?> eventType = parameterTypes[0];
+      EventHandler handler = makeHandler(listener, method);
+      methodsInListener.put(eventType, handler);
     }
     return methodsInListener;
+  }
+
+  private static ImmutableList<Method> getAnnotatedMethods(Class<?> clazz) {
+    try {
+      return handlerMethodsCache.getUnchecked(clazz);
+    } catch (UncheckedExecutionException e) {
+      throw Throwables.propagate(e.getCause());
+    }
+  }
+
+  private static ImmutableList<Method> getAnnotatedMethodsInternal(Class<?> clazz) {
+    Set<? extends Class<?>> supers = TypeToken.of(clazz).getTypes().rawTypes();
+    ImmutableList.Builder<Method> result = ImmutableList.builder();
+    for (Method method : clazz.getMethods()) {
+      /*
+       * Iterate over each distinct method of {@code clazz}, checking if it is annotated with
+       * @Subscribe by any of the superclasses or superinterfaces that declare it.
+       */
+      for (Class<?> c : supers) {
+        try {
+          Method m = c.getMethod(method.getName(), method.getParameterTypes());
+          if (m.isAnnotationPresent(Subscribe.class)) {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (parameterTypes.length != 1) {
+              throw new IllegalArgumentException("Method " + method
+                  + " has @Subscribe annotation, but requires " + parameterTypes.length
+                  + " arguments.  Event handler methods must require a single argument.");
+            }
+            Class<?> eventType = parameterTypes[0];
+            result.add(method);
+            break;
+          }
+        } catch (NoSuchMethodException ignored) {
+          // Move on.
+        }
+      }
+    }
+    return result.build();
   }
 
   /**

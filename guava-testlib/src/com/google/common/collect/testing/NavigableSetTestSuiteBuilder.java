@@ -16,7 +16,7 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.collect.testing.testers.SetNavigationTester;
+import com.google.common.collect.testing.testers.NavigableSetNavigationTester;
 
 import java.util.List;
 
@@ -25,7 +25,7 @@ import java.util.List;
  * a NavigableSet implementation.
  */
 public final class NavigableSetTestSuiteBuilder<E>
-    extends SetTestSuiteBuilder<E> {
+    extends SortedSetTestSuiteBuilder<E> {
   public static <E> NavigableSetTestSuiteBuilder<E> using(
       TestSetGenerator<E> generator) {
     NavigableSetTestSuiteBuilder<E> builder =
@@ -37,7 +37,7 @@ public final class NavigableSetTestSuiteBuilder<E>
   @Override protected List<Class<? extends AbstractTester>> getTesters() {
     List<Class<? extends AbstractTester>> testers =
         Helpers.copyToList(super.getTesters());
-    testers.add(SetNavigationTester.class);
+    testers.add(NavigableSetNavigationTester.class);
     return testers;
   }
 }

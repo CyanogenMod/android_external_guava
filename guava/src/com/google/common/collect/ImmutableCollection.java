@@ -17,6 +17,7 @@
 package com.google.common.collect;
 
 import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.VisibleForTesting;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -85,7 +86,9 @@ public abstract class ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
+  @Deprecated
   @Override
   public final boolean add(E e) {
     throw new UnsupportedOperationException();
@@ -95,7 +98,9 @@ public abstract class ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
+  @Deprecated
   @Override
   public final boolean remove(Object object) {
     throw new UnsupportedOperationException();
@@ -105,7 +110,9 @@ public abstract class ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
+  @Deprecated
   @Override
   public final boolean addAll(Collection<? extends E> newElements) {
     throw new UnsupportedOperationException();
@@ -115,7 +122,9 @@ public abstract class ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
+  @Deprecated
   @Override
   public final boolean removeAll(Collection<?> oldElements) {
     throw new UnsupportedOperationException();
@@ -125,7 +134,9 @@ public abstract class ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
+  @Deprecated
   @Override
   public final boolean retainAll(Collection<?> elementsToKeep) {
     throw new UnsupportedOperationException();
@@ -135,7 +146,9 @@ public abstract class ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
+  @Deprecated
   @Override
   public final void clear() {
     throw new UnsupportedOperationException();
@@ -164,7 +177,7 @@ public abstract class ImmutableCollection<E>
       case 1:
         return ImmutableList.of(iterator().next());
       default:
-        return new ImmutableAsList<E>(toArray(), this);
+        return new RegularImmutableAsList<E>(this, toArray());
     }
   }
 
@@ -186,7 +199,7 @@ public abstract class ImmutableCollection<E>
     }
 
     @Override public UnmodifiableIterator<Object> iterator() {
-      return Iterators.EMPTY_ITERATOR;
+      return Iterators.EMPTY_LIST_ITERATOR;
     }
 
     private static final Object[] EMPTY_ARRAY = new Object[0];
@@ -272,6 +285,24 @@ public abstract class ImmutableCollection<E>
    * @since 10.0
    */
   public abstract static class Builder<E> {
+    static final int DEFAULT_INITIAL_CAPACITY = 4;
+
+    @VisibleForTesting
+    static int expandedCapacity(int oldCapacity, int minCapacity) {
+      if (minCapacity < 0) {
+        throw new AssertionError("cannot store more than MAX_VALUE elements");
+      }
+      // careful of overflow!
+      int newCapacity = oldCapacity + (oldCapacity >> 1) + 1;
+      if (newCapacity < minCapacity) {
+        newCapacity = Integer.highestOneBit(minCapacity - 1) << 1;
+      }
+      if (newCapacity < 0) {
+        newCapacity = Integer.MAX_VALUE;
+        // guaranteed to be >= newCapacity
+      }
+      return newCapacity;
+    }
 
     Builder() {
     }

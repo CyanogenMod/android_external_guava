@@ -16,9 +16,13 @@
 
 package com.google.common.collect;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.primitives.Primitives;
 
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 /**
  * A class-to-instance map backed by an {@link ImmutableMap}. See also {@link
@@ -138,15 +142,18 @@ public final class ImmutableClassToInstanceMap<B> extends
 
   @Override
   @SuppressWarnings("unchecked") // value could not get in if not a T
+  @Nullable
   public <T extends B> T getInstance(Class<T> type) {
-    return (T) delegate.get(type);
+    return (T) delegate.get(checkNotNull(type));
   }
 
   /**
    * Guaranteed to throw an exception and leave the map unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
+  @Deprecated
   @Override
   public <T extends B> T putInstance(Class<T> type, T value) {
     throw new UnsupportedOperationException();

@@ -52,26 +52,9 @@ public abstract class GenericMapMaker<K0, V0> {
   abstract GenericMapMaker<K0, V0> maximumSize(int maximumSize);
 
   /**
-   * See {@link MapMaker#strongKeys}.
-   */
-  abstract GenericMapMaker<K0, V0> strongKeys();
-
-  /**
    * See {@link MapMaker#concurrencyLevel}.
    */
   public abstract GenericMapMaker<K0, V0> concurrencyLevel(int concurrencyLevel);
-
-  /**
-   * See {@link MapMaker#strongValues}.
-   */
-  abstract GenericMapMaker<K0, V0> strongValues();
-
-  /**
-   * See {@link MapMaker#expiration}.
-   */
-  @Deprecated
-  public
-  abstract GenericMapMaker<K0, V0> expiration(long duration, TimeUnit unit);
 
   /**
    * See {@link MapMaker#expireAfterWrite}.

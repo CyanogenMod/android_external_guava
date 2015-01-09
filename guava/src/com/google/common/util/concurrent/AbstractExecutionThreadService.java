@@ -55,7 +55,8 @@ public abstract class AbstractExecutionThreadService implements Service {
                   shutDown();
                 } catch (Exception ignored) {
                   logger.log(Level.WARNING, 
-                      "Error while attempting to shut down the service after failure.", ignored);
+                      "Error while attempting to shut down the service"
+                      + " after failure.", ignored);
                 }
                 throw t;
               }
@@ -77,7 +78,14 @@ public abstract class AbstractExecutionThreadService implements Service {
   };
 
   /**
+   * Constructor for use by subclasses.
+   */
+  protected AbstractExecutionThreadService() {}
+
+  /**
    * Start the service. This method is invoked on the execution thread.
+   * 
+   * <p>By default this method does nothing.
    */
   protected void startUp() throws Exception {}
 
@@ -99,12 +107,16 @@ public abstract class AbstractExecutionThreadService implements Service {
 
   /**
    * Stop the service. This method is invoked on the execution thread.
+   * 
+   * <p>By default this method does nothing.
    */
   // TODO: consider supporting a TearDownTestCase-like API
   protected void shutDown() throws Exception {}
 
   /**
    * Invoked to request the service to stop.
+   * 
+   * <p>By default this method does nothing.
    */
   protected void triggerShutdown() {}
 
@@ -117,19 +129,19 @@ public abstract class AbstractExecutionThreadService implements Service {
    * promptly.
    * 
    * <p>The default implementation returns a new {@link Executor} that sets the 
-   * name of its threads to the string returned by {@link #getServiceName}
+   * name of its threads to the string returned by {@link #serviceName}
    */
   protected Executor executor() {
     return new Executor() {
       @Override
       public void execute(Runnable command) {
-        new Thread(command, getServiceName()).start();
+        MoreExecutors.newThread(serviceName(), command).start();
       }
     };
   }
 
   @Override public String toString() {
-    return getServiceName() + " [" + state() + "]";
+    return serviceName() + " [" + state() + "]";
   }
 
   // We override instead of using ForwardingService so that these can be final.
@@ -159,14 +171,28 @@ public abstract class AbstractExecutionThreadService implements Service {
   }
 
   /**
-   * Returns the name of this service. {@link AbstractExecutionThreadService} may include the name
-   * in debugging output.
+   * @since 13.0
+   */
+  @Override public final void addListener(Listener listener, Executor executor) {
+    delegate.addListener(listener, executor);
+  }
+  
+  /**
+   * @since 14.0
+   */
+  @Override public final Throwable failureCause() {
+    return delegate.failureCause();
+  }
+  
+  /**
+   * Returns the name of this service. {@link AbstractExecutionThreadService}
+   * may include the name in debugging output.
    *
    * <p>Subclasses may override this method.
    *
-   * @since 10.0
+   * @since 14.0 (present in 10.0 as getServiceName)
    */
-  protected String getServiceName() {
+  protected String serviceName() {
     return getClass().getSimpleName();
   }
 }

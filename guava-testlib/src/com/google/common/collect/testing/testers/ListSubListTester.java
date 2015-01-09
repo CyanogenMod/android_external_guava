@@ -16,6 +16,8 @@
 
 package com.google.common.collect.testing.testers;
 
+import static com.google.common.collect.testing.Helpers.getMethod;
+import static com.google.common.collect.testing.features.CollectionFeature.SERIALIZABLE_INCLUDING_VIEWS;
 import static com.google.common.collect.testing.features.CollectionSize.ONE;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 import static com.google.common.collect.testing.features.ListFeature.SUPPORTS_ADD_WITH_INDEX;
@@ -23,9 +25,13 @@ import static com.google.common.collect.testing.features.ListFeature.SUPPORTS_RE
 import static com.google.common.collect.testing.features.ListFeature.SUPPORTS_SET;
 import static java.util.Collections.emptyList;
 
+import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.Helpers;
+import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.ListFeature;
+import com.google.common.testing.SerializableTester;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -43,6 +49,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Chris Povirk
  */
 @SuppressWarnings("unchecked") // too many "unchecked generic array creations"
+@GwtCompatible(emulated = true)
 public class ListSubListTester<E> extends AbstractListTester<E> {
   public void testSubList_startNegative() {
     try {
@@ -171,7 +178,7 @@ public class ListSubListTester<E> extends AbstractListTester<E> {
     List<E> subList = getList().subList(0, 2).subList(1, 2);
     assertEquals("subList(0, 2).subList(1, 2) "
         + "should be a single-element list of the element at index 1",
-        Collections.singletonList(samples.e1), subList);
+        Collections.singletonList(getOrderedElements().get(1)), subList);
   }
 
   @CollectionSize.Require(absent = {ZERO})
@@ -298,6 +305,22 @@ public class ListSubListTester<E> extends AbstractListTester<E> {
                  -1);
   }
 
+  @CollectionFeature.Require(SERIALIZABLE_INCLUDING_VIEWS)
+  public void testReserializeWholeSubList() {
+    SerializableTester.reserializeAndAssert(getList().subList(0, getNumElements()));
+  }
+
+  @CollectionFeature.Require(SERIALIZABLE_INCLUDING_VIEWS)
+  public void testReserializeEmptySubList() {
+    SerializableTester.reserializeAndAssert(getList().subList(0, 0));
+  }
+
+  @CollectionFeature.Require(SERIALIZABLE_INCLUDING_VIEWS)
+  @CollectionSize.Require(absent = {ZERO, ONE})
+  public void testReserializeSubList() {
+    SerializableTester.reserializeAndAssert(getList().subList(0, 2));
+  }
+
   /**
    * Returns the {@link Method} instance for
    * {@link #testSubList_originalListSetAffectsSubList()} so that tests
@@ -306,9 +329,9 @@ public class ListSubListTester<E> extends AbstractListTester<E> {
    * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6570631">Sun bug
    * 6570631</a> is fixed.
    */
+  @GwtIncompatible("reflection")
   public static Method getSubListOriginalListSetAffectsSubListMethod() {
-    return Platform
-        .getMethod(ListSubListTester.class, "testSubList_originalListSetAffectsSubList");
+    return getMethod(ListSubListTester.class, "testSubList_originalListSetAffectsSubList");
   }
 
   /**
@@ -319,10 +342,9 @@ public class ListSubListTester<E> extends AbstractListTester<E> {
    * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6570631">Sun bug
    * 6570631</a> is fixed.
    */
-  public static Method
-      getSubListOriginalListSetAffectsSubListLargeListMethod() {
-    return Platform
-        .getMethod(ListSubListTester.class, "testSubList_originalListSetAffectsSubListLargeList");
+  @GwtIncompatible("reflection")
+  public static Method getSubListOriginalListSetAffectsSubListLargeListMethod() {
+    return getMethod(ListSubListTester.class, "testSubList_originalListSetAffectsSubListLargeList");
   }
 
   /**
@@ -333,9 +355,9 @@ public class ListSubListTester<E> extends AbstractListTester<E> {
    * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6570575">Sun bug
    * 6570575</a> is fixed.
    */
+  @GwtIncompatible("reflection")
   public static Method getSubListSubListRemoveAffectsOriginalLargeListMethod() {
-    return Platform.getMethod(
-        ListSubListTester.class, "testSubList_subListRemoveAffectsOriginalLargeList");
+    return getMethod(ListSubListTester.class, "testSubList_subListRemoveAffectsOriginalLargeList");
   }
 
   /*

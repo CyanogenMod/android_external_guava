@@ -23,12 +23,21 @@ import static com.google.common.collect.testing.IteratorFeature.MODIFIABLE;
 import static com.google.common.collect.testing.IteratorFeature.SUPPORTS_REMOVE;
 import static com.google.common.collect.testing.IteratorFeature.SUPPORTS_SET;
 import static java.util.Arrays.asList;
-import static org.junit.contrib.truth.Truth.ASSERT;
+import static org.truth0.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.IteratorTester;
 import com.google.common.collect.testing.ListIteratorTester;
+import com.google.common.collect.testing.features.CollectionFeature;
+import com.google.common.collect.testing.features.CollectionSize;
+import com.google.common.collect.testing.features.MapFeature;
+import com.google.common.collect.testing.google.ListMultimapTestSuiteBuilder;
+import com.google.common.collect.testing.google.TestStringListMultimapGenerator;
+import com.google.common.testing.EqualsTester;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,6 +57,32 @@ import java.util.Set;
  */
 @GwtCompatible(emulated = true)
 public class LinkedListMultimapTest extends AbstractListMultimapTest {
+
+  @GwtIncompatible("suite")
+  public static Test suite() {
+    TestSuite suite = new TestSuite();
+    suite.addTest(ListMultimapTestSuiteBuilder.using(new TestStringListMultimapGenerator() {
+        @Override
+        protected ListMultimap<String, String> create(Entry<String, String>[] entries) {
+          ListMultimap<String, String> multimap = LinkedListMultimap.create();
+          for (Entry<String, String> entry : entries) {
+            multimap.put(entry.getKey(), entry.getValue());
+          }
+          return multimap;
+        }
+      })
+      .named("LinkedListMultimap")
+      .withFeatures(
+          MapFeature.ALLOWS_NULL_KEYS,
+          MapFeature.ALLOWS_NULL_VALUES,
+          MapFeature.GENERAL_PURPOSE,
+          CollectionFeature.SERIALIZABLE,
+          CollectionFeature.KNOWN_ORDER,
+          CollectionSize.ANY)
+      .createTestSuite());
+    suite.addTestSuite(LinkedListMultimapTest.class);
+    return suite;
+  }
 
   @Override protected LinkedListMultimap<String, Integer> create() {
     return LinkedListMultimap.create();
@@ -195,10 +230,10 @@ public class LinkedListMultimapTest extends AbstractListMultimapTest {
     List<Integer> foos = map.get("foo");
     Collection<Integer> values = map.values();
     assertEquals(asList(1, 2), foos);
-    ASSERT.that(values).hasContentsInOrder(1, 2, 3);
+    ASSERT.that(values).has().allOf(1, 2, 3).inOrder();
     map.clear();
     assertEquals(Collections.emptyList(), foos);
-    ASSERT.that(values).hasContentsInOrder();
+    ASSERT.that(values).isEmpty();
     assertEquals("[]", map.entries().toString());
     assertEquals("{}", map.toString());
   }
@@ -222,7 +257,7 @@ public class LinkedListMultimapTest extends AbstractListMultimapTest {
     map.put("bar", 4);
     assertEquals("[bar=1, foo=2, bar=3, bar=4]",
         map.entries().toString());
-    ASSERT.that(map.keys()).hasContentsInOrder("bar", "foo", "bar", "bar");
+    ASSERT.that(map.keys()).has().allOf("bar", "foo", "bar", "bar").inOrder();
     map.keys().remove("bar"); // bar is no longer the first key!
     assertEquals("{foo=[2], bar=[3, 4]}", map.toString());
   }
@@ -268,7 +303,7 @@ public class LinkedListMultimapTest extends AbstractListMultimapTest {
         = map.asMap().entrySet().iterator();
     Map.Entry<String, Collection<Integer>> entry = entries.next();
     assertEquals("bar", entry.getKey());
-    ASSERT.that(entry.getValue()).hasContentsInOrder(1, 3);
+    ASSERT.that(entry.getValue()).has().allOf(1, 3).inOrder();
     try {
       entry.setValue(Arrays.<Integer>asList());
       fail("UnsupportedOperationException expected");
@@ -276,7 +311,7 @@ public class LinkedListMultimapTest extends AbstractListMultimapTest {
     entries.remove(); // clear
     entry = entries.next();
     assertEquals("foo", entry.getKey());
-    ASSERT.that(entry.getValue()).hasContentsInOrder(2);
+    ASSERT.that(entry.getValue()).has().item(2);
     assertFalse(entries.hasNext());
     assertEquals("{foo=[2]}", map.toString());
   }
@@ -469,5 +504,14 @@ public class LinkedListMultimapTest extends AbstractListMultimapTest {
         assertEquals(newHashSet(elements), multimap.asMap().entrySet());
       }
     }.test();
+  }
+
+  public void testEquals() {
+    new EqualsTester()
+        .addEqualityGroup(
+            LinkedListMultimap.create(),
+            LinkedListMultimap.create(),
+            LinkedListMultimap.create(1))
+        .testEquals();
   }
 }

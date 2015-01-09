@@ -13,14 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.common.collect;
+
+import static java.util.Collections.emptyList;
+
+import java.util.List;
 
 /**
  * GWT emulated version of EmptyImmutableList.
  *
  * @author Hayward Chan
  */
-final class EmptyImmutableList extends ImmutableList<Object> {
-
+final class EmptyImmutableList extends ForwardingImmutableList<Object> {
   static final EmptyImmutableList INSTANCE = new EmptyImmutableList();
+
+  private EmptyImmutableList() {
+  }
+
+  @Override List<Object> delegateList() {
+    return emptyList();
+  }
 }
