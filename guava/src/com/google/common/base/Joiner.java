@@ -56,6 +56,9 @@ import javax.annotation.Nullable;
  *   joiner.skipNulls(); // does nothing!
  *   return joiner.join("wrong", null, "wrong");}</pre>
  *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/StringsExplained#Joiner">{@code Joiner}</a>.
+ *
  * @author Kevin Bourrillion
  * @since 2.0 (imported from Google Collections Library)
  */
@@ -95,7 +98,8 @@ public class Joiner {
    */
   @Beta
   @Deprecated
-  public final <A extends Appendable, I extends Object & Iterable<?> & Iterator<?>> A
+  public
+  final <A extends Appendable, I extends Object & Iterable<?> & Iterator<?>> A
       appendTo(A appendable, I parts) throws IOException {
     return appendTo(appendable, (Iterator<?>) parts);
   }
@@ -114,7 +118,6 @@ public class Joiner {
    *
    * @since 11.0
    */
-  @Beta
   public <A extends Appendable> A appendTo(A appendable, Iterator<?> parts) throws IOException {
     checkNotNull(appendable);
     if (parts.hasNext()) {
@@ -154,7 +157,8 @@ public class Joiner {
    */
   @Beta
   @Deprecated
-  public final <I extends Object & Iterable<?> & Iterator<?>> StringBuilder
+  public
+  final <I extends Object & Iterable<?> & Iterator<?>> StringBuilder
       appendTo(StringBuilder builder, I parts) {
     return appendTo(builder, (Iterator<?>) parts);
   }
@@ -175,7 +179,6 @@ public class Joiner {
    *
    * @since 11.0
    */
-  @Beta
   public final StringBuilder appendTo(StringBuilder builder, Iterator<?> parts) {
     try {
       appendTo((Appendable) builder, parts);
@@ -214,7 +217,8 @@ public class Joiner {
    */
   @Beta
   @Deprecated
-  public final <I extends Object & Iterable<?> & Iterator<?>> String join(I parts) {
+  public
+  final <I extends Object & Iterable<?> & Iterator<?>> String join(I parts) {
     return join((Iterator<?>) parts);
   }
 
@@ -232,7 +236,6 @@ public class Joiner {
    *
    * @since 11.0
    */
-  @Beta
   public final String join(Iterator<?> parts) {
     return appendTo(new StringBuilder(), parts).toString();
   }
@@ -261,7 +264,7 @@ public class Joiner {
   public Joiner useForNull(final String nullText) {
     checkNotNull(nullText);
     return new Joiner(this) {
-      @Override CharSequence toString(Object part) {
+      @Override CharSequence toString(@Nullable Object part) {
         return (part == null) ? nullText : Joiner.this.toString(part);
       }
 
@@ -388,7 +391,8 @@ public class Joiner {
      */
     @Beta
     @Deprecated
-    public <A extends Appendable,
+    public
+    <A extends Appendable,
         I extends Object & Iterable<? extends Entry<?, ?>> & Iterator<? extends Entry<?, ?>>>
         A appendTo(A appendable, I entries) throws IOException {
       Iterator<? extends Entry<?, ?>> iterator = entries;
@@ -444,7 +448,8 @@ public class Joiner {
      */
     @Beta
     @Deprecated
-    public <I extends Object & Iterable<? extends Entry<?, ?>> & Iterator<? extends Entry<?, ?>>>
+    public
+    <I extends Object & Iterable<? extends Entry<?, ?>> & Iterator<? extends Entry<?, ?>>>
         StringBuilder appendTo(StringBuilder builder, I entries) throws IOException {
       Iterator<? extends Entry<?, ?>> iterator = entries;
       return appendTo(builder, iterator);
@@ -490,7 +495,8 @@ public class Joiner {
      */
     @Beta
     @Deprecated
-    public <I extends Object & Iterable<? extends Entry<?, ?>> & Iterator<? extends Entry<?, ?>>>
+    public
+    <I extends Object & Iterable<? extends Entry<?, ?>> & Iterator<? extends Entry<?, ?>>>
         String join(I entries) throws IOException {
       Iterator<? extends Entry<?, ?>> iterator = entries;
       return join(iterator);

@@ -19,21 +19,24 @@ package com.google.common.math;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.math.DoubleUtils.IMPLICIT_BIT;
 import static com.google.common.math.DoubleUtils.SIGNIFICAND_BITS;
-import static com.google.common.math.DoubleUtils.getExponent;
 import static com.google.common.math.DoubleUtils.getSignificand;
 import static com.google.common.math.DoubleUtils.isFinite;
 import static com.google.common.math.DoubleUtils.isNormal;
-import static com.google.common.math.DoubleUtils.next;
 import static com.google.common.math.DoubleUtils.scaleNormalize;
 import static com.google.common.math.MathPreconditions.checkInRange;
 import static com.google.common.math.MathPreconditions.checkNonNegative;
 import static com.google.common.math.MathPreconditions.checkRoundingUnnecessary;
+import static java.lang.Math.abs;
+import static java.lang.Math.copySign;
+import static java.lang.Math.getExponent;
+import static java.lang.Math.log;
+import static java.lang.Math.rint;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.primitives.Booleans;
 
 import java.math.BigInteger;
 import java.math.RoundingMode;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.annotations.Beta;
 
 /**
  * A class for arithmetic on doubles that is not covered by {@link java.lang.Math}.
@@ -41,7 +44,6 @@ import com.google.common.annotations.Beta;
  * @author Louis Wasserman
  * @since 11.0
  */
-@Beta
 public final class DoubleMath {
   /*
    * This method returns a value y such that rounding y DOWN (towards zero) gives the same result
@@ -57,43 +59,55 @@ public final class DoubleMath {
         return x;
 
       case FLOOR:
-        return (x >= 0.0) ? x : Math.floor(x);
+        if (x >= 0.0 || isMathematicalInteger(x)) {
+          return x;
+        } else {
+          return x - 1.0;
+        }
 
       case CEILING:
-        return (x >= 0.0) ? Math.ceil(x) : x;
+        if (x <= 0.0 || isMathematicalInteger(x)) {
+          return x;
+        } else {
+          return x + 1.0;
+        }
 
       case DOWN:
         return x;
 
       case UP:
-        return (x >= 0.0) ? Math.ceil(x) : Math.floor(x);
+        if (isMathematicalInteger(x)) {
+          return x;
+        } else {
+          return x + Math.copySign(1.0, x);
+        }
 
       case HALF_EVEN:
-        return Math.rint(x);
+        return rint(x);
 
-      case HALF_UP:
-        if (isMathematicalInteger(x)) {
+      case HALF_UP: {
+        double z = rint(x);
+        if (abs(x - z) == 0.5) {
+          return x + copySign(0.5, x);
+        } else {
+          return z;
+        }
+      }
+
+      case HALF_DOWN: {
+        double z = rint(x);
+        if (abs(x - z) == 0.5) {
           return x;
         } else {
-          return (x >= 0.0) ? x + 0.5 : x - 0.5;
+          return z;
         }
-
-      case HALF_DOWN:
-        if (isMathematicalInteger(x)) {
-          return x;
-        } else if (x >= 0.0) {
-          double z = x + 0.5;
-          return (z == x) ? x : next(z, false); // x + 0.5 - epsilon
-        } else {
-          double z = x - 0.5;
-          return (z == x) ? x : next(z, true); // x - 0.5 + epsilon
-        }
+      }
 
       default:
         throw new AssertionError();
     }
   }
-  
+
   /**
    * Returns the {@code int} value that is equal to {@code x} rounded with the specified rounding
    * mode, if possible.
@@ -161,9 +175,6 @@ public final class DoubleMath {
       return BigInteger.valueOf((long) x);
     }
     int exponent = getExponent(x);
-    if (exponent < 0) {
-      return BigInteger.ZERO;
-    }
     long significand = getSignificand(x);
     BigInteger result = BigInteger.valueOf(significand).shiftLeft(exponent - SIGNIFICAND_BITS);
     return (x < 0) ? result.negate() : result;
@@ -187,16 +198,16 @@ public final class DoubleMath {
    * <li>If {@code x} is positive or negative zero, the result is negative infinity.
    * </ul>
    *
-   * <p>The computed result must be within 1 ulp of the exact result.
+   * <p>The computed result is within 1 ulp of the exact result.
    *
    * <p>If the result of this method will be immediately rounded to an {@code int},
    * {@link #log2(double, RoundingMode)} is faster.
    */
   public static double log2(double x) {
-    return Math.log(x) / LN_2; // surprisingly within 1 ulp according to tests
+    return log(x) / LN_2; // surprisingly within 1 ulp according to tests
   }
 
-  private static final double LN_2 = Math.log(2);
+  private static final double LN_2 = log(2);
 
   /**
    * Returns the base 2 logarithm of a double value, rounded with the specified rounding mode to an
@@ -249,14 +260,14 @@ public final class DoubleMath {
 
   /**
    * Returns {@code true} if {@code x} represents a mathematical integer.
-   * 
+   *
    * <p>This is equivalent to, but not necessarily implemented as, the expression {@code
    * !Double.isNaN(x) && !Double.isInfinite(x) && x == Math.rint(x)}.
    */
   public static boolean isMathematicalInteger(double x) {
     return isFinite(x)
-        && (x == 0.0 || SIGNIFICAND_BITS
-            - Long.numberOfTrailingZeros(getSignificand(x)) <= getExponent(x));
+        && (x == 0.0 ||
+            SIGNIFICAND_BITS - Long.numberOfTrailingZeros(getSignificand(x)) <= getExponent(x));
   }
 
   /**
@@ -274,12 +285,12 @@ public final class DoubleMath {
       return Double.POSITIVE_INFINITY;
     } else {
       // Multiplying the last (n & 0xf) values into their own accumulator gives a more accurate
-      // result than multiplying by EVERY_SIXTEENTH_FACTORIAL[n >> 4] directly.
+      // result than multiplying by everySixteenthFactorial[n >> 4] directly.
       double accum = 1.0;
       for (int i = 1 + (n & ~0xf); i <= n; i++) {
         accum *= i;
       }
-      return accum * EVERY_SIXTEENTH_FACTORIAL[n >> 4];
+      return accum * everySixteenthFactorial[n >> 4];
     }
   }
 
@@ -287,7 +298,7 @@ public final class DoubleMath {
   static final int MAX_FACTORIAL = 170;
 
   @VisibleForTesting
-  static final double[] EVERY_SIXTEENTH_FACTORIAL = {
+  static final double[] everySixteenthFactorial = {
       0x1.0p0,
       0x1.30777758p44,
       0x1.956ad0aae33a4p117,
@@ -299,4 +310,66 @@ public final class DoubleMath {
       0x1.1e5dfc140e1e5p716,
       0x1.8ce85fadb707ep829,
       0x1.95d5f3d928edep945};
+
+  /**
+   * Returns {@code true} if {@code a} and {@code b} are within {@code tolerance} of each other.
+   *
+   * <p>Technically speaking, this is equivalent to
+   * {@code Math.abs(a - b) <= tolerance || Double.valueOf(a).equals(Double.valueOf(b))}.
+   *
+   * <p>Notable special cases include:
+   * <ul>
+   * <li>All NaNs are fuzzily equal.
+   * <li>If {@code a == b}, then {@code a} and {@code b} are always fuzzily equal.
+   * <li>Positive and negative zero are always fuzzily equal.
+   * <li>If {@code tolerance} is zero, and neither {@code a} nor {@code b} is NaN, then
+   * {@code a} and {@code b} are fuzzily equal if and only if {@code a == b}.
+   * <li>With {@link Double#POSITIVE_INFINITY} tolerance, all non-NaN values are fuzzily equal.
+   * <li>With finite tolerance, {@code Double.POSITIVE_INFINITY} and {@code
+   * Double.NEGATIVE_INFINITY} are fuzzily equal only to themselves.
+   * </li>
+   *
+   * <p>This is reflexive and symmetric, but <em>not</em> transitive, so it is <em>not</em> an
+   * equivalence relation and <em>not</em> suitable for use in {@link Object#equals}
+   * implementations.
+   *
+   * @throws IllegalArgumentException if {@code tolerance} is {@code < 0} or NaN
+   * @since 13.0
+   */
+  public static boolean fuzzyEquals(double a, double b, double tolerance) {
+    MathPreconditions.checkNonNegative("tolerance", tolerance);
+    return
+          Math.copySign(a - b, 1.0) <= tolerance
+           // copySign(x, 1.0) is a branch-free version of abs(x), but with different NaN semantics
+          || (a == b) // needed to ensure that infinities equal themselves
+          || ((a != a) && (b != b)); // x != x is equivalent to Double.isNaN(x), but faster
+  }
+
+  /**
+   * Compares {@code a} and {@code b} "fuzzily," with a tolerance for nearly-equal values.
+   *
+   * <p>This method is equivalent to
+   * {@code fuzzyEquals(a, b, tolerance) ? 0 : Double.compare(a, b)}. In particular, like
+   * {@link Double#compare(double, double)}, it treats all NaN values as equal and greater than all
+   * other values (including {@link Double#POSITIVE_INFINITY}).
+   *
+   * <p>This is <em>not</em> a total ordering and is <em>not</em> suitable for use in
+   * {@link Comparable#compareTo} implementations.  In particular, it is not transitive.
+   *
+   * @throws IllegalArgumentException if {@code tolerance} is {@code < 0} or NaN
+   * @since 13.0
+   */
+  public static int fuzzyCompare(double a, double b, double tolerance) {
+    if (fuzzyEquals(a, b, tolerance)) {
+      return 0;
+    } else if (a < b) {
+      return -1;
+    } else if (a > b) {
+      return 1;
+    } else {
+      return Booleans.compare(Double.isNaN(a), Double.isNaN(b));
+    }
+  }
+
+  private DoubleMath() {}
 }

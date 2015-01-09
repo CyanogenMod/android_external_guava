@@ -18,7 +18,6 @@ package com.google.common.collect;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.base.Supplier;
 
@@ -45,12 +44,15 @@ import javax.annotation.Nullable;
  * <p>Note that this implementation is not synchronized. If multiple threads
  * access this table concurrently and one of the threads modifies the table, it
  * must be synchronized externally.
+ * 
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Table">
+ * {@code Table}</a>.
  *
  * @author Jared Levy
  * @since 7.0
  */
 @GwtCompatible(serializable = true)
-@Beta
 public class HashBasedTable<R, C, V> extends StandardTable<R, C, V> {
   private static class Factory<C, V>
       implements Supplier<Map<C, V>>, Serializable {

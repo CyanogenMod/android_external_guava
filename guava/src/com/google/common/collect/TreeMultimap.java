@@ -26,10 +26,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.SortedMap;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
+import javax.annotation.Nullable;
 
 /**
  * Implementation of {@code Multimap} whose keys and values are ordered by
@@ -64,11 +67,16 @@ import java.util.TreeSet;
  * update operations, wrap your multimap with a call to {@link
  * Multimaps#synchronizedSortedSetMultimap}.
  *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multimap">
+ * {@code Multimap}</a>.
+ *
  * @author Jared Levy
+ * @author Louis Wasserman
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible(serializable = true, emulated = true)
-public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
+public class TreeMultimap<K, V> extends AbstractSortedKeySortedSetMultimap<K, V> {
   private transient Comparator<? super K> keyComparator;
   private transient Comparator<? super V> valueComparator;
 
@@ -134,6 +142,14 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
     return new TreeSet<V>(valueComparator);
   }
 
+  @Override
+  Collection<V> createCollection(@Nullable K key) {
+    if (key == null) {
+      keyComparator().compare(key, key);
+    }
+    return super.createCollection(key);
+  }
+
   /**
    * Returns the comparator that orders the multimap keys.
    */
@@ -146,26 +162,79 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
     return valueComparator;
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * <p>Because a {@code TreeMultimap} has unique sorted keys, this method
-   * returns a {@link SortedSet}, instead of the {@link java.util.Set} specified
-   * in the {@link Multimap} interface.
+  /*
+   * The following @GwtIncompatible methods override the methods in 
+   * AbstractSortedKeySortedSetMultimap, so GWT will fall back to the ASKSSM implementations,
+   * which return SortedSets and SortedMaps.
    */
-  @Override public SortedSet<K> keySet() {
-    return (SortedSet<K>) super.keySet();
+  
+  @Override
+  @GwtIncompatible("NavigableMap")
+  NavigableMap<K, Collection<V>> backingMap() {
+    return (NavigableMap<K, Collection<V>>) super.backingMap();
+  }
+  
+  /**
+   * @since 14.0 (present with return type {@code SortedSet} since 2.0)
+   */
+  @Override
+  @GwtIncompatible("NavigableSet")
+  public NavigableSet<V> get(@Nullable K key) {
+    return (NavigableSet<V>) super.get(key);
+  }
+
+  @Override
+  @GwtIncompatible("NavigableSet")
+  Collection<V> unmodifiableCollectionSubclass(Collection<V> collection) {
+    return Sets.unmodifiableNavigableSet((NavigableSet<V>) collection);
+  }
+
+  @Override
+  @GwtIncompatible("NavigableSet")
+  Collection<V> wrapCollection(K key, Collection<V> collection) {
+    return new WrappedNavigableSet(key, (NavigableSet<V>) collection, null);
   }
 
   /**
    * {@inheritDoc}
    *
    * <p>Because a {@code TreeMultimap} has unique sorted keys, this method
-   * returns a {@link SortedMap}, instead of the {@link java.util.Map} specified
+   * returns a {@link NavigableSet}, instead of the {@link java.util.Set} specified
    * in the {@link Multimap} interface.
+   * 
+   * @since 14.0 (present with return type {@code SortedSet} since 2.0)
    */
-  @Override public SortedMap<K, Collection<V>> asMap() {
-    return (SortedMap<K, Collection<V>>) super.asMap();
+  @Override
+  @GwtIncompatible("NavigableSet") 
+  public NavigableSet<K> keySet() {
+    return (NavigableSet<K>) super.keySet();
+  }
+
+  @Override
+  @GwtIncompatible("NavigableSet")
+  NavigableSet<K> createKeySet() {
+    return new NavigableKeySet(backingMap());
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Because a {@code TreeMultimap} has unique sorted keys, this method
+   * returns a {@link NavigableMap}, instead of the {@link java.util.Map} specified
+   * in the {@link Multimap} interface.
+   * 
+   * @since 14.0 (present with return type {@code SortedMap} since 2.0)
+   */
+  @Override 
+  @GwtIncompatible("NavigableMap")
+  public NavigableMap<K, Collection<V>> asMap() {
+    return (NavigableMap<K, Collection<V>>) super.asMap();
+  }
+
+  @Override
+  @GwtIncompatible("NavigableMap")
+  NavigableMap<K, Collection<V>> createAsMap() {
+    return new NavigableAsMap(backingMap());
   }
 
   /**
