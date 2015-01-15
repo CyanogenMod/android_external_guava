@@ -16,19 +16,23 @@
 
 package com.google.common.collect;
 
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableBiMap.Builder;
 import com.google.common.collect.testing.MapInterfaceTest;
+import com.google.common.collect.testing.ReserializingTestSetGenerator;
+import com.google.common.collect.testing.SetTestSuiteBuilder;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
-import com.google.common.collect.testing.features.MapFeature;
-import com.google.common.collect.testing.google.BiMapGenerators.ImmutableBiMapGenerator;
-import com.google.common.collect.testing.google.BiMapInverseTester;
-import com.google.common.collect.testing.google.BiMapTestSuiteBuilder;
+import com.google.common.collect.testing.google.BiMapGenerators.ImmutableBiMapEntrySetGenerator;
+import com.google.common.collect.testing.google.BiMapGenerators.ImmutableBiMapInverseEntrySetGenerator;
+import com.google.common.collect.testing.google.BiMapGenerators.ImmutableBiMapInverseKeySetGenerator;
+import com.google.common.collect.testing.google.BiMapGenerators.ImmutableBiMapInverseValuesGenerator;
+import com.google.common.collect.testing.google.BiMapGenerators.ImmutableBiMapKeySetGenerator;
+import com.google.common.collect.testing.google.BiMapGenerators.ImmutableBiMapValuesGenerator;
 import com.google.common.testing.SerializableTester;
 
 import junit.framework.Test;
@@ -60,14 +64,77 @@ public class ImmutableBiMapTest extends TestCase {
     suite.addTestSuite(CreationTests.class);
     suite.addTestSuite(BiMapSpecificTests.class);
 
-    suite.addTest(BiMapTestSuiteBuilder.using(new ImmutableBiMapGenerator())
-        .named("ImmutableBiMap")
-        .withFeatures(CollectionSize.ANY,
-            CollectionFeature.SERIALIZABLE,
+    suite.addTest(SetTestSuiteBuilder.using(new ImmutableBiMapKeySetGenerator())
+        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableBiMap.keySet")
+        .createTestSuite());
+
+    suite.addTest(SetTestSuiteBuilder.using(
+        new ImmutableBiMapEntrySetGenerator())
+        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableBiMap.entrySet")
+        .createTestSuite());
+
+    suite.addTest(SetTestSuiteBuilder.using(new ImmutableBiMapValuesGenerator())
+        .withFeatures(
+            CollectionSize.ANY,
+            CollectionFeature.REJECTS_DUPLICATES_AT_CREATION,
             CollectionFeature.KNOWN_ORDER,
-            MapFeature.REJECTS_DUPLICATES_AT_CREATION,
-            MapFeature.ALLOWS_NULL_QUERIES)
-        .suppressing(BiMapInverseTester.getInverseSameAfterSerializingMethods())
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableBiMap.values")
+        .createTestSuite());
+
+    suite.addTest(SetTestSuiteBuilder.using(
+        new ImmutableBiMapInverseKeySetGenerator())
+        .withFeatures(
+            CollectionSize.ANY,
+            CollectionFeature.REJECTS_DUPLICATES_AT_CREATION,
+            CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableBiMap.inverse.keys")
+        .createTestSuite());
+
+    suite.addTest(SetTestSuiteBuilder.using(
+        new ImmutableBiMapInverseEntrySetGenerator())
+        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableBiMap.inverse.entrySet")
+        .createTestSuite());
+
+    suite.addTest(SetTestSuiteBuilder.using(
+        new ImmutableBiMapInverseValuesGenerator())
+        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableBiMap.inverse.values")
+        .createTestSuite());
+
+    suite.addTest(SetTestSuiteBuilder.using(
+        ReserializingTestSetGenerator.newInstance(
+            new ImmutableBiMapKeySetGenerator()))
+        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableBiMap.keySet, reserialized")
+        .createTestSuite());
+
+    suite.addTest(SetTestSuiteBuilder.using(
+        ReserializingTestSetGenerator.newInstance(
+            new ImmutableBiMapEntrySetGenerator()))
+        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableBiMap.entrySet, reserialized")
+        .createTestSuite());
+
+    suite.addTest(SetTestSuiteBuilder.using(
+        ReserializingTestSetGenerator.newInstance(
+            new ImmutableBiMapValuesGenerator()))
+        .withFeatures(
+            CollectionSize.ANY,
+            CollectionFeature.REJECTS_DUPLICATES_AT_CREATION,
+            CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableBiMap.values, reserialized")
         .createTestSuite());
 
     return suite;
@@ -267,7 +334,7 @@ public class ImmutableBiMapTest extends TestCase {
         builder.build();
         fail();
       } catch (IllegalArgumentException expected) {
-        assertTrue(expected.getMessage().contains("one"));
+        assertEquals("duplicate key: one", expected.getMessage());
       }
     }
 
@@ -340,7 +407,7 @@ public class ImmutableBiMapTest extends TestCase {
         ImmutableBiMap.of("one", 1, "one", 1);
         fail();
       } catch (IllegalArgumentException expected) {
-        assertTrue(expected.getMessage().contains("one"));
+        assertEquals("duplicate key: one", expected.getMessage());
       }
     }
 
@@ -414,14 +481,13 @@ public class ImmutableBiMapTest extends TestCase {
         ImmutableBiMap.copyOf(map);
         fail();
       } catch (IllegalArgumentException expected) {
-        assertTrue(expected.getMessage().contains("1"));
+        assertEquals("duplicate key: 1", expected.getMessage());
       }
     }
   }
 
   public static class BiMapSpecificTests extends TestCase {
 
-    @SuppressWarnings("deprecation")
     public void testForcePut() {
       ImmutableBiMap<String, Integer> bimap = ImmutableBiMap.copyOf(
           ImmutableMap.of("one", 1, "two", 2));
@@ -436,7 +502,7 @@ public class ImmutableBiMapTest extends TestCase {
           ImmutableMap.of("one", 1, "two", 2, "three", 3, "four", 4));
       Set<String> keys = bimap.keySet();
       assertEquals(Sets.newHashSet("one", "two", "three", "four"), keys);
-      ASSERT.that(keys).has().allOf("one", "two", "three", "four").inOrder();
+      ASSERT.that(keys).hasContentsInOrder("one", "two", "three", "four");
     }
 
     public void testValues() {
@@ -444,7 +510,7 @@ public class ImmutableBiMapTest extends TestCase {
           ImmutableMap.of("one", 1, "two", 2, "three", 3, "four", 4));
       Set<Integer> values = bimap.values();
       assertEquals(Sets.newHashSet(1, 2, 3, 4), values);
-      ASSERT.that(values).has().allOf(1, 2, 3, 4).inOrder();
+      ASSERT.that(values).hasContentsInOrder(1, 2, 3, 4);
     }
 
     public void testDoubleInverse() {

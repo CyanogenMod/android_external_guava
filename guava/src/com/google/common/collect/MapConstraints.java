@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -396,7 +395,7 @@ public final class MapConstraints {
 
   /** @see MapConstraints#constrainedMultimap */
   private static class ConstrainedMultimap<K, V>
-      extends ForwardingMultimap<K, V> implements Serializable {
+      extends ForwardingMultimap<K, V> {
     final MapConstraint<? super K, ? super V> constraint;
     final Multimap<K, V> delegate;
     transient Collection<Entry<K, V>> entries;

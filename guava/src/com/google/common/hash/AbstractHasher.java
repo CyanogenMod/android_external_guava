@@ -14,6 +14,8 @@
 
 package com.google.common.hash;
 
+import com.google.common.base.Charsets;
+
 import java.nio.charset.Charset;
 
 /**
@@ -21,7 +23,7 @@ import java.nio.charset.Charset;
  * {@link #putFloat(float)}, {@link #putString(CharSequence)}, and
  * {@link #putString(CharSequence, Charset)} as prescribed by {@link Hasher}.
  *
- * @author Dimitris Andreou
+ * @author andreou@google.com (Dimitris Andreou)
  */
 abstract class AbstractHasher implements Hasher {
   @Override public final Hasher putBoolean(boolean b) {
@@ -37,13 +39,15 @@ abstract class AbstractHasher implements Hasher {
   }
 
   @Override public Hasher putString(CharSequence charSequence) {
-    for (int i = 0, len = charSequence.length(); i < len; i++) {
-      putChar(charSequence.charAt(i));
-    }
-    return this;
+    // TODO(user): Should we instead loop over the CharSequence and call #putChar?
+    return putString(charSequence, Charsets.UTF_16LE);
   }
 
   @Override public Hasher putString(CharSequence charSequence, Charset charset) {
-    return putBytes(charSequence.toString().getBytes(charset));
+    try {
+      return putBytes(charSequence.toString().getBytes(charset.name()));
+    } catch (java.io.UnsupportedEncodingException impossible) {
+      throw new AssertionError(impossible);
+    }
   }
 }

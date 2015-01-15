@@ -30,7 +30,6 @@ import java.util.List;
  * Unit test for {@link UnsignedBytes}.
  *
  * @author Kevin Bourrillion
- * @author Louis Wasserman
  */
 public class UnsignedBytesTest extends TestCase {
   private static final byte LEAST = 0;
@@ -71,7 +70,7 @@ public class UnsignedBytesTest extends TestCase {
     assertEquals(LEAST, UnsignedBytes.saturatedCast(Long.MIN_VALUE));
   }
 
-  private static void assertCastFails(long value) {
+  private void assertCastFails(long value) {
     try {
       UnsignedBytes.checkedCast(value);
       fail("Cast to byte should have failed: " + value);
@@ -124,95 +123,6 @@ public class UnsignedBytesTest extends TestCase {
     assertEquals(GREATEST, UnsignedBytes.min(GREATEST));
     assertEquals((byte) 0, UnsignedBytes.min(
         (byte) 0, (byte) -128, (byte) -1, (byte) 127, (byte) 1));
-    assertEquals((byte) 0, UnsignedBytes.min(
-        (byte) -1, (byte) 127, (byte) 1, (byte) -128, (byte) 0));
-  }
-
-  private static void assertParseFails(String value) {
-    try {
-      UnsignedBytes.parseUnsignedByte(value);
-      fail();
-    } catch (NumberFormatException expected) {
-    }
-  }
-
-  public void testParseUnsignedByte() {
-    // We can easily afford to test this exhaustively.
-    for (int i = 0; i <= 0xff; i++) {
-      assertEquals((byte) i, UnsignedBytes.parseUnsignedByte(Integer.toString(i)));
-    }
-    assertParseFails("1000");
-    assertParseFails("-1");
-    assertParseFails("-128");
-    assertParseFails("256");
-  }
-
-  public void testMaxValue() {
-    assertTrue(UnsignedBytes
-        .compare(UnsignedBytes.MAX_VALUE, (byte) (UnsignedBytes.MAX_VALUE + 1)) > 0);
-  }
-
-  private static void assertParseFails(String value, int radix) {
-    try {
-      UnsignedBytes.parseUnsignedByte(value, radix);
-      fail();
-    } catch (NumberFormatException expected) {
-    }
-  }
-
-  public void testParseUnsignedByteWithRadix() throws NumberFormatException {
-    // We can easily afford to test this exhaustively.
-    for (int radix = Character.MIN_RADIX; radix <= Character.MAX_RADIX; radix++) {
-      for (int i = 0; i <= 0xff; i++) {
-        assertEquals((byte) i, UnsignedBytes.parseUnsignedByte(Integer.toString(i, radix), radix));
-      }
-      assertParseFails(Integer.toString(1000, radix), radix);
-      assertParseFails(Integer.toString(-1, radix), radix);
-      assertParseFails(Integer.toString(-128, radix), radix);
-      assertParseFails(Integer.toString(256, radix), radix);
-    }
-  }
-
-  public void testParseUnsignedByteThrowsExceptionForInvalidRadix() {
-    // Valid radix values are Character.MIN_RADIX to Character.MAX_RADIX,
-    // inclusive.
-    try {
-      UnsignedBytes.parseUnsignedByte("0", Character.MIN_RADIX - 1);
-      fail();
-    } catch (NumberFormatException nfe) {
-      // expected
-    }
-
-    try {
-      UnsignedBytes.parseUnsignedByte("0", Character.MAX_RADIX + 1);
-      fail();
-    } catch (NumberFormatException nfe) {
-      // expected
-    }
-
-    // The radix is used as an array index, so try a negative value.
-    try {
-      UnsignedBytes.parseUnsignedByte("0", -1);
-      fail();
-    } catch (NumberFormatException nfe) {
-      // expected
-    }
-  }
-
-  public void testToString() {
-    // We can easily afford to test this exhaustively.
-    for (int i = 0; i <= 0xff; i++) {
-      assertEquals(Integer.toString(i), UnsignedBytes.toString((byte) i));
-    }
-  }
-
-  public void testToStringWithRadix() {
-    // We can easily afford to test this exhaustively.
-    for (int radix = Character.MIN_RADIX; radix <= Character.MAX_RADIX; radix++) {
-      for (int i = 0; i <= 0xff; i++) {
-        assertEquals(Integer.toString(i, radix), UnsignedBytes.toString((byte) i, radix));
-      }
-    }
   }
 
   public void testJoin() {
@@ -254,7 +164,9 @@ public class UnsignedBytesTest extends TestCase {
     assertSame(javaImpl, SerializableTester.reserialize(javaImpl));
   }
 
-  public void testNulls() {
-    new NullPointerTester().testAllPublicStaticMethods(UnsignedBytes.class);
+  public void testNulls() throws Exception {
+    NullPointerTester tester = new NullPointerTester();
+    tester.setDefault(byte[].class, new byte[0]);
+    tester.testAllPublicStaticMethods(UnsignedBytes.class);
   }
 }

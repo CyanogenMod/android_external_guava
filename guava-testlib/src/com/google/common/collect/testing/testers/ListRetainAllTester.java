@@ -16,12 +16,11 @@
 
 package com.google.common.collect.testing.testers;
 
-import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_REMOVE;
+import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_RETAIN_ALL;
 import static com.google.common.collect.testing.features.CollectionSize.ONE;
 import static com.google.common.collect.testing.features.CollectionSize.SEVERAL;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.MinimalCollection;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
@@ -35,9 +34,8 @@ import com.google.common.collect.testing.features.CollectionSize;
  *
  * @author Chris Povirk
  */
-@GwtCompatible
 public class ListRetainAllTester<E> extends AbstractListTester<E> {
-  @CollectionFeature.Require(SUPPORTS_REMOVE)
+  @CollectionFeature.Require(SUPPORTS_RETAIN_ALL)
   @CollectionSize.Require(absent = {ZERO, ONE})
   public void testRetainAll_duplicatesKept() {
     E[] array = createSamplesArray();
@@ -49,7 +47,7 @@ public class ListRetainAllTester<E> extends AbstractListTester<E> {
   }
 
   @SuppressWarnings("unchecked")
-  @CollectionFeature.Require(SUPPORTS_REMOVE)
+  @CollectionFeature.Require(SUPPORTS_RETAIN_ALL)
   @CollectionSize.Require(SEVERAL)
   public void testRetainAll_duplicatesRemoved() {
     E[] array = createSamplesArray();

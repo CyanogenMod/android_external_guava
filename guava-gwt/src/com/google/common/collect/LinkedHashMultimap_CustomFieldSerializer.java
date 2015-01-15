@@ -20,13 +20,11 @@ import com.google.gwt.user.client.rpc.SerializationException;
 import com.google.gwt.user.client.rpc.SerializationStreamReader;
 import com.google.gwt.user.client.rpc.SerializationStreamWriter;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * This class implements the GWT serialization of {@link LinkedHashMultimap}.
- *
+ * 
  * @author Chris Povirk
  */
 public class LinkedHashMultimap_CustomFieldSerializer {
@@ -36,39 +34,28 @@ public class LinkedHashMultimap_CustomFieldSerializer {
   }
 
   public static LinkedHashMultimap<Object, Object> instantiate(
-      SerializationStreamReader stream) throws SerializationException {
-    LinkedHashMultimap<Object, Object> multimap = LinkedHashMultimap.create();
+      SerializationStreamReader in) throws SerializationException {
+    LinkedHashMultimap<Object, Object> multimap =
+        (LinkedHashMultimap<Object, Object>)
+            Multimap_CustomFieldSerializerBase.populate(
+                in, LinkedHashMultimap.create());
 
-    multimap.valueSetCapacity = stream.readInt();
-    int distinctKeys = stream.readInt();
-    Map<Object, Collection<Object>> map =
-        new LinkedHashMap<Object, Collection<Object>>(Maps.capacity(distinctKeys));
-    for (int i = 0; i < distinctKeys; i++) {
-      Object key = stream.readObject();
-      map.put(key, multimap.createCollection(key));
+    multimap.linkedEntries.clear(); // will clear and repopulate entries
+    for (int i = 0; i < multimap.size(); i++) {
+      Object key = in.readObject();
+      Object value = in.readObject();
+      multimap.linkedEntries.add(Maps.immutableEntry(key, value));
     }
-    int entries = stream.readInt();
-    for (int i = 0; i < entries; i++) {
-      Object key = stream.readObject();
-      Object value = stream.readObject();
-      map.get(key).add(value);
-    }
-    multimap.setMap(map);
 
     return multimap;
   }
 
-  public static void serialize(SerializationStreamWriter stream,
+  public static void serialize(SerializationStreamWriter out,
       LinkedHashMultimap<?, ?> multimap) throws SerializationException {
-    stream.writeInt(multimap.valueSetCapacity);
-    stream.writeInt(multimap.keySet().size());
-    for (Object key : multimap.keySet()) {
-      stream.writeObject(key);
-    }
-    stream.writeInt(multimap.size());
+    Multimap_CustomFieldSerializerBase.serialize(out, multimap);
     for (Map.Entry<?, ?> entry : multimap.entries()) {
-      stream.writeObject(entry.getKey());
-      stream.writeObject(entry.getValue());
+      out.writeObject(entry.getKey());
+      out.writeObject(entry.getValue());
     }
   }
 }

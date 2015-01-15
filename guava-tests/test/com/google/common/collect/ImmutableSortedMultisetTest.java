@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2011 The Guava Authors
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- *
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
@@ -14,15 +14,13 @@
 
 package com.google.common.collect;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Arrays.asList;
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.base.Function;
-import com.google.common.collect.Multiset.Entry;
-import com.google.common.collect.testing.ListTestSuiteBuilder;
 import com.google.common.collect.testing.MinimalCollection;
-import com.google.common.collect.testing.TestStringListGenerator;
+import com.google.common.collect.testing.SetTestSuiteBuilder;
+import com.google.common.collect.testing.TestStringSetGenerator;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.google.SortedMultisetTestSuiteBuilder;
@@ -35,10 +33,9 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import org.easymock.EasyMock;
-
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -46,7 +43,7 @@ import java.util.Set;
 
 /**
  * Tests for {@link ImmutableSortedMultiset}.
- *
+ * 
  * @author Louis Wasserman
  */
 public class ImmutableSortedMultisetTest extends TestCase {
@@ -55,61 +52,47 @@ public class ImmutableSortedMultisetTest extends TestCase {
     suite.addTestSuite(ImmutableSortedMultisetTest.class);
 
     suite.addTest(SortedMultisetTestSuiteBuilder.using(new TestStringMultisetGenerator() {
-        @Override
-        protected Multiset<String> create(String[] elements) {
-          return ImmutableSortedMultiset.copyOf(elements);
-        }
+      @Override
+      protected Multiset<String> create(String[] elements) {
+        return ImmutableSortedMultiset.copyOf(elements);
+      }
 
-        @Override
-        public List<String> order(List<String> insertionOrder) {
-          return Ordering.natural().sortedCopy(insertionOrder);
-        }
-      })
-      .named("ImmutableSortedMultiset")
-      .withFeatures(CollectionSize.ANY,
-          CollectionFeature.SERIALIZABLE_INCLUDING_VIEWS,
-          CollectionFeature.ALLOWS_NULL_QUERIES)
+      @Override
+      public List<String> order(List<String> insertionOrder) {
+        return Ordering.natural().sortedCopy(insertionOrder);
+      }
+    }).named("ImmutableSortedMultiset").withFeatures(CollectionSize.ANY,
+        CollectionFeature.ALLOWS_NULL_QUERIES)
         .createTestSuite());
 
-    suite.addTest(ListTestSuiteBuilder.using(new TestStringListGenerator() {
-        @Override
-        protected List<String> create(String[] elements) {
-          return ImmutableSortedMultiset.copyOf(elements).asList();
-        }
+    suite.addTest(SortedMultisetTestSuiteBuilder.using(new TestStringMultisetGenerator() {
+      @Override
+      protected Multiset<String> create(String[] elements) {
+        return SerializableTester.reserialize(ImmutableSortedMultiset.copyOf(elements));
+      }
 
-        @Override
-        public List<String> order(List<String> insertionOrder) {
-          return Ordering.natural().sortedCopy(insertionOrder);
-        }
-      })
-      .named("ImmutableSortedMultiset.asList")
-      .withFeatures(CollectionSize.ANY,
-          CollectionFeature.SERIALIZABLE,
-          CollectionFeature.ALLOWS_NULL_QUERIES)
+      @Override
+      public List<String> order(List<String> insertionOrder) {
+        return Ordering.natural().sortedCopy(insertionOrder);
+      }
+    }).named("ImmutableSortedMultiset, reserialized").withFeatures(CollectionSize.ANY,
+        CollectionFeature.ALLOWS_NULL_QUERIES)
         .createTestSuite());
 
-    suite.addTest(ListTestSuiteBuilder.using(new TestStringListGenerator() {
-        @Override
-        protected List<String> create(String[] elements) {
-          Set<String> set = Sets.newHashSet();
-          ImmutableSortedMultiset.Builder<String> builder = ImmutableSortedMultiset.naturalOrder();
-          for (String s : elements) {
-            checkArgument(set.add(s));
-            builder.addCopies(s, 2);
+    suite.addTest(SetTestSuiteBuilder
+        .using(new TestStringSetGenerator() {
+          @Override
+          protected Set<String> create(String[] elements) {
+            return SerializableTester.reserialize(ImmutableSortedMultiset.copyOf(elements)
+                .elementSet());
           }
-          return builder.build().elementSet().asList();
-        }
 
-        @Override
-        public List<String> order(List<String> insertionOrder) {
-          return Ordering.natural().sortedCopy(insertionOrder);
-        }
-      })
-      .named("ImmutableSortedMultiset.elementSet.asList")
-      .withFeatures(CollectionSize.ANY,
-          CollectionFeature.REJECTS_DUPLICATES_AT_CREATION,
-          CollectionFeature.SERIALIZABLE,
-          CollectionFeature.ALLOWS_NULL_QUERIES)
+          @Override
+          public List<String> order(List<String> insertionOrder) {
+            return Ordering.natural().immutableSortedCopy(insertionOrder);
+          }
+        }).named("ImmutableSortedMultiset, element set").withFeatures(CollectionSize.ANY,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
         .createTestSuite());
 
     return suite;
@@ -408,8 +391,14 @@ public class ImmutableSortedMultisetTest extends TestCase {
     } catch (IllegalArgumentException expected) {}
   }
 
-  public void testNullPointers() {
-    new NullPointerTester().testAllPublicStaticMethods(ImmutableSortedMultiset.class);
+  public void testNullPointers() throws Exception {
+    NullPointerTester tester = new NullPointerTester();
+    tester.setDefault(Comparator.class, Ordering.natural());
+    tester.setDefault(Comparable.class, "");
+    tester.setDefault(Iterator.class, Iterators.emptyIterator());
+    tester.setDefault(Iterable.class, Collections.emptySet());
+    tester.setDefault(Comparable[].class, new Comparable[0]);
+    tester.testAllPublicStaticMethods(ImmutableSortedMultiset.class);
   }
 
   public void testSerialization_empty() {
@@ -420,13 +409,13 @@ public class ImmutableSortedMultisetTest extends TestCase {
   public void testSerialization_multiple() {
     Collection<String> c = ImmutableSortedMultiset.of("a", "b", "a");
     Collection<String> copy = SerializableTester.reserializeAndAssert(c);
-    ASSERT.that(copy).has().allOf("a", "a", "b").inOrder();
+    ASSERT.that(copy).hasContentsInOrder("a", "a", "b");
   }
 
   public void testSerialization_elementSet() {
     Multiset<String> c = ImmutableSortedMultiset.of("a", "b", "a");
     Collection<String> copy = SerializableTester.reserializeAndAssert(c.elementSet());
-    ASSERT.that(copy).has().allOf("a", "b").inOrder();
+    ASSERT.that(copy).hasContentsInOrder("a", "b");
   }
 
   public void testSerialization_entrySet() {
@@ -444,7 +433,7 @@ public class ImmutableSortedMultisetTest extends TestCase {
 
   public void testIterationOrder() {
     Collection<String> c = ImmutableSortedMultiset.of("a", "b", "a");
-    ASSERT.that(c).has().allOf("a", "a", "b").inOrder();
+    ASSERT.that(c).hasContentsInOrder("a", "a", "b");
   }
 
   public void testMultisetWrites() {
@@ -461,63 +450,5 @@ public class ImmutableSortedMultisetTest extends TestCase {
     assertTrue(copy instanceof ImmutableAsList);
     assertEquals(2, list.indexOf("b"));
     assertEquals(4, list.lastIndexOf("b"));
-  }
-
-  public void testCopyOfDefensiveCopy() {
-    // Test that toArray() is used to make a defensive copy in copyOf(), so concurrently modified
-    // synchronized collections can be safely copied.
-    @SuppressWarnings("unchecked")
-    Collection<String> toCopy = EasyMock.createMock(Collection.class);
-    EasyMock.expect(toCopy.toArray()).andReturn(new Object[0]);
-    EasyMock.replay(toCopy);
-    ImmutableSortedMultiset<String> multiset =
-        ImmutableSortedMultiset.copyOf(Ordering.natural(), toCopy);
-    EasyMock.verify(toCopy);
-  }
-
-  @SuppressWarnings("unchecked")
-  public void testCopyOfSortedDefensiveCopy() {
-    // Test that toArray() is used to make a defensive copy in copyOf(), so concurrently modified
-    // synchronized collections can be safely copied.
-    SortedMultiset<String> toCopy = EasyMock.createMock(SortedMultiset.class);
-    Set<Entry<String>> entrySet = EasyMock.createMock(Set.class);
-    EasyMock.expect((Comparator<Comparable>) toCopy.comparator())
-      .andReturn(Ordering.natural());
-    EasyMock.expect(toCopy.entrySet()).andReturn(entrySet);
-    EasyMock.expect(entrySet.toArray()).andReturn(new Object[0]);
-    EasyMock.replay(toCopy, entrySet);
-    ImmutableSortedMultiset<String> multiset =
-        ImmutableSortedMultiset.copyOfSorted(toCopy);
-    EasyMock.verify(toCopy, entrySet);
-  }
-
-  private static class IntegerDiv10 implements Comparable<IntegerDiv10> {
-    final int value;
-
-    IntegerDiv10(int value) {
-      this.value = value;
-    }
-
-    @Override
-    public int compareTo(IntegerDiv10 o) {
-      return value / 10 - o.value / 10;
-    }
-
-    @Override public String toString() {
-      return Integer.toString(value);
-    }
-  }
-
-  public void testCopyOfDuplicateInconsistentWithEquals() {
-    IntegerDiv10 three = new IntegerDiv10(3);
-    IntegerDiv10 eleven = new IntegerDiv10(11);
-    IntegerDiv10 twelve = new IntegerDiv10(12);
-    IntegerDiv10 twenty = new IntegerDiv10(20);
-
-    List<IntegerDiv10> original = ImmutableList.of(three, eleven, twelve, twenty);
-
-    Multiset<IntegerDiv10> copy = ImmutableSortedMultiset.copyOf(original);
-    assertTrue(copy.contains(eleven));
-    assertTrue(copy.contains(twelve));
   }
 }

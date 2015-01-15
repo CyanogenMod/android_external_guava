@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 The Guava Authors
+ * Copyright (C) 2011 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package java.util.concurrent;
 /**
  * Emulation of ExecutionException.
  *
- * @author Charles Fry
+ * @author fry@google.com (Charles Fry)
  */
 public class ExecutionException extends Exception {
   protected ExecutionException() { }

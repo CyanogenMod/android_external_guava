@@ -23,9 +23,7 @@ import static com.google.common.base.Preconditions.checkPositionIndexes;
 import static java.lang.Float.NEGATIVE_INFINITY;
 import static java.lang.Float.POSITIVE_INFINITY;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 
 import java.io.Serializable;
 import java.util.AbstractList;
@@ -36,20 +34,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.RandomAccess;
 
-import javax.annotation.Nullable;
-
 /**
  * Static utility methods pertaining to {@code float} primitives, that are not
  * already found in either {@link Float} or {@link Arrays}.
  *
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
- * primitive utilities</a>.
- *
  * @author Kevin Bourrillion
  * @since 1.0
  */
-@GwtCompatible(emulated = true)
+@GwtCompatible
 public final class Floats {
   private Floats() {}
 
@@ -357,21 +349,20 @@ public final class Floats {
   }
 
   /**
-   * Returns an array containing each value of {@code collection}, converted to
-   * a {@code float} value in the manner of {@link Number#floatValue}.
+   * Copies a collection of {@code Float} instances into a new array of
+   * primitive {@code float} values.
    *
    * <p>Elements are copied from the argument collection as if by {@code
    * collection.toArray()}.  Calling this method is as thread-safe as calling
    * that method.
    *
-   * @param collection a collection of {@code Number} instances
+   * @param collection a collection of {@code Float} objects
    * @return an array containing the same values as {@code collection}, in the
    *     same order, converted to primitives
    * @throws NullPointerException if {@code collection} or any of its elements
    *     is null
-   * @since 1.0 (parameter was {@code Collection<Float>} before 12.0)
    */
-  public static float[] toArray(Collection<? extends Number> collection) {
+  public static float[] toArray(Collection<Float> collection) {
     if (collection instanceof FloatArrayAsList) {
       return ((FloatArrayAsList) collection).toFloatArray();
     }
@@ -381,7 +372,7 @@ public final class Floats {
     float[] array = new float[len];
     for (int i = 0; i < len; i++) {
       // checkNotNull for GWT (do not optimize)
-      array[i] = ((Number) checkNotNull(boxedArray[i])).floatValue();
+      array[i] = (Float) checkNotNull(boxedArray[i]);
     }
     return array;
   }
@@ -471,8 +462,7 @@ public final class Floats {
     @Override public Float set(int index, Float element) {
       checkElementIndex(index, size());
       float oldValue = array[start + index];
-      // checkNotNull for GWT (do not optimize)
-      array[start + index] = checkNotNull(element);
+      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
       return oldValue;
     }
 
@@ -523,7 +513,7 @@ public final class Floats {
     }
 
     float[] toFloatArray() {
-      // Arrays.copyOfRange() is not available under GWT
+      // Arrays.copyOfRange() requires Java 6
       int size = size();
       float[] result = new float[size];
       System.arraycopy(array, start, result, 0, size);
@@ -531,41 +521,5 @@ public final class Floats {
     }
 
     private static final long serialVersionUID = 0;
-  }
-
-  /**
-   * Parses the specified string as a single-precision floating point value.
-   * The ASCII character {@code '-'} (<code>'&#92;u002D'</code>) is recognized
-   * as the minus sign.
-   *
-   * <p>Unlike {@link Float#parseFloat(String)}, this method returns
-   * {@code null} instead of throwing an exception if parsing fails.
-   * Valid inputs are exactly those accepted by {@link Float#valueOf(String)},
-   * except that leading and trailing whitespace is not permitted.
-   *
-   * <p>This implementation is likely to be faster than {@code
-   * Float.parseFloat} if many failures are expected.
-   *
-   * @param string the string representation of a {@code float} value
-   * @return the floating point value represented by {@code string}, or
-   *     {@code null} if {@code string} has a length of zero or cannot be
-   *     parsed as a {@code float} value
-   * @since 14.0
-   */
-  @GwtIncompatible("regular expressions")
-  @Nullable
-  @Beta
-  public static Float tryParse(String string) {
-    if (Doubles.FLOATING_POINT_PATTERN.matcher(string).matches()) {
-      // TODO(user): could be potentially optimized, but only with
-      // extensive testing
-      try {
-        return Float.parseFloat(string);
-      } catch (NumberFormatException e) {
-        // Float.parseFloat has changed specs several times, so fall through
-        // gracefully
-      }
-    }
-    return null;
   }
 }

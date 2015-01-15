@@ -32,8 +32,4 @@ final class RegularImmutableSortedSet<E> extends ImmutableSortedSet<E> {
     super(delegate);
     this.isSubset = isSubset;
   }
-
-  @Override ImmutableList<E> createAsList() {
-    return new ImmutableSortedAsList<E>(this, ImmutableList.<E>asImmutableList(toArray()));
-  }
 }

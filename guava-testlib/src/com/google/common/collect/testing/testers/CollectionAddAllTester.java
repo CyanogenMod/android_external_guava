@@ -17,23 +17,17 @@
 package com.google.common.collect.testing.testers;
 
 import static com.google.common.collect.testing.features.CollectionFeature.ALLOWS_NULL_VALUES;
-import static com.google.common.collect.testing.features.CollectionFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION;
 import static com.google.common.collect.testing.features.CollectionFeature.RESTRICTS_ELEMENTS;
-import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_ADD;
+import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_ADD_ALL;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 import static java.util.Collections.singletonList;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.AbstractCollectionTester;
-import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.MinimalCollection;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 
 import java.lang.reflect.Method;
-import java.util.ConcurrentModificationException;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -47,16 +41,15 @@ import java.util.List;
  * @author Kevin Bourrillion
  */
 @SuppressWarnings("unchecked") // too many "unchecked generic array creations"
-@GwtCompatible(emulated = true)
 public class CollectionAddAllTester<E> extends AbstractCollectionTester<E> {
-  @CollectionFeature.Require(SUPPORTS_ADD)
+  @CollectionFeature.Require(SUPPORTS_ADD_ALL)
   public void testAddAll_supportedNothing() {
     assertFalse("addAll(nothing) should return false",
         collection.addAll(emptyCollection()));
     expectUnchanged();
   }
 
-  @CollectionFeature.Require(absent = SUPPORTS_ADD)
+  @CollectionFeature.Require(absent = SUPPORTS_ADD_ALL)
   public void testAddAll_unsupportedNothing() {
     try {
       assertFalse("addAll(nothing) should return false or throw",
@@ -66,14 +59,14 @@ public class CollectionAddAllTester<E> extends AbstractCollectionTester<E> {
     expectUnchanged();
   }
 
-  @CollectionFeature.Require(SUPPORTS_ADD)
+  @CollectionFeature.Require(SUPPORTS_ADD_ALL)
   public void testAddAll_supportedNonePresent() {
     assertTrue("addAll(nonePresent) should return true",
         collection.addAll(createDisjointCollection()));
     expectAdded(samples.e3, samples.e4);
   }
 
-  @CollectionFeature.Require(absent = SUPPORTS_ADD)
+  @CollectionFeature.Require(absent = SUPPORTS_ADD_ALL)
   public void testAddAll_unsupportedNonePresent() {
     try {
       collection.addAll(createDisjointCollection());
@@ -84,7 +77,7 @@ public class CollectionAddAllTester<E> extends AbstractCollectionTester<E> {
     expectMissing(samples.e3, samples.e4);
   }
 
-  @CollectionFeature.Require(SUPPORTS_ADD)
+  @CollectionFeature.Require(SUPPORTS_ADD_ALL)
   @CollectionSize.Require(absent = ZERO)
   public void testAddAll_supportedSomePresent() {
     assertTrue("addAll(somePresent) should return true",
@@ -93,7 +86,7 @@ public class CollectionAddAllTester<E> extends AbstractCollectionTester<E> {
     assertTrue("should contain " + samples.e0, collection.contains(samples.e0));
   }
 
-  @CollectionFeature.Require(absent = SUPPORTS_ADD)
+  @CollectionFeature.Require(absent = SUPPORTS_ADD_ALL)
   @CollectionSize.Require(absent = ZERO)
   public void testAddAll_unsupportedSomePresent() {
     try {
@@ -104,21 +97,7 @@ public class CollectionAddAllTester<E> extends AbstractCollectionTester<E> {
     expectUnchanged();
   }
 
-  @CollectionFeature.Require({SUPPORTS_ADD,
-      FAILS_FAST_ON_CONCURRENT_MODIFICATION})
-  @CollectionSize.Require(absent = ZERO)
-  public void testAddAllConcurrentWithIteration() {
-    try {
-      Iterator<E> iterator = collection.iterator();
-      assertTrue(collection.addAll(MinimalCollection.of(samples.e3, samples.e0)));
-      iterator.next();
-      fail("Expected ConcurrentModificationException");
-    } catch (ConcurrentModificationException expected) {
-      // success
-    }
-  }
-
-  @CollectionFeature.Require(absent = SUPPORTS_ADD)
+  @CollectionFeature.Require(absent = SUPPORTS_ADD_ALL)
   @CollectionSize.Require(absent = ZERO)
   public void testAddAll_unsupportedAllPresent() {
     try {
@@ -129,7 +108,7 @@ public class CollectionAddAllTester<E> extends AbstractCollectionTester<E> {
     expectUnchanged();
   }
 
-  @CollectionFeature.Require(value = {SUPPORTS_ADD,
+  @CollectionFeature.Require(value = {SUPPORTS_ADD_ALL,
       ALLOWS_NULL_VALUES}, absent = RESTRICTS_ELEMENTS)
   public void testAddAll_nullSupported() {
     List<E> containsNull = singletonList(null);
@@ -142,7 +121,7 @@ public class CollectionAddAllTester<E> extends AbstractCollectionTester<E> {
     expectAdded((E) null);
   }
 
-  @CollectionFeature.Require(value = SUPPORTS_ADD,
+  @CollectionFeature.Require(value = SUPPORTS_ADD_ALL,
       absent = ALLOWS_NULL_VALUES)
   public void testAddAll_nullUnsupported() {
     List<E> containsNull = singletonList(null);
@@ -156,7 +135,7 @@ public class CollectionAddAllTester<E> extends AbstractCollectionTester<E> {
         "Should not contain null after unsupported addAll(containsNull)");
   }
 
-  @CollectionFeature.Require(SUPPORTS_ADD)
+  @CollectionFeature.Require(SUPPORTS_ADD_ALL)
   public void testAddAll_nullCollectionReference() {
     try {
       collection.addAll(null);
@@ -172,8 +151,7 @@ public class CollectionAddAllTester<E> extends AbstractCollectionTester<E> {
    * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5045147">Sun
    * bug 5045147</a> is fixed.
    */
-  @GwtIncompatible("reflection")
   public static Method getAddAllNullUnsupportedMethod() {
-    return Helpers.getMethod(CollectionAddAllTester.class, "testAddAll_nullUnsupported");
+    return Platform.getMethod(CollectionAddAllTester.class, "testAddAll_nullUnsupported");
   }
 }

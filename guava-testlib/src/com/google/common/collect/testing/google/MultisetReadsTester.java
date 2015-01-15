@@ -21,11 +21,9 @@ import static com.google.common.collect.testing.features.CollectionSize.SEVERAL;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
-import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.WrongType;
 import com.google.common.collect.testing.features.CollectionSize;
 
@@ -40,7 +38,7 @@ import java.util.List;
  *
  * @author Jared Levy
  */
-@GwtCompatible(emulated = true)
+@GwtCompatible
 public class MultisetReadsTester<E> extends AbstractMultisetTester<E> {
   public void testCount_0() {
     assertEquals("multiset.count(missing) didn't return 0",
@@ -149,9 +147,8 @@ public class MultisetReadsTester<E> extends AbstractMultisetTester<E> {
    * support duplicates so that the test of {@code Multisets.forSet()} can
    * suppress them.
    */
-  @GwtIncompatible("reflection")
   public static List<Method> getReadsDuplicateInitializingMethods() {
     return Arrays.asList(
-        Helpers.getMethod(MultisetReadsTester.class, "testCount_3"));
+        Platform.getMethod(MultisetReadsTester.class, "testCount_3"));
   }
 }

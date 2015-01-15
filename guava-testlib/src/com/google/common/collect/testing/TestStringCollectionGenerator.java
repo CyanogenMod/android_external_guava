@@ -16,7 +16,6 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.SampleElements.Strings;
 
 import java.util.Collection;
@@ -29,7 +28,6 @@ import java.util.List;
  *
  * @author Jared Levy
  */
-@GwtCompatible
 public abstract class TestStringCollectionGenerator
     implements TestCollectionGenerator<String> {
   @Override

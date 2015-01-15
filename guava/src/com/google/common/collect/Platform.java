@@ -17,16 +17,9 @@
 package com.google.common.collect;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Maps.EntryTransformer;
+import com.google.common.annotations.GwtIncompatible;
 
 import java.lang.reflect.Array;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.NavigableSet;
-import java.util.SortedMap;
-import java.util.SortedSet;
 
 /**
  * Methods factored out so that they can be emulated differently in GWT.
@@ -41,6 +34,35 @@ class Platform {
    */
   static <T> T[] clone(T[] array) {
     return array.clone();
+  }
+
+  /**
+   * Wrapper around {@link System#arraycopy} so that it can be emulated
+   * correctly in GWT.
+   *
+   * <p>It is only intended for the case {@code src} and {@code dest} are
+   * different.  It also doesn't validate the types and indices.
+   *
+   * <p>As of GWT 2.0, The built-in {@link System#arraycopy} doesn't work
+   * in general case.  See
+   * http://code.google.com/p/google-web-toolkit/issues/detail?id=3621
+   * for more details.
+   */
+  static void unsafeArrayCopy(
+      Object[] src, int srcPos, Object[] dest, int destPos, int length) {
+    System.arraycopy(src, srcPos, dest, destPos, length);
+  }
+
+  /**
+   * Returns a new array of the given length with the specified component type.
+   *
+   * @param type the component type
+   * @param length the length of the new array
+   */
+  @GwtIncompatible("Array.newInstance(Class, int)")
+  @SuppressWarnings("unchecked")
+  static <T> T[] newArray(Class<T> type, int length) {
+    return (T[]) Array.newInstance(type, length);
   }
 
   /**
@@ -68,35 +90,6 @@ class Platform {
    */
   static MapMaker tryWeakKeys(MapMaker mapMaker) {
     return mapMaker.weakKeys();
-  }
-
-  static <K, V1, V2> SortedMap<K, V2> mapsTransformEntriesSortedMap(
-      SortedMap<K, V1> fromMap,
-      EntryTransformer<? super K, ? super V1, V2> transformer) {
-    return (fromMap instanceof NavigableMap)
-        ? Maps.transformEntries((NavigableMap<K, V1>) fromMap, transformer)
-        : Maps.transformEntriesIgnoreNavigable(fromMap, transformer);
-  }
-
-  static <K, V> SortedMap<K, V> mapsAsMapSortedSet(SortedSet<K> set,
-      Function<? super K, V> function) {
-    return (set instanceof NavigableSet)
-        ? Maps.asMap((NavigableSet<K>) set, function)
-        : Maps.asMapSortedIgnoreNavigable(set, function);
-  }
-
-  static <E> SortedSet<E> setsFilterSortedSet(SortedSet<E> set,
-      Predicate<? super E> predicate) {
-    return (set instanceof NavigableSet)
-        ? Sets.filter((NavigableSet<E>) set, predicate)
-        : Sets.filterSortedIgnoreNavigable(set, predicate);
-  }
-  
-  static <K, V> SortedMap<K, V> mapsFilterSortedMap(SortedMap<K, V> map,
-      Predicate<? super Map.Entry<K, V>> predicate) {
-    return (map instanceof NavigableMap)
-        ? Maps.filterEntries((NavigableMap<K, V>) map, predicate)
-        : Maps.filterSortedIgnoreNavigable(map, predicate);
   }
 
   private Platform() {}

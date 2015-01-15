@@ -16,7 +16,6 @@
 
 package com.google.common.collect.testing.features;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.Helpers;
 
 import java.lang.annotation.Inherited;
@@ -36,8 +35,7 @@ import java.util.SortedSet;
  */
 // Enum values use constructors with generic varargs.
 @SuppressWarnings("unchecked")
-@GwtCompatible
-public enum CollectionFeature implements Feature<Collection> {
+public enum CollectionFeature implements Feature<Collection> {  
   /**
    * The collection must not throw {@code NullPointerException} on calls
    * such as {@code contains(null)} or {@code remove(null)}, but instead
@@ -63,7 +61,7 @@ public enum CollectionFeature implements Feature<Collection> {
    * Indicates that a collection has a well-defined ordering of its elements.
    * The ordering may depend on the element values, such as a {@link SortedSet},
    * or on the insertion ordering, such as a {@link LinkedHashSet}. All list
-   * tests and sorted-collection tests automatically specify this feature.
+   * tests automatically specify this feature.
    */
   KNOWN_ORDER,
 
@@ -84,7 +82,10 @@ public enum CollectionFeature implements Feature<Collection> {
 
   SUPPORTS_ADD,
   SUPPORTS_REMOVE,
-  FAILS_FAST_ON_CONCURRENT_MODIFICATION,
+  SUPPORTS_ADD_ALL,
+  SUPPORTS_REMOVE_ALL,
+  SUPPORTS_RETAIN_ALL,
+  SUPPORTS_CLEAR,
 
   /**
    * Features supported by general-purpose collections -
@@ -93,13 +94,18 @@ public enum CollectionFeature implements Feature<Collection> {
    */
   GENERAL_PURPOSE(
       SUPPORTS_ADD,
-      SUPPORTS_REMOVE),
+      SUPPORTS_REMOVE,
+      SUPPORTS_ADD_ALL,
+      SUPPORTS_REMOVE_ALL,
+      SUPPORTS_RETAIN_ALL,
+      SUPPORTS_CLEAR),
 
   /** Features supported by collections where only removal is allowed. */
   REMOVE_OPERATIONS(
-      SUPPORTS_REMOVE),
-
-  SERIALIZABLE, SERIALIZABLE_INCLUDING_VIEWS(SERIALIZABLE),
+      SUPPORTS_REMOVE,
+      SUPPORTS_REMOVE_ALL,
+      SUPPORTS_RETAIN_ALL,
+      SUPPORTS_CLEAR),
 
   /**
    * For documenting collections that support no optional features, such as

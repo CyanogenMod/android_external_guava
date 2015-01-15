@@ -76,7 +76,7 @@ public class PrimitivesTest extends TestCase {
     }
   }
 
-  public void testNullPointerExceptions() {
+  public void testNullPointerExceptions() throws Exception {
     NullPointerTester tester = new NullPointerTester();
     tester.testAllPublicStaticMethods(Primitives.class);
   }

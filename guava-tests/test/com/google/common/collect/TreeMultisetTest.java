@@ -19,24 +19,8 @@ package com.google.common.collect;
 import static com.google.common.collect.BoundType.CLOSED;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.testing.IteratorFeature.MODIFIABLE;
-import static java.util.Collections.sort;
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
-import com.google.common.collect.testing.Helpers.NullsBeforeB;
-import com.google.common.collect.testing.IteratorTester;
-import com.google.common.collect.testing.NavigableSetTestSuiteBuilder;
-import com.google.common.collect.testing.TestStringSetGenerator;
-import com.google.common.collect.testing.features.CollectionFeature;
-import com.google.common.collect.testing.features.CollectionSize;
-import com.google.common.collect.testing.google.SortedMultisetTestSuiteBuilder;
-import com.google.common.collect.testing.google.TestStringMultisetGenerator;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -45,6 +29,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 
+import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.GwtIncompatible;
+import com.google.common.collect.testing.IteratorTester;
+
 /**
  * Unit test for {@link TreeMultiset}.
  *
@@ -52,70 +40,6 @@ import java.util.SortedSet;
  */
 @GwtCompatible(emulated = true)
 public class TreeMultisetTest extends AbstractMultisetTest {
-
-  @GwtIncompatible("suite")
-  public static Test suite() {
-    TestSuite suite = new TestSuite();
-    suite.addTest(SortedMultisetTestSuiteBuilder
-        .using(new TestStringMultisetGenerator() {
-          @Override
-          protected Multiset<String> create(String[] elements) {
-            return TreeMultiset.create(Arrays.asList(elements));
-          }
-
-          @Override
-          public List<String> order(List<String> insertionOrder) {
-            return Ordering.natural().sortedCopy(insertionOrder);
-          }
-        })
-        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
-            CollectionFeature.GENERAL_PURPOSE,
-            CollectionFeature.SERIALIZABLE,
-            CollectionFeature.ALLOWS_NULL_QUERIES)
-        .named("TreeMultiset, Ordering.natural")
-        .createTestSuite());
-    suite.addTest(SortedMultisetTestSuiteBuilder
-        .using(new TestStringMultisetGenerator() {
-          @Override
-          protected Multiset<String> create(String[] elements) {
-            Multiset<String> result = TreeMultiset.create(NullsBeforeB.INSTANCE);
-            result.addAll(Arrays.asList(elements));
-            return result;
-          }
-
-          @Override
-          public List<String> order(List<String> insertionOrder) {
-            sort(insertionOrder, NullsBeforeB.INSTANCE);
-            return insertionOrder;
-          }
-        })
-        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
-            CollectionFeature.GENERAL_PURPOSE,
-            CollectionFeature.SERIALIZABLE,
-            CollectionFeature.ALLOWS_NULL_VALUES)
-        .named("TreeMultiset, NullsBeforeB")
-        .createTestSuite());
-    suite.addTest(NavigableSetTestSuiteBuilder.using(new TestStringSetGenerator() {
-        @Override
-        protected Set<String> create(String[] elements) {
-          return TreeMultiset.create(Arrays.asList(elements)).elementSet();
-        }
-
-        @Override
-        public List<String> order(List<String> insertionOrder) {
-          return Lists.newArrayList(Sets.newTreeSet(insertionOrder));
-        }
-      })
-      .named("TreeMultiset[Ordering.natural].elementSet")
-      .withFeatures(
-          CollectionSize.ANY,
-          CollectionFeature.SUPPORTS_REMOVE,
-          CollectionFeature.ALLOWS_NULL_QUERIES)
-      .createTestSuite());
-    suite.addTestSuite(TreeMultisetTest.class);
-    return suite;
-  }
-
   @SuppressWarnings("unchecked")
   @Override protected <E> Multiset<E> create() {
     return (Multiset) TreeMultiset.create();
@@ -215,9 +139,9 @@ public class TreeMultisetTest extends AbstractMultisetTest {
     assertEquals("c", elementSet.last());
     assertEquals(Ordering.natural(), elementSet.comparator());
 
-    ASSERT.that(elementSet.headSet("b")).has().allOf("a").inOrder();
-    ASSERT.that(elementSet.tailSet("b")).has().allOf("b", "c").inOrder();
-    ASSERT.that(elementSet.subSet("a", "c")).has().allOf("a", "b").inOrder();
+    ASSERT.that(elementSet.headSet("b")).hasContentsInOrder("a");
+    ASSERT.that(elementSet.tailSet("b")).hasContentsInOrder("b", "c");
+    ASSERT.that(elementSet.subSet("a", "c")).hasContentsInOrder("a", "b");
   }
 
   public void testElementSetSubsetRemove() {
@@ -230,18 +154,18 @@ public class TreeMultisetTest extends AbstractMultisetTest {
     ms.add("f", 2);
 
     SortedSet<String> elementSet = ms.elementSet();
-    ASSERT.that(elementSet).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(elementSet).hasContentsInOrder("a", "b", "c", "d", "e", "f");
     SortedSet<String> subset = elementSet.subSet("b", "f");
-    ASSERT.that(subset).has().allOf("b", "c", "d", "e").inOrder();
+    ASSERT.that(subset).hasContentsInOrder("b", "c", "d", "e");
 
     assertTrue(subset.remove("c"));
-    ASSERT.that(elementSet).has().allOf("a", "b", "d", "e", "f").inOrder();
-    ASSERT.that(subset).has().allOf("b", "d", "e").inOrder();
+    ASSERT.that(elementSet).hasContentsInOrder("a", "b", "d", "e", "f");
+    ASSERT.that(subset).hasContentsInOrder("b", "d", "e");
     assertEquals(10, ms.size());
 
     assertFalse(subset.remove("a"));
-    ASSERT.that(elementSet).has().allOf("a", "b", "d", "e", "f").inOrder();
-    ASSERT.that(subset).has().allOf("b", "d", "e").inOrder();
+    ASSERT.that(elementSet).hasContentsInOrder("a", "b", "d", "e", "f");
+    ASSERT.that(subset).hasContentsInOrder("b", "d", "e");
     assertEquals(10, ms.size());
   }
 
@@ -255,13 +179,13 @@ public class TreeMultisetTest extends AbstractMultisetTest {
     ms.add("f", 2);
 
     SortedSet<String> elementSet = ms.elementSet();
-    ASSERT.that(elementSet).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(elementSet).hasContentsInOrder("a", "b", "c", "d", "e", "f");
     SortedSet<String> subset = elementSet.subSet("b", "f");
-    ASSERT.that(subset).has().allOf("b", "c", "d", "e").inOrder();
+    ASSERT.that(subset).hasContentsInOrder("b", "c", "d", "e");
 
     assertTrue(subset.removeAll(Arrays.asList("a", "c")));
-    ASSERT.that(elementSet).has().allOf("a", "b", "d", "e", "f").inOrder();
-    ASSERT.that(subset).has().allOf("b", "d", "e").inOrder();
+    ASSERT.that(elementSet).hasContentsInOrder("a", "b", "d", "e", "f");
+    ASSERT.that(subset).hasContentsInOrder("b", "d", "e");
     assertEquals(10, ms.size());
   }
 
@@ -275,13 +199,13 @@ public class TreeMultisetTest extends AbstractMultisetTest {
     ms.add("f", 2);
 
     SortedSet<String> elementSet = ms.elementSet();
-    ASSERT.that(elementSet).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(elementSet).hasContentsInOrder("a", "b", "c", "d", "e", "f");
     SortedSet<String> subset = elementSet.subSet("b", "f");
-    ASSERT.that(subset).has().allOf("b", "c", "d", "e").inOrder();
+    ASSERT.that(subset).hasContentsInOrder("b", "c", "d", "e");
 
     assertTrue(subset.retainAll(Arrays.asList("a", "c")));
-    ASSERT.that(elementSet).has().allOf("a", "c", "f").inOrder();
-    ASSERT.that(subset).has().allOf("c").inOrder();
+    ASSERT.that(elementSet).hasContentsInOrder("a", "c", "f");
+    ASSERT.that(subset).hasContentsInOrder("c");
     assertEquals(5, ms.size());
   }
 
@@ -295,13 +219,13 @@ public class TreeMultisetTest extends AbstractMultisetTest {
     ms.add("f", 2);
 
     SortedSet<String> elementSet = ms.elementSet();
-    ASSERT.that(elementSet).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(elementSet).hasContentsInOrder("a", "b", "c", "d", "e", "f");
     SortedSet<String> subset = elementSet.subSet("b", "f");
-    ASSERT.that(subset).has().allOf("b", "c", "d", "e").inOrder();
+    ASSERT.that(subset).hasContentsInOrder("b", "c", "d", "e");
 
     subset.clear();
-    ASSERT.that(elementSet).has().allOf("a", "f").inOrder();
-    ASSERT.that(subset).isEmpty();
+    ASSERT.that(elementSet).hasContentsInOrder("a", "f");
+    ASSERT.that(subset).hasContentsInOrder();
     assertEquals(3, ms.size());
   }
 
@@ -320,7 +244,7 @@ public class TreeMultisetTest extends AbstractMultisetTest {
     ms.add("b");
     ms.add("d");
 
-    ASSERT.that(ms).has().allOf("d", "c", "b", "b", "a").inOrder();
+    ASSERT.that(ms).hasContentsInOrder("d", "c", "b", "b", "a");
 
     SortedSet<String> elementSet = ms.elementSet();
     assertEquals("d", elementSet.first());
@@ -338,7 +262,7 @@ public class TreeMultisetTest extends AbstractMultisetTest {
     ms.add("b");
     ms.add(null, 2);
 
-    ASSERT.that(ms).has().allOf(null, null, null, "a", "b", "b").inOrder();
+    ASSERT.that(ms).hasContentsInOrder(null, null, null, "a", "b", "b");
     assertEquals(3, ms.count(null));
 
     SortedSet<String> elementSet = ms.elementSet();
@@ -408,14 +332,5 @@ public class TreeMultisetTest extends AbstractMultisetTest {
     c = ms = TreeMultiset.create(Ordering.natural().nullsFirst());
     super.testToStringNull();
   }
-
-  @GwtIncompatible("reflection")
-  public void testElementSetBridgeMethods() {
-    for (Method m : TreeMultiset.class.getMethods()) {
-      if (m.getName().equals("elementSet") && m.getReturnType().equals(SortedSet.class)) {
-        return;
-      }
-    }
-    fail("No bridge method found");
-  }
 }
+

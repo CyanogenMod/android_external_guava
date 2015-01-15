@@ -55,10 +55,6 @@ import java.util.Map;
  * multimap. Concurrent read operations will work correctly. To allow concurrent
  * update operations, wrap your multimap with a call to {@link
  * Multimaps#synchronizedListMultimap}.
- * 
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multimap">
- * {@code Multimap}</a>.
  *
  * @author Jared Levy
  * @since 2.0 (imported from Google Collections Library)
@@ -66,7 +62,7 @@ import java.util.Map;
 @GwtCompatible(serializable = true, emulated = true)
 public final class ArrayListMultimap<K, V> extends AbstractListMultimap<K, V> {
   // Default from ArrayList
-  private static final int DEFAULT_VALUES_PER_KEY = 3;
+  private static final int DEFAULT_VALUES_PER_KEY = 10;
 
   @VisibleForTesting transient int expectedValuesPerKey;
 

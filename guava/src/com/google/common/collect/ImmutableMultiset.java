@@ -19,6 +19,7 @@ package com.google.common.collect;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.GwtCompatible;
+import com.google.common.collect.Multiset.Entry;
 import com.google.common.primitives.Ints;
 
 import java.io.Serializable;
@@ -28,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -38,10 +40,6 @@ import javax.annotation.Nullable;
  * element among the items passed to the factory method or builder. When the
  * multiset contains multiple instances of an element, those instances are
  * consecutive in the iteration order.
- *
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/ImmutableCollectionsExplained">
- * immutable collections</a>.
  *
  * @author Jared Levy
  * @author Louis Wasserman
@@ -136,6 +134,23 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
    * Returns an immutable multiset containing the given elements.
    *
    * <p>The multiset is ordered by the first occurrence of each element. For
+   * example, {@code ImmutableMultiset.of(2, 3, 1, 3)} yields a multiset with
+   * elements in the order {@code 2, 3, 3, 1}.
+   *
+   * @throws NullPointerException if any of {@code elements} is null
+   * @deprecated use {@link #copyOf(Object[])}. <b>This method is scheduled for
+   *     deletion in January 2012.</b>
+   * @since 2.0 (changed from varargs in 6.0)
+   */
+  @Deprecated
+  public static <E> ImmutableMultiset<E> of(E[] elements) {
+    return copyOf(Arrays.asList(elements));
+  }
+
+  /**
+   * Returns an immutable multiset containing the given elements.
+   *
+   * <p>The multiset is ordered by the first occurrence of each element. For
    * example, {@code ImmutableMultiset.copyOf([2, 3, 1, 3])} yields a multiset
    * with elements in the order {@code 2, 3, 3, 1}.
    *
@@ -206,8 +221,7 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
     if (size == 0) {
       return of();
     }
-    return new RegularImmutableMultiset<E>(
-        builder.build(), Ints.saturatedCast(size));
+    return new RegularImmutableMultiset<E>(builder.build(), Ints.saturatedCast(size));
   }
 
   /**
@@ -230,7 +244,8 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
   ImmutableMultiset() {}
 
   @Override public UnmodifiableIterator<E> iterator() {
-    final Iterator<Entry<E>> entryIterator = entrySet().iterator();
+    final Iterator<Entry<E>> entryIterator = entryIterator();
+
     return new UnmodifiableIterator<E>() {
       int remaining;
       E element;
@@ -267,9 +282,7 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
   public final int add(E element, int occurrences) {
     throw new UnsupportedOperationException();
@@ -279,9 +292,7 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
   public final int remove(Object element, int occurrences) {
     throw new UnsupportedOperationException();
@@ -291,9 +302,7 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
   public final int setCount(E element, int count) {
     throw new UnsupportedOperationException();
@@ -303,9 +312,7 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
    * Guaranteed to throw an exception and leave the collection unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
   public final boolean setCount(E element, int oldCount, int newCount) {
     throw new UnsupportedOperationException();
@@ -341,17 +348,39 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
   private transient ImmutableSet<Entry<E>> entrySet;
 
   @Override
-  public ImmutableSet<Entry<E>> entrySet() {
+  public Set<Entry<E>> entrySet() {
     ImmutableSet<Entry<E>> es = entrySet;
     return (es == null) ? (entrySet = createEntrySet()) : es;
   }
 
-  abstract ImmutableSet<Entry<E>> createEntrySet();
+  abstract UnmodifiableIterator<Entry<E>> entryIterator();
 
-  abstract class EntrySet extends ImmutableSet<Entry<E>> {
+  abstract int distinctElements();
+
+  ImmutableSet<Entry<E>> createEntrySet() {
+    return new EntrySet<E>(this);
+  }
+
+  static class EntrySet<E> extends ImmutableSet<Entry<E>> {
+    transient final ImmutableMultiset<E> multiset;
+
+    public EntrySet(ImmutableMultiset<E> multiset) {
+      this.multiset = multiset;
+    }
+
+    @Override
+    public UnmodifiableIterator<Entry<E>> iterator() {
+      return multiset.entryIterator();
+    }
+
+    @Override
+    public int size() {
+      return multiset.distinctElements();
+    }
+
     @Override
     boolean isPartialView() {
-      return ImmutableMultiset.this.isPartialView();
+      return multiset.isPartialView();
     }
 
     @Override
@@ -361,7 +390,7 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
         if (entry.getCount() <= 0) {
           return false;
         }
-        int count = count(entry.getElement());
+        int count = multiset.count(entry.getElement());
         return count == entry.getCount();
       }
       return false;
@@ -401,29 +430,28 @@ public abstract class ImmutableMultiset<E> extends ImmutableCollection<E>
 
     @Override
     public int hashCode() {
-      return ImmutableMultiset.this.hashCode();
+      return multiset.hashCode();
     }
 
     // We can't label this with @Override, because it doesn't override anything
     // in the GWT emulated version.
-    // TODO(cpovirk): try making all copies of this method @GwtIncompatible instead
     Object writeReplace() {
-      return new EntrySetSerializedForm<E>(ImmutableMultiset.this);
+      return new EntrySetSerializedForm<E>(multiset);
+    }
+
+    static class EntrySetSerializedForm<E> implements Serializable {
+      final ImmutableMultiset<E> multiset;
+
+      EntrySetSerializedForm(ImmutableMultiset<E> multiset) {
+        this.multiset = multiset;
+      }
+
+      Object readResolve() {
+        return multiset.entrySet();
+      }
     }
 
     private static final long serialVersionUID = 0;
-  }
-
-  static class EntrySetSerializedForm<E> implements Serializable {
-    final ImmutableMultiset<E> multiset;
-
-    EntrySetSerializedForm(ImmutableMultiset<E> multiset) {
-      this.multiset = multiset;
-    }
-
-    Object readResolve() {
-      return multiset.entrySet();
-    }
   }
 
   private static class SerializedForm implements Serializable {

@@ -22,14 +22,10 @@ import static com.google.common.collect.testing.features.MapFeature.ALLOWS_NULL_
 import static com.google.common.collect.testing.features.MapFeature.ALLOWS_NULL_VALUES;
 import static com.google.common.collect.testing.features.MapFeature.REJECTS_DUPLICATES_AT_CREATION;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.AbstractMapTester;
-import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.MapFeature;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
@@ -44,7 +40,6 @@ import java.util.Map.Entry;
  * @author Chris Povirk
  * @author Kevin Bourrillion
  */
-@GwtCompatible(emulated = true)
 public class MapCreationTester<K, V> extends AbstractMapTester<K, V> {
   @MapFeature.Require(ALLOWS_NULL_KEYS)
   @CollectionSize.Require(absent = ZERO)
@@ -126,13 +121,13 @@ public class MapCreationTester<K, V> extends AbstractMapTester<K, V> {
 
   private Entry<K, V>[] getEntriesMultipleNullKeys() {
     Entry<K, V>[] entries = createArrayWithNullKey();
-    entries[0] = entry(null, entries[0].getValue());
+    entries[0] = entries[getNullLocation()];
     return entries;
   }
 
   private Entry<K, V>[] getEntriesMultipleNonNullKeys() {
     Entry<K, V>[] entries = createSamplesArray();
-    entries[0] = entry(samples.e1.getKey(), samples.e0.getValue());
+    entries[0] = samples.e1;
     return entries;
   }
 
@@ -142,17 +137,5 @@ public class MapCreationTester<K, V> extends AbstractMapTester<K, V> {
     List<Entry<K, V>> expectedWithDuplicateRemoved =
         Arrays.asList(entries).subList(1, getNumElements());
     expectContents(expectedWithDuplicateRemoved);
-  }
-
-  /**
-   * Returns the {@link Method} instance for {@link
-   * #testCreateWithNullKeyUnsupported()} so that tests can suppress it
-   * with {@code FeatureSpecificTestSuiteBuilder.suppressing()} until <a
-   * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5045147">Sun
-   * bug 5045147</a> is fixed.
-   */
-  @GwtIncompatible("reflection")
-  public static Method getCreateWithNullKeyUnsupportedMethod() {
-    return Helpers.getMethod(MapCreationTester.class, "testCreateWithNullKeyUnsupported");
   }
 }

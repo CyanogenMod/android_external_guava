@@ -16,7 +16,6 @@
 
 package com.google.common.collect.testing.features;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.Helpers;
 
 import java.lang.annotation.Inherited;
@@ -48,7 +47,6 @@ import java.util.Set;
  */
 // Enum values use constructors with generic varargs.
 @SuppressWarnings("unchecked")
-@GwtCompatible
 public enum CollectionSize implements Feature<Collection>,
     Comparable<CollectionSize> {
   /** Test an empty collection. */

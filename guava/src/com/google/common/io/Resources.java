@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Charsets;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +38,6 @@ import java.util.List;
  *
  * @author Chris Nokleberg
  * @author Ben Yu
- * @author Colin Decker
  * @since 1.0
  */
 @Beta
@@ -53,39 +51,15 @@ public final class Resources {
    * @param url the URL to read from
    * @return the factory
    */
-  public static InputSupplier<InputStream> newInputStreamSupplier(URL url) {
-    return ByteStreams.asInputSupplier(asByteSource(url));
-  }
-
-  /**
-   * Returns a {@link ByteSource} that reads from the given URL.
-   *
-   * @since 14.0
-   */
-  public static ByteSource asByteSource(URL url) {
-    return new UrlByteSource(url);
-  }
-
-  /**
-   * A byte source that reads from a URL using {@link URL#openStream()}.
-   */
-  private static final class UrlByteSource extends ByteSource {
-
-    private final URL url;
-
-    private UrlByteSource(URL url) {
-      this.url = checkNotNull(url);
-    }
-
-    @Override
-    public InputStream openStream() throws IOException {
-      return url.openStream();
-    }
-
-    @Override
-    public String toString() {
-      return "Resources.newByteSource(" + url + ")";
-    }
+  public static InputSupplier<InputStream> newInputStreamSupplier(
+      final URL url) {
+    checkNotNull(url);
+    return new InputSupplier<InputStream>() {
+      @Override
+      public InputStream getInput() throws IOException {
+        return url.openStream();
+      }
+    };
   }
 
   /**
@@ -93,22 +67,12 @@ public final class Resources {
    * {@link InputStreamReader} that read a URL using the given character set.
    *
    * @param url the URL to read from
-   * @param charset the charset used to decode the input stream; see {@link
-   *     Charsets} for helpful predefined constants
+   * @param charset the character set used when reading the URL contents
    * @return the factory
    */
   public static InputSupplier<InputStreamReader> newReaderSupplier(
       URL url, Charset charset) {
-    return CharStreams.asInputSupplier(asCharSource(url, charset));
-  }
-
-  /**
-   * Returns a {@link CharSource} that reads from the given URL using the given character set.
-   *
-   * @since 14.0
-   */
-  public static CharSource asCharSource(URL url, Charset charset) {
-    return asByteSource(url).asCharSource(charset);
+    return CharStreams.newReaderSupplier(newInputStreamSupplier(url), charset);
   }
 
   /**
@@ -119,7 +83,7 @@ public final class Resources {
    * @throws IOException if an I/O error occurs
    */
   public static byte[] toByteArray(URL url) throws IOException {
-    return asByteSource(url).read();
+    return ByteStreams.toByteArray(newInputStreamSupplier(url));
   }
 
   /**
@@ -127,13 +91,12 @@ public final class Resources {
    * character set.
    *
    * @param url the URL to read from
-   * @param charset the charset used to decode the input stream; see {@link
-   *     Charsets} for helpful predefined constants
+   * @param charset the character set used when reading the URL
    * @return a string containing all the characters from the URL
    * @throws IOException if an I/O error occurs.
    */
   public static String toString(URL url, Charset charset) throws IOException {
-    return asCharSource(url, charset).read();
+    return CharStreams.toString(newReaderSupplier(url, charset));
   }
 
   /**
@@ -141,8 +104,7 @@ public final class Resources {
    * have read all of the lines.
    *
    * @param url the URL to read from
-   * @param charset the charset used to decode the input stream; see {@link
-   *     Charsets} for helpful predefined constants
+   * @param charset the character set used when reading the URL
    * @param callback the LineProcessor to use to handle the lines
    * @return the output of processing the lines
    * @throws IOException if an I/O error occurs
@@ -158,8 +120,7 @@ public final class Resources {
    * whitespace.
    *
    * @param url the URL to read from
-   * @param charset the charset used to decode the input stream; see {@link
-   *     Charsets} for helpful predefined constants
+   * @param charset the character set used when writing the file
    * @return a mutable {@link List} containing all the lines
    * @throws IOException if an I/O error occurs
    */
@@ -176,7 +137,7 @@ public final class Resources {
    * @throws IOException if an I/O error occurs
    */
   public static void copy(URL from, OutputStream to) throws IOException {
-    asByteSource(from).copyTo(to);
+    ByteStreams.copy(newInputStreamSupplier(from), to);
   }
   
   /**

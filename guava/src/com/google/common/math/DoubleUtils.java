@@ -17,27 +17,35 @@
 package com.google.common.math;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.Double.MAX_EXPONENT;
-import static java.lang.Double.MIN_EXPONENT;
-import static java.lang.Double.POSITIVE_INFINITY;
-import static java.lang.Double.doubleToRawLongBits;
-import static java.lang.Double.isNaN;
-import static java.lang.Double.longBitsToDouble;
-import static java.lang.Math.getExponent;
 
 import java.math.BigInteger;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
- * Utilities for {@code double} primitives.
+ * Utilities for {@code double} primitives. Some of these are exposed in JDK 6,
+ * but we can't depend on them there.
  *
  * @author Louis Wasserman
  */
 final class DoubleUtils {
+  // TODO(user): replace with appropriate calls when we move to JDK 6
+
   private DoubleUtils() {
   }
 
-  static double nextDown(double d) {
-    return -Math.nextUp(-d);
+  static double next(double x, boolean up) {
+    // Math.nextAfter is JDK 6.
+    if (x == 0.0) {
+      return up ? Double.MIN_VALUE : -Double.MIN_VALUE;
+    }
+    long bits = Double.doubleToRawLongBits(x);
+    if ((x < 0.0) == up) {
+      bits--;
+    } else {
+      bits++;
+    }
+    return Double.longBitsToDouble(bits);
   }
 
   // The mask for the significand, according to the {@link
@@ -56,27 +64,64 @@ final class DoubleUtils {
 
   static final int EXPONENT_BIAS = 1023;
 
+  static final int MIN_DOUBLE_EXPONENT = -1022;
+
+  static final int MAX_DOUBLE_EXPONENT = 1023;
+
   /**
    * The implicit 1 bit that is omitted in significands of normal doubles.
    */
   static final long IMPLICIT_BIT = SIGNIFICAND_MASK + 1;
 
+  @VisibleForTesting
+  static int getExponent(double d) {
+    // TODO: replace with Math.getExponent in JDK 6
+    long bits = Double.doubleToRawLongBits(d);
+    int exponent = (int) ((bits & EXPONENT_MASK) >> SIGNIFICAND_BITS);
+    exponent -= EXPONENT_BIAS;
+    return exponent;
+  }
+
+  /**
+   * Returns {@code d * 2^scale}.
+   */
+  static strictfp double scalb(double d, int scale) {
+    // TODO: replace with Math.scalb in JDK 6
+    int exponent = getExponent(d);
+    switch (exponent) {
+      case MAX_DOUBLE_EXPONENT + 1: // NaN, infinity
+        return d;
+      case MIN_DOUBLE_EXPONENT - 1:
+        return d * StrictMath.pow(2.0, scale);
+      default:
+        int newExponent = exponent + scale;
+        if (MIN_DOUBLE_EXPONENT <= newExponent
+            & newExponent <= MAX_DOUBLE_EXPONENT) {
+          long bits = Double.doubleToRawLongBits(d);
+          bits &= ~EXPONENT_MASK;
+          bits |= ((long) (newExponent + EXPONENT_BIAS)) << SIGNIFICAND_BITS;
+          return Double.longBitsToDouble(bits);
+        }
+        return d * StrictMath.pow(2.0, scale);
+    }
+  }
+
   static long getSignificand(double d) {
     checkArgument(isFinite(d), "not a normal value");
     int exponent = getExponent(d);
-    long bits = doubleToRawLongBits(d);
+    long bits = Double.doubleToRawLongBits(d);
     bits &= SIGNIFICAND_MASK;
-    return (exponent == MIN_EXPONENT - 1)
+    return (exponent == MIN_DOUBLE_EXPONENT - 1)
         ? bits << 1
         : bits | IMPLICIT_BIT;
   }
 
   static boolean isFinite(double d) {
-    return getExponent(d) <= MAX_EXPONENT;
+    return getExponent(d) <= MAX_DOUBLE_EXPONENT;
   }
 
   static boolean isNormal(double d) {
-    return getExponent(d) >= MIN_EXPONENT;
+    return getExponent(d) >= MIN_DOUBLE_EXPONENT;
   }
 
   /*
@@ -84,8 +129,8 @@ final class DoubleUtils {
    * normal, and finite.
    */
   static double scaleNormalize(double x) {
-    long significand = doubleToRawLongBits(x) & SIGNIFICAND_MASK;
-    return longBitsToDouble(significand | ONE_BITS);
+    long significand = Double.doubleToRawLongBits(x) & SIGNIFICAND_MASK;
+    return Double.longBitsToDouble(significand | ONE_BITS);
   }
 
   static double bigToDouble(BigInteger x) {
@@ -95,8 +140,8 @@ final class DoubleUtils {
     // exponent == floor(log2(abs(x)))
     if (exponent < Long.SIZE - 1) {
       return x.longValue();
-    } else if (exponent > MAX_EXPONENT) {
-      return x.signum() * POSITIVE_INFINITY;
+    } else if (exponent > MAX_DOUBLE_EXPONENT) {
+      return x.signum() * Double.POSITIVE_INFINITY;
     }
 
     /*
@@ -129,20 +174,8 @@ final class DoubleUtils {
      * Double.POSITIVE_INFINITY.
      */
     bits |= x.signum() & SIGN_MASK;
-    return longBitsToDouble(bits);
+    return Double.longBitsToDouble(bits);
   }
 
-  /**
-   * Returns its argument if it is non-negative, zero if it is negative.
-   */
-  static double ensureNonNegative(double value) {
-    checkArgument(!isNaN(value));
-    if (value > 0.0) {
-      return value;
-    } else {
-      return 0.0;
-    }
-  }
-
-  private static final long ONE_BITS = doubleToRawLongBits(1.0);
+  private static final long ONE_BITS = Double.doubleToRawLongBits(1.0);
 }

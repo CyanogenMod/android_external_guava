@@ -16,10 +16,9 @@
 
 package com.google.common.collect.testing.testers;
 
-import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_ADD;
+import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_ADD_ALL;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.MinimalCollection;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
@@ -34,9 +33,8 @@ import com.google.common.collect.testing.features.CollectionSize;
  * @author Kevin Bourrillion
  */
 @SuppressWarnings("unchecked") // too many "unchecked generic array creations"
-@GwtCompatible
 public class SetAddAllTester<E> extends AbstractSetTester<E> {
-  @CollectionFeature.Require(SUPPORTS_ADD)
+  @CollectionFeature.Require(SUPPORTS_ADD_ALL)
   @CollectionSize.Require(absent = ZERO)
   public void testAddAll_supportedSomePresent() {
     assertTrue("add(somePresent) should return true",
@@ -44,7 +42,7 @@ public class SetAddAllTester<E> extends AbstractSetTester<E> {
     expectAdded(samples.e3);
   }
 
-  @CollectionFeature.Require(SUPPORTS_ADD)
+  @CollectionFeature.Require(SUPPORTS_ADD_ALL)
   public void testAddAll_withDuplicates() {
     MinimalCollection<E> elementsToAdd
         = MinimalCollection.of(samples.e3, samples.e4, samples.e3, samples.e4);
@@ -53,7 +51,7 @@ public class SetAddAllTester<E> extends AbstractSetTester<E> {
     expectAdded(samples.e3, samples.e4);
   }
 
-  @CollectionFeature.Require(SUPPORTS_ADD)
+  @CollectionFeature.Require(SUPPORTS_ADD_ALL)
   @CollectionSize.Require(absent = ZERO)
   public void testAddAll_supportedAllPresent() {
     assertFalse("add(allPresent) should return false",

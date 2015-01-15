@@ -16,8 +16,6 @@
 
 package com.google.common.testing;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 
@@ -53,7 +51,7 @@ public class TearDownStack implements TearDownAccepter {
 
   @Override
   public final void addTearDown(TearDown tearDown) {
-    stack.addFirst(checkNotNull(tearDown));
+    stack.addFirst(tearDown);
   }
 
   /**

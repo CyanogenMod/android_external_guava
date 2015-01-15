@@ -20,8 +20,6 @@ import static com.google.common.collect.testing.features.CollectionFeature.ALLOW
 import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_ADD;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
@@ -39,7 +37,6 @@ import java.util.List;
  * @author Chris Povirk
  */
 @SuppressWarnings("unchecked") // too many "unchecked generic array creations"
-@GwtCompatible(emulated = true)
 public class ListAddTester<E> extends AbstractListTester<E> {
   @CollectionFeature.Require(SUPPORTS_ADD)
   @CollectionSize.Require(absent = ZERO)
@@ -79,8 +76,7 @@ public class ListAddTester<E> extends AbstractListTester<E> {
    * {@link #testAdd_supportedNullPresent()} so that tests can suppress it. See
    * {@link CollectionAddTester#getAddNullSupportedMethod()} for details.
    */
-  @GwtIncompatible("reflection")
   public static Method getAddSupportedNullPresentMethod() {
-    return Helpers.getMethod(ListAddTester.class, "testAdd_supportedNullPresent");
+    return Platform.getMethod(ListAddTester.class, "testAdd_supportedNullPresent");
   }
 }

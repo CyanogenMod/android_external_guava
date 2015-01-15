@@ -19,10 +19,7 @@ package com.google.common.collect.testing.testers;
 import static com.google.common.collect.testing.features.CollectionFeature.ALLOWS_NULL_VALUES;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.AbstractCollectionTester;
-import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 
@@ -37,7 +34,6 @@ import java.lang.reflect.Method;
  *
  * @author Chris Povirk
  */
-@GwtCompatible(emulated = true)
 public class CollectionCreationTester<E> extends AbstractCollectionTester<E> {
   @CollectionFeature.Require(ALLOWS_NULL_VALUES)
   @CollectionSize.Require(absent = ZERO)
@@ -66,8 +62,7 @@ public class CollectionCreationTester<E> extends AbstractCollectionTester<E> {
    * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5045147">Sun
    * bug 5045147</a> is fixed.
    */
-  @GwtIncompatible("reflection")
   public static Method getCreateWithNullUnsupportedMethod() {
-    return Helpers.getMethod(CollectionCreationTester.class, "testCreateWithNull_unsupported");
+    return Platform.getMethod(CollectionCreationTester.class, "testCreateWithNull_unsupported");
   }
 }

@@ -22,13 +22,10 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
-import com.google.common.base.Strings;
 
-import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -63,7 +60,7 @@ import javax.annotation.concurrent.Immutable;
  * @since 10.0
  */
 @Beta @Immutable
-public final class HostAndPort implements Serializable {
+public final class HostAndPort {
   /** Magic value indicating the absence of a port number. */
   private static final int NO_PORT = -1;
 
@@ -86,7 +83,7 @@ public final class HostAndPort implements Serializable {
    * Returns the portion of this {@code HostAndPort} instance that should
    * represent the hostname or IPv4/IPv6 literal.
    *
-   * <p>A successful parse does not imply any degree of sanity in this field.
+   * A successful parse does not imply any degree of sanity in this field.
    * For additional validation, see the {@link HostSpecifier} class.
    */
   public String getHostText() {
@@ -174,7 +171,7 @@ public final class HostAndPort implements Serializable {
     }
 
     int port = NO_PORT;
-    if (!Strings.isNullOrEmpty(portString)) {
+    if (portString != null) {
       // Try to parse the whole port string as a number.
       // JDK7 accepts leading plus signs. We don't want to.
       checkArgument(!portString.startsWith("+"), "Unparseable port number: %s", hostPortString);
@@ -228,7 +225,7 @@ public final class HostAndPort implements Serializable {
   }
 
   @Override
-  public boolean equals(@Nullable Object other) {
+  public boolean equals(Object other) {
     if (this == other) {
       return true;
     }
@@ -265,6 +262,4 @@ public final class HostAndPort implements Serializable {
   private static boolean isValidPort(int port) {
     return port >= 0 && port <= 65535;
   }
-
-  private static final long serialVersionUID = 0;
 }

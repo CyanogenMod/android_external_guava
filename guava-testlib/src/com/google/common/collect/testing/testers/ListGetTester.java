@@ -16,8 +16,6 @@
 
 package com.google.common.collect.testing.testers;
 
-import com.google.common.annotations.GwtCompatible;
-
 /**
  * A generic JUnit test which tests {@code get()} operations on a list. Can't be
  * invoked directly; please see
@@ -27,11 +25,10 @@ import com.google.common.annotations.GwtCompatible;
  *
  * @author Chris Povirk
  */
-@GwtCompatible
 public class ListGetTester<E> extends AbstractListTester<E> {
   public void testGet_valid() {
     // This calls get() on each index and checks the result:
-    expectContents(createOrderedArray());
+    expectContents(createSamplesArray());
   }
 
   public void testGet_negative() {

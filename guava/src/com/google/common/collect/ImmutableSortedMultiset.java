@@ -14,13 +14,12 @@
 
 package com.google.common.collect;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtIncompatible;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,7 +61,7 @@ import java.util.List;
  *
  *   {(x, y) | x.compareTo(y) == 0}}</pre>
  *
- * <b>Warning:</b> Like most multisets, an {@code ImmutableSortedMultiset} will not function
+ *  <b>Warning:</b> Like most multisets, an {@code ImmutableSortedMultiset} will not function
  * correctly if an element is modified after being placed in the multiset. For this reason, and to
  * avoid general confusion, it is strongly recommended to place only immutable objects into this
  * collection.
@@ -70,16 +69,10 @@ import java.util.List;
  * <p><b>Note:</b> Although this class is not final, it cannot be subclassed as it has no public or
  * protected constructors. Thus, instances of this type are guaranteed to be immutable.
  *
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/ImmutableCollectionsExplained">
- * immutable collections</a>.
- *
  * @author Louis Wasserman
- * @since 12.0
  */
-@Beta
 @GwtIncompatible("hasn't been tested yet")
-public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultisetFauxverideShim<E>
+abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultisetFauxverideShim<E>
     implements SortedMultiset<E> {
   // TODO(user): GWT compatibility
 
@@ -100,11 +93,8 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
    * Returns an immutable sorted multiset containing a single element.
    */
   public static <E extends Comparable<? super E>> ImmutableSortedMultiset<E> of(E element) {
-    RegularImmutableSortedSet<E> elementSet =
-        (RegularImmutableSortedSet<E>) ImmutableSortedSet.of(element);
-    int[] counts = {1};
-    long[] cumulativeCounts = {0, 1};
-    return new RegularImmutableSortedMultiset<E>(elementSet, counts, cumulativeCounts, 0, 1);
+    return RegularImmutableSortedMultiset.createFromSorted(
+        NATURAL_ORDER, ImmutableList.of(Multisets.immutableEntry(checkNotNull(element), 1)));
   }
 
   /**
@@ -161,9 +151,15 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
    */
   @SuppressWarnings("unchecked")
   public static <E extends Comparable<? super E>> ImmutableSortedMultiset<E> of(
-      E e1, E e2, E e3, E e4, E e5, E e6, E... remaining) {
+      E e1,
+      E e2,
+      E e3,
+      E e4,
+      E e5,
+      E e6,
+      E... remaining) {
     int size = remaining.length + 6;
-    List<E> all = Lists.newArrayListWithCapacity(size);
+    List<E> all = new ArrayList<E>(size);
     Collections.addAll(all, e1, e2, e3, e4, e5, e6);
     Collections.addAll(all, remaining);
     return copyOf(Ordering.natural(), all);
@@ -224,7 +220,7 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
     // Unsafe, see ImmutableSortedMultisetFauxverideShim.
     @SuppressWarnings("unchecked")
     Ordering<E> naturalOrder = (Ordering<E>) Ordering.<Comparable>natural();
-    return copyOf(naturalOrder, elements);
+    return copyOfInternal(naturalOrder, elements);
   }
 
   /**
@@ -236,7 +232,7 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
   public static <E> ImmutableSortedMultiset<E> copyOf(
       Comparator<? super E> comparator, Iterator<? extends E> elements) {
     checkNotNull(comparator);
-    return new Builder<E>(comparator).addAll(elements).build();
+    return copyOfInternal(comparator, elements);
   }
 
   /**
@@ -251,21 +247,8 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
    */
   public static <E> ImmutableSortedMultiset<E> copyOf(
       Comparator<? super E> comparator, Iterable<? extends E> elements) {
-    if (elements instanceof ImmutableSortedMultiset) {
-      @SuppressWarnings("unchecked") // immutable collections are always safe for covariant casts
-      ImmutableSortedMultiset<E> multiset = (ImmutableSortedMultiset<E>) elements;
-      if (comparator.equals(multiset.comparator())) {
-        if (multiset.isPartialView()) {
-          return copyOfSortedEntries(comparator, multiset.entrySet().asList());
-        } else {
-          return multiset;
-        }
-      }
-    }
-    elements = Lists.newArrayList(elements); // defensive copy
-    TreeMultiset<E> sortedCopy = TreeMultiset.create(checkNotNull(comparator));
-    Iterables.addAll(sortedCopy, elements);
-    return copyOfSortedEntries(comparator, sortedCopy.entrySet());
+    checkNotNull(comparator);
+    return copyOfInternal(comparator, elements);
   }
 
   /**
@@ -282,29 +265,50 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
    *
    * @throws NullPointerException if {@code sortedMultiset} or any of its elements is null
    */
+  @SuppressWarnings("unchecked")
   public static <E> ImmutableSortedMultiset<E> copyOfSorted(SortedMultiset<E> sortedMultiset) {
-    return copyOfSortedEntries(sortedMultiset.comparator(),
-        Lists.newArrayList(sortedMultiset.entrySet()));
+    Comparator<? super E> comparator = sortedMultiset.comparator();
+    if (comparator == null) {
+      comparator = (Comparator<? super E>) NATURAL_ORDER;
+    }
+    return copyOfInternal(comparator, sortedMultiset);
   }
 
-  private static <E> ImmutableSortedMultiset<E> copyOfSortedEntries(
-      Comparator<? super E> comparator, Collection<Entry<E>> entries) {
+  @SuppressWarnings("unchecked")
+  private static <E> ImmutableSortedMultiset<E> copyOfInternal(
+      Comparator<? super E> comparator, Iterable<? extends E> iterable) {
+    if (SortedIterables.hasSameComparator(comparator, iterable)
+        && iterable instanceof ImmutableSortedMultiset<?>) {
+      ImmutableSortedMultiset<E> multiset = (ImmutableSortedMultiset<E>) iterable;
+      if (!multiset.isPartialView()) {
+        return (ImmutableSortedMultiset<E>) iterable;
+      }
+    }
+    ImmutableList<Entry<E>> entries =
+        (ImmutableList) ImmutableList.copyOf(SortedIterables.sortedCounts(comparator, iterable));
     if (entries.isEmpty()) {
       return emptyMultiset(comparator);
     }
-    ImmutableList.Builder<E> elementsBuilder = new ImmutableList.Builder<E>(entries.size());
-    int[] counts = new int[entries.size()];
-    long[] cumulativeCounts = new long[entries.size() + 1];
-    int i = 0;
-    for (Entry<E> entry : entries) {
-      elementsBuilder.add(entry.getElement());
-      counts[i] = entry.getCount();
-      cumulativeCounts[i + 1] = cumulativeCounts[i] + counts[i];
-      i++;
+    verifyEntries(entries);
+    return RegularImmutableSortedMultiset.createFromSorted(comparator, entries);
+  }
+
+  private static <E> ImmutableSortedMultiset<E> copyOfInternal(
+      Comparator<? super E> comparator, Iterator<? extends E> iterator) {
+    @SuppressWarnings("unchecked") // We can safely cast from IL<Entry<? extends E>> to IL<Entry<E>>
+    ImmutableList<Entry<E>> entries =
+        (ImmutableList) ImmutableList.copyOf(SortedIterables.sortedCounts(comparator, iterator));
+    if (entries.isEmpty()) {
+      return emptyMultiset(comparator);
     }
-    return new RegularImmutableSortedMultiset<E>(
-        new RegularImmutableSortedSet<E>(elementsBuilder.build(), comparator),
-        counts, cumulativeCounts, 0, entries.size());
+    verifyEntries(entries);
+    return RegularImmutableSortedMultiset.createFromSorted(comparator, entries);
+  }
+
+  private static <E> void verifyEntries(Collection<Entry<E>> entries) {
+    for (Entry<E> entry : entries) {
+      checkNotNull(entry.getElement());
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -315,15 +319,49 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
     return new EmptyImmutableSortedMultiset<E>(comparator);
   }
 
-  ImmutableSortedMultiset() {}
+  private final transient Comparator<? super E> comparator;
 
-  @Override
-  public final Comparator<? super E> comparator() {
-    return elementSet().comparator();
+  ImmutableSortedMultiset(Comparator<? super E> comparator) {
+    this.comparator = checkNotNull(comparator);
   }
 
   @Override
-  public abstract ImmutableSortedSet<E> elementSet();
+  public Comparator<? super E> comparator() {
+    return comparator;
+  }
+
+  // Pretend the comparator can compare anything. If it turns out it can't
+  // compare two elements, it'll throw a CCE. Only methods that are specified to
+  // throw CCE should call this.
+  @SuppressWarnings("unchecked")
+  Comparator<Object> unsafeComparator() {
+    return (Comparator<Object>) comparator;
+  }
+
+  private transient Comparator<? super E> reverseComparator;
+
+  Comparator<? super E> reverseComparator() {
+    Comparator<? super E> result = reverseComparator;
+    if (result == null) {
+      return reverseComparator = Ordering.from(comparator).<E>reverse();
+    }
+    return result;
+  }
+
+  private transient ImmutableSortedSet<E> elementSet;
+
+  @Override
+  public ImmutableSortedSet<E> elementSet() {
+    ImmutableSortedSet<E> result = elementSet;
+    if (result == null) {
+      return elementSet = createElementSet();
+    }
+    return result;
+  }
+
+  abstract ImmutableSortedSet<E> createElementSet();
+
+  abstract ImmutableSortedSet<E> createDescendingElementSet();
 
   transient ImmutableSortedMultiset<E> descendingMultiset;
 
@@ -336,15 +374,13 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
     return result;
   }
 
+  abstract UnmodifiableIterator<Entry<E>> descendingEntryIterator();
+
   /**
    * {@inheritDoc}
    *
    * <p>This implementation is guaranteed to throw an {@link UnsupportedOperationException}.
-   *
-   * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
   public final Entry<E> pollFirstEntry() {
     throw new UnsupportedOperationException();
@@ -354,13 +390,9 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
    * {@inheritDoc}
    *
    * <p>This implementation is guaranteed to throw an {@link UnsupportedOperationException}.
-   *
-   * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
-  public final Entry<E> pollLastEntry() {
+  public Entry<E> pollLastEntry() {
     throw new UnsupportedOperationException();
   }
 
@@ -370,8 +402,6 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
   @Override
   public ImmutableSortedMultiset<E> subMultiset(
       E lowerBound, BoundType lowerBoundType, E upperBound, BoundType upperBoundType) {
-    checkArgument(comparator().compare(lowerBound, upperBound) <= 0,
-        "Expected lowerBound <= upperBound but %s > %s", lowerBound, upperBound);
     return tailMultiset(lowerBound, lowerBoundType).headMultiset(upperBound, upperBoundType);
   }
 
@@ -432,8 +462,6 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
    *
    * Builder instances can be reused; it is safe to call {@link #build} multiple times to build
    * multiple multisets in series.
-   *
-   * @since 12.0
    */
   public static class Builder<E> extends ImmutableMultiset.Builder<E> {
     private final Comparator<? super E> comparator;
@@ -538,7 +566,7 @@ public abstract class ImmutableSortedMultiset<E> extends ImmutableSortedMultiset
      */
     @Override
     public ImmutableSortedMultiset<E> build() {
-      return copyOfSorted((SortedMultiset<E>) contents);
+      return copyOf(comparator, contents);
     }
   }
 

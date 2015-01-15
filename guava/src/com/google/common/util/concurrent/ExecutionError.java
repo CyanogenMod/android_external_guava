@@ -17,8 +17,7 @@
 package com.google.common.util.concurrent;
 
 import com.google.common.annotations.GwtCompatible;
-
-import javax.annotation.Nullable;
+import com.google.common.annotations.Beta;
 
 /**
  * {@link Error} variant of {@link java.util.concurrent.ExecutionException}. As
@@ -32,6 +31,7 @@ import javax.annotation.Nullable;
  * @author Chris Povirk
  * @since 10.0
  */
+@Beta
 @GwtCompatible
 public class ExecutionError extends Error {
   /**
@@ -42,21 +42,21 @@ public class ExecutionError extends Error {
   /**
    * Creates a new instance with the given detail message.
    */
-  protected ExecutionError(@Nullable String message) {
+  protected ExecutionError(String message) {
     super(message);
   }
 
   /**
    * Creates a new instance with the given detail message and cause.
    */
-  public ExecutionError(@Nullable String message, @Nullable Error cause) {
+  public ExecutionError(String message, Error cause) {
     super(message, cause);
   }
 
   /**
    * Creates a new instance with the given cause.
    */
-  public ExecutionError(@Nullable Error cause) {
+  public ExecutionError(Error cause) {
     super(cause);
   }
 

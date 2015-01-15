@@ -18,8 +18,6 @@ package com.google.common.collect;
 
 import com.google.common.annotations.GwtCompatible;
 
-import javax.annotation.Nullable;
-
 /**
  * Wraps an exception that occurred during a computation.
  *
@@ -31,7 +29,7 @@ public class ComputationException extends RuntimeException {
   /**
    * Creates a new instance with the given cause.
    */
-  public ComputationException(@Nullable Throwable cause) {
+  public ComputationException(Throwable cause) {
     super(cause);
   }
   private static final long serialVersionUID = 0;

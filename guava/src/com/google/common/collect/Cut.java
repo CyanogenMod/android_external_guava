@@ -161,9 +161,6 @@ abstract class Cut<C extends Comparable> implements Comparable<Cut<C>>, Serializ
     @Override public int compareTo(Cut<Comparable<?>> o) {
       return (o == this) ? 0 : -1;
     }
-    @Override public String toString() {
-      return "-\u221e";
-    }
     private Object readResolve() {
       return INSTANCE;
     }
@@ -221,9 +218,6 @@ abstract class Cut<C extends Comparable> implements Comparable<Cut<C>>, Serializ
     }
     @Override public int compareTo(Cut<Comparable<?>> o) {
       return (o == this) ? 0 : 1;
-    }
-    @Override public String toString() {
-      return "+\u221e";
     }
     private Object readResolve() {
       return INSTANCE;
@@ -286,9 +280,6 @@ abstract class Cut<C extends Comparable> implements Comparable<Cut<C>>, Serializ
     @Override public int hashCode() {
       return endpoint.hashCode();
     }
-    @Override public String toString() {
-      return "\\" + endpoint + "/";
-    }
     private static final long serialVersionUID = 0;
   }
 
@@ -350,9 +341,6 @@ abstract class Cut<C extends Comparable> implements Comparable<Cut<C>>, Serializ
     }
     @Override public int hashCode() {
       return ~endpoint.hashCode();
-    }
-    @Override public String toString() {
-      return "/" + endpoint + "\\";
     }
     private static final long serialVersionUID = 0;
   }

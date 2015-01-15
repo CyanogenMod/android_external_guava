@@ -16,8 +16,6 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
-
 /**
  * A non-empty tester for {@link java.util.Iterator}.
  *
@@ -25,7 +23,6 @@ import com.google.common.annotations.GwtCompatible;
  *
  * @author George van den Driessche
  */
-@GwtCompatible
 public final class ExampleIteratorTester<E>
     extends AbstractTester<TestIteratorGenerator<E>> {
   public void testSomethingAboutIterators() {

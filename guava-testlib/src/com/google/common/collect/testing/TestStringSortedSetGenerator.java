@@ -16,8 +16,6 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
@@ -30,7 +28,6 @@ import java.util.SortedSet;
  *
  * @author Jared Levy
  */
-@GwtCompatible
 public abstract class TestStringSortedSetGenerator
     extends TestStringSetGenerator {
   @Override protected abstract SortedSet<String> create(String[] elements);

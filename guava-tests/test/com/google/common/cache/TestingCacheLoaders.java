@@ -14,8 +14,6 @@
 
 package com.google.common.cache;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.Maps;
@@ -24,8 +22,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.annotation.Nullable;
 
 /**
  * Utility {@link CacheLoader} implementations intended for use in testing.
@@ -40,7 +36,6 @@ class TestingCacheLoaders {
    * {@link CacheLoader#load} calls to {@code loader}.
    */
   static <K, V> CacheLoader<K, V> bulkLoader(final CacheLoader<K, V> loader) {
-    checkNotNull(loader);
     return new CacheLoader<K, V>() {
       @Override
       public V load(K key) throws Exception {
@@ -61,7 +56,7 @@ class TestingCacheLoaders {
   /**
    * Returns a {@link CacheLoader} that returns the given {@code constant} for every request.
    */
-  static <K, V> ConstantLoader<K, V> constantLoader(@Nullable V constant) {
+  static <K, V> ConstantLoader<K, V> constantLoader(V constant) {
     return new ConstantLoader<K, V>(constant);
   }
 
@@ -76,7 +71,6 @@ class TestingCacheLoaders {
    * Returns a {@link CacheLoader} that throws the given error for every request.
    */
   static <K, V> CacheLoader<K, V> errorLoader(final Error e) {
-    checkNotNull(e);
     return new CacheLoader<K, V>() {
       @Override
       public V load(K key) {
@@ -89,7 +83,6 @@ class TestingCacheLoaders {
    * Returns a {@link CacheLoader} that throws the given exception for every request.
    */
   static <K, V> CacheLoader<K, V> exceptionLoader(final Exception e) {
-    checkNotNull(e);
     return new CacheLoader<K, V>() {
       @Override
       public V load(K key) throws Exception {

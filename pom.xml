@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
@@ -11,13 +11,10 @@
   </parent>
   <groupId>com.google.guava</groupId>
   <artifactId>guava-parent</artifactId>
-  <version>14.0.1</version>
+  <version>11.0.2</version>
   <packaging>pom</packaging>
   <name>Guava Maven Parent</name>
   <url>http://code.google.com/p/guava-libraries</url>
-  <properties>
-    <gpg.skip>true</gpg.skip>
-  </properties>
   <issueManagement>
     <system>code.google.com</system>
     <url>http://code.google.com/p/guava-libraries/issues</url>
@@ -31,7 +28,7 @@
     </license>
   </licenses>
   <prerequisites>
-    <maven>3.0.3</maven>
+    <maven>2.0.9</maven>
   </prerequisites>
   <scm>
     <connection>scm:git:https://code.google.com/p/guava-libraries/</connection>
@@ -41,7 +38,7 @@
   <developers>
     <developer>
       <id>kevinb9n</id>
-      <name>Kevin Bourrillion</name>
+      <name>Kevin Bourillion</name>
       <email>kevinb@google.com</email>
       <organization>Google</organization>
       <organizationUrl>http://www.google.com</organizationUrl>
@@ -54,30 +51,9 @@
   </developers>
   <modules>
     <module>guava</module>
+    <module>guava-bootstrap</module>
     <module>guava-gwt</module>
     <module>guava-testlib</module>
     <module>guava-tests</module>
   </modules>
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <version>1.4</version>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-            <phase>verify</phase>
-            <goals><goal>sign</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-  <distributionManagement>
-    <site>
-      <id>guava-site</id>
-      <name>Guava Documentation Site</name>
-      <url>scp://dummy.server/dontinstall/usestaging</url>
-    </site>
-  </distributionManagement>
 </project>

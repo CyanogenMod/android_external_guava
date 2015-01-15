@@ -14,54 +14,26 @@
  * limitations under the License.
  */
 
-/*
- * Portions of this file are modified versions of
- * http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/test/tck/AbstractExecutorServiceTest.java?revision=1.30
- * which contained the following notice:
- *
- * Written by Doug Lea with assistance from members of JCP JSR-166
- * Expert Group and released to the public domain, as explained at
- * http://creativecommons.org/publicdomain/zero/1.0/
- * Other contributors include Andrew Wright, Jeffrey Hayes,
- * Pat Fisher, Mike Judd.
- */
-
 package com.google.common.util.concurrent;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
-import static com.google.common.util.concurrent.MoreExecutors.invokeAnyImpl;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.testing.ClassSanityTester;
-import com.google.common.util.concurrent.MoreExecutors.Application;
 
-import org.mockito.InOrder;
-import org.mockito.Mockito;
+import junit.framework.TestCase;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -70,11 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author Kyle Littlefield (klittle)
  */
-public class MoreExecutorsTest extends JSR166TestCase {
-
-  private static final Runnable EMPTY_RUNNABLE = new Runnable() {
-    @Override public void run() {}
-  };
+public class MoreExecutorsTest extends TestCase {
 
   public void testSameThreadExecutorServiceInThreadExecution()
       throws Exception {
@@ -234,21 +202,6 @@ public class MoreExecutorsTest extends JSR166TestCase {
         throwableFromOtherThread.get());
   }
 
-  public void testSameThreadExecutor_shutdownNow() {
-    ExecutorService executor = MoreExecutors.sameThreadExecutor();
-    assertEquals(ImmutableList.of(), executor.shutdownNow());
-    assertTrue(executor.isShutdown());
-  }
-
-  public void testExecuteAfterShutdown() {
-    ExecutorService executor = MoreExecutors.sameThreadExecutor();
-    executor.shutdown();
-    try {
-      executor.execute(EMPTY_RUNNABLE);
-      fail();
-    } catch (RejectedExecutionException expected) {}
-  }
-
   public void testListeningDecorator() throws Exception {
     ListeningExecutorService service =
         listeningDecorator(MoreExecutors.sameThreadExecutor());
@@ -269,88 +222,6 @@ public class MoreExecutorsTest extends JSR166TestCase {
      */
   }
 
-  /**
-   * invokeAny(null) throws NPE
-   */
-  public void testInvokeAnyImpl_nullTasks() throws Exception {
-    ListeningExecutorService e = sameThreadExecutor();
-    try {
-      invokeAnyImpl(e, null, false, 0);
-      shouldThrow();
-    } catch (NullPointerException success) {
-    } finally {
-      joinPool(e);
-    }
-  }
-
-  /**
-   * invokeAny(empty collection) throws IAE
-   */
-  public void testInvokeAnyImpl_emptyTasks() throws Exception {
-    ListeningExecutorService e = sameThreadExecutor();
-    try {
-      invokeAnyImpl(e, new ArrayList<Callable<String>>(), false, 0);
-      shouldThrow();
-    } catch (IllegalArgumentException success) {
-    } finally {
-      joinPool(e);
-    }
-  }
-
-  /**
-   * invokeAny(c) throws NPE if c has null elements
-   */
-  public void testInvokeAnyImpl_nullElement() throws Exception {
-    ListeningExecutorService e = sameThreadExecutor();
-    List<Callable<Integer>> l = new ArrayList<Callable<Integer>>();
-    l.add(new Callable<Integer>() {
-      @Override public Integer call() {
-          throw new ArithmeticException("/ by zero");
-      }
-    });
-    l.add(null);
-    try {
-      invokeAnyImpl(e, l, false, 0);
-      shouldThrow();
-    } catch (NullPointerException success) {
-    } finally {
-      joinPool(e);
-    }
-  }
-
-  /**
-   * invokeAny(c) throws ExecutionException if no task in c completes
-   */
-  public void testInvokeAnyImpl_noTaskCompletes() throws Exception {
-    ListeningExecutorService e = sameThreadExecutor();
-    List<Callable<String>> l = new ArrayList<Callable<String>>();
-    l.add(new NPETask());
-    try {
-      invokeAnyImpl(e, l, false, 0);
-      shouldThrow();
-    } catch (ExecutionException success) {
-      assertTrue(success.getCause() instanceof NullPointerException);
-    } finally {
-      joinPool(e);
-    }
-  }
-
-  /**
-   * invokeAny(c) returns result of some task in c if at least one completes
-   */
-  public void testInvokeAnyImpl() throws Exception {
-    ListeningExecutorService e = sameThreadExecutor();
-    try {
-      List<Callable<String>> l = new ArrayList<Callable<String>>();
-      l.add(new StringTask());
-      l.add(new StringTask());
-      String result = invokeAnyImpl(e, l, false, 0);
-      assertSame(TEST_STRING, result);
-    } finally {
-      joinPool(e);
-    }
-  }
-
   private static void assertListenerRunImmediately(ListenableFuture<?> future) {
     CountingRunnable listener = new CountingRunnable();
     future.addListener(listener, sameThreadExecutor());
@@ -363,111 +234,6 @@ public class MoreExecutorsTest extends JSR166TestCase {
     @Override
     public void run() {
       count++;
-    }
-  }
-
-  public void testAddDelayedShutdownHook_success() throws InterruptedException {
-    TestApplication application = new TestApplication();
-    ExecutorService service = mock(ExecutorService.class);
-    application.addDelayedShutdownHook(service, 2, TimeUnit.SECONDS);
-    verify(service, Mockito.never()).shutdown();
-    application.shutdown();
-    InOrder shutdownFirst = Mockito.inOrder(service);
-    shutdownFirst.verify(service).shutdown();
-    shutdownFirst.verify(service).awaitTermination(2, TimeUnit.SECONDS);
-  }
-
-  public void testAddDelayedShutdownHook_interrupted() throws InterruptedException {
-    TestApplication application = new TestApplication();
-    ExecutorService service = mock(ExecutorService.class);
-    application.addDelayedShutdownHook(service, 2, TimeUnit.SECONDS);
-    when(service.awaitTermination(2, TimeUnit.SECONDS)).thenThrow(new InterruptedException());
-    application.shutdown();
-    verify(service).shutdown();
-  }
-
-  public void testGetExitingExcutorService_executorSetToUseDaemonThreads() {
-    TestApplication application = new TestApplication();
-    ThreadPoolExecutor executor = new ThreadPoolExecutor(
-        1, 2, 3, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1));
-    assertNotNull(application.getExitingExecutorService(executor));
-    assertTrue(executor.getThreadFactory().newThread(EMPTY_RUNNABLE).isDaemon());
-  }
-
-  public void testGetExitingExcutorService_executorDelegatesToOriginal() {
-    TestApplication application = new TestApplication();
-    ThreadPoolExecutor executor = mock(ThreadPoolExecutor.class);
-    ThreadFactory threadFactory = mock(ThreadFactory.class);
-    when(executor.getThreadFactory()).thenReturn(threadFactory);
-    application.getExitingExecutorService(executor).execute(EMPTY_RUNNABLE);
-    verify(executor).execute(EMPTY_RUNNABLE);
-  }
-
-  public void testGetExitingExcutorService_shutdownHookRegistered() throws InterruptedException {
-    TestApplication application = new TestApplication();
-    ThreadPoolExecutor executor = mock(ThreadPoolExecutor.class);
-    ThreadFactory threadFactory = mock(ThreadFactory.class);
-    when(executor.getThreadFactory()).thenReturn(threadFactory);
-    application.getExitingExecutorService(executor);
-    application.shutdown();
-    verify(executor).shutdown();
-  }
-
-  public void testGetExitingScheduledExcutorService_executorSetToUseDaemonThreads() {
-    TestApplication application = new TestApplication();
-    ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
-    assertNotNull(application.getExitingScheduledExecutorService(executor));
-    assertTrue(executor.getThreadFactory().newThread(EMPTY_RUNNABLE).isDaemon());
-  }
-
-  public void testGetExitingScheduledExcutorService_executorDelegatesToOriginal() {
-    TestApplication application = new TestApplication();
-    ScheduledThreadPoolExecutor executor = mock(ScheduledThreadPoolExecutor.class);
-    ThreadFactory threadFactory = mock(ThreadFactory.class);
-    when(executor.getThreadFactory()).thenReturn(threadFactory);
-    application.getExitingScheduledExecutorService(executor).execute(EMPTY_RUNNABLE);
-    verify(executor).execute(EMPTY_RUNNABLE);
-  }
-
-  public void testGetScheduledExitingExcutorService_shutdownHookRegistered()
-      throws InterruptedException {
-    TestApplication application = new TestApplication();
-    ScheduledThreadPoolExecutor executor = mock(ScheduledThreadPoolExecutor.class);
-    ThreadFactory threadFactory = mock(ThreadFactory.class);
-    when(executor.getThreadFactory()).thenReturn(threadFactory);
-    application.getExitingScheduledExecutorService(executor);
-    application.shutdown();
-    verify(executor).shutdown();
-  }
-
-  public void testPlatformThreadFactory_default() {
-    ThreadFactory factory = MoreExecutors.platformThreadFactory();
-    assertNotNull(factory);
-    // Executors#defaultThreadFactory() may return a new instance each time.
-    assertEquals(factory.getClass(), Executors.defaultThreadFactory().getClass());
-  }
-
-  public void testExecutors_nullCheck() throws Exception {
-    new ClassSanityTester()
-        .forAllPublicStaticMethods(MoreExecutors.class)
-        .thatReturn(Executor.class)
-        .testNulls();
-  }
-
-  private static class TestApplication extends Application {
-    private final List<Thread> hooks = Lists.newArrayList();
-
-    @Override synchronized void addShutdownHook(Thread hook) {
-      hooks.add(hook);
-    }
-
-    synchronized void shutdown() throws InterruptedException {
-      for (Thread hook : hooks) {
-        hook.start();
-      }
-      for (Thread hook : hooks) {
-        hook.join();
-      }
     }
   }
 }

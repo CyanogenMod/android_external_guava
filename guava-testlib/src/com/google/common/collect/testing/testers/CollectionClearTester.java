@@ -16,18 +16,12 @@
 
 package com.google.common.collect.testing.testers;
 
-import static com.google.common.collect.testing.features.CollectionFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION;
-import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_REMOVE;
-import static com.google.common.collect.testing.features.CollectionSize.SEVERAL;
+import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_CLEAR;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.AbstractCollectionTester;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
-
-import java.util.ConcurrentModificationException;
-import java.util.Iterator;
 
 /**
  * A generic JUnit test which tests {@code clear()} operations on a collection.
@@ -38,16 +32,15 @@ import java.util.Iterator;
  *
  * @author George van den Driessche
  */
-@GwtCompatible
 public class CollectionClearTester<E> extends AbstractCollectionTester<E> {
-  @CollectionFeature.Require(SUPPORTS_REMOVE)
+  @CollectionFeature.Require(SUPPORTS_CLEAR)
   public void testClear() {
     collection.clear();
     assertTrue("After clear(), a collection should be empty.",
         collection.isEmpty());
   }
 
-  @CollectionFeature.Require(absent = SUPPORTS_REMOVE)
+  @CollectionFeature.Require(absent = SUPPORTS_CLEAR)
   @CollectionSize.Require(absent = ZERO)
   public void testClear_unsupported() {
     try {
@@ -59,7 +52,7 @@ public class CollectionClearTester<E> extends AbstractCollectionTester<E> {
     expectUnchanged();
   }
 
-  @CollectionFeature.Require(absent = SUPPORTS_REMOVE)
+  @CollectionFeature.Require(absent = SUPPORTS_CLEAR)
   @CollectionSize.Require(ZERO)
   public void testClear_unsupportedByEmptyCollection() {
     try {
@@ -67,23 +60,5 @@ public class CollectionClearTester<E> extends AbstractCollectionTester<E> {
     } catch (UnsupportedOperationException tolerated) {
     }
     expectUnchanged();
-  }
-
-  @CollectionFeature.Require({SUPPORTS_REMOVE,
-      FAILS_FAST_ON_CONCURRENT_MODIFICATION})
-  @CollectionSize.Require(SEVERAL)
-  public void testClearConcurrentWithIteration() {
-    try {
-      Iterator<E> iterator = collection.iterator();
-      collection.clear();
-      iterator.next();
-      /*
-       * We prefer for iterators to fail immediately on hasNext, but ArrayList
-       * and LinkedList will notably return true on hasNext here!
-       */
-      fail("Expected ConcurrentModificationException");
-    } catch (ConcurrentModificationException expected) {
-      // success
-    }
   }
 }
