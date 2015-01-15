@@ -46,6 +46,8 @@ import java.util.logging.Logger;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.Immutable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * A manager for monitoring and controlling a set of {@link Service services}. This class provides
@@ -99,6 +101,7 @@ import javax.annotation.concurrent.Immutable;
  * @since 14.0
  */
 @Beta
+@Singleton
 public final class ServiceManager {
   private static final Logger logger = Logger.getLogger(ServiceManager.class.getName());
   
@@ -179,7 +182,7 @@ public final class ServiceManager {
    * 
    * @throws IllegalStateException if not all services are {@link State#NEW new}.
    */
-  ServiceManager(Set<Service> services) {
+  @Inject ServiceManager(Set<Service> services) {
     this((Iterable<Service>) services);
   }
   
