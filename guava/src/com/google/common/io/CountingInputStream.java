@@ -22,8 +22,6 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.annotation.Nullable;
-
 /**
  * An {@link InputStream} that counts the number of bytes read.
  *
@@ -41,7 +39,7 @@ public final class CountingInputStream extends FilterInputStream {
    *
    * @param in the input stream to be wrapped
    */
-  public CountingInputStream(@Nullable InputStream in) {
+  public CountingInputStream(InputStream in) {
     super(in);
   }
 

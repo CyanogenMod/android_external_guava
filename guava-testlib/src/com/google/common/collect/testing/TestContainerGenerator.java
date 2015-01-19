@@ -16,8 +16,6 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +30,6 @@ import java.util.Map;
  *
  * @author George van den Driessche
  */
-@GwtCompatible
 public interface TestContainerGenerator<T, E> {
   /**
    * Returns the sample elements that this generate populates its container

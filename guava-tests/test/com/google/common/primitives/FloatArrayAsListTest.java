@@ -19,7 +19,6 @@ package com.google.common.primitives;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.testing.ListTestSuiteBuilder;
 import com.google.common.collect.testing.SampleElements;
@@ -39,7 +38,7 @@ import java.util.List;
  *
  * @author Kevin Bourrillion
  */
-@GwtCompatible(emulated = true)
+@GwtCompatible
 public class FloatArrayAsListTest extends TestCase {
 
   private static List<Float> asList(Float[] values) {
@@ -50,7 +49,6 @@ public class FloatArrayAsListTest extends TestCase {
     return Floats.asList(temp);
   }
 
-  @GwtIncompatible("suite")
   public static Test suite() {
     List<ListTestSuiteBuilder<Float>> builders =
         ImmutableList.of(

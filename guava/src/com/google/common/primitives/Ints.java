@@ -40,10 +40,6 @@ import javax.annotation.CheckForNull;
  * Static utility methods pertaining to {@code int} primitives, that are not
  * already found in either {@link Integer} or {@link Arrays}.
  *
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
- * primitive utilities</a>.
- *
  * @author Kevin Bourrillion
  * @since 1.0
  */
@@ -420,21 +416,20 @@ public final class Ints {
   }
 
   /**
-   * Returns an array containing each value of {@code collection}, converted to
-   * a {@code int} value in the manner of {@link Number#intValue}.
+   * Copies a collection of {@code Integer} instances into a new array of
+   * primitive {@code int} values.
    *
    * <p>Elements are copied from the argument collection as if by {@code
    * collection.toArray()}.  Calling this method is as thread-safe as calling
    * that method.
    *
-   * @param collection a collection of {@code Number} instances
+   * @param collection a collection of {@code Integer} objects
    * @return an array containing the same values as {@code collection}, in the
    *     same order, converted to primitives
    * @throws NullPointerException if {@code collection} or any of its elements
    *     is null
-   * @since 1.0 (parameter was {@code Collection<Integer>} before 12.0)
    */
-  public static int[] toArray(Collection<? extends Number> collection) {
+  public static int[] toArray(Collection<Integer> collection) {
     if (collection instanceof IntArrayAsList) {
       return ((IntArrayAsList) collection).toIntArray();
     }
@@ -444,7 +439,7 @@ public final class Ints {
     int[] array = new int[len];
     for (int i = 0; i < len; i++) {
       // checkNotNull for GWT (do not optimize)
-      array[i] = ((Number) checkNotNull(boxedArray[i])).intValue();
+      array[i] = (Integer) checkNotNull(boxedArray[i]);
     }
     return array;
   }
@@ -531,8 +526,7 @@ public final class Ints {
     @Override public Integer set(int index, Integer element) {
       checkElementIndex(index, size());
       int oldValue = array[start + index];
-      // checkNotNull for GWT (do not optimize)
-      array[start + index] = checkNotNull(element);
+      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
       return oldValue;
     }
 
@@ -583,7 +577,7 @@ public final class Ints {
     }
 
     int[] toIntArray() {
-      // Arrays.copyOfRange() is not available under GWT
+      // Arrays.copyOfRange() requires Java 6
       int size = size();
       int[] result = new int[size];
       System.arraycopy(array, start, result, 0, size);

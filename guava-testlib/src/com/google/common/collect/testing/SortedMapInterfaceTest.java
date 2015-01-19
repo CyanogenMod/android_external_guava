@@ -16,8 +16,6 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,7 +38,6 @@ import java.util.SortedMap;
  * @author Jared Levy
  */
 // TODO: Use this class to test classes besides ImmutableSortedMap.
-@GwtCompatible
 public abstract class SortedMapInterfaceTest<K, V>
     extends MapInterfaceTest<K, V> {
 

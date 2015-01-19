@@ -122,6 +122,25 @@ public class MapMakerInternalMapTest extends TestCase {
     assertSame(map.valueStrength.defaultEquivalence(), map.valueEquivalence);
   }
 
+  public void testSetValueEquivalence() {
+    Equivalence<Object> testEquivalence = new Equivalence<Object>() {
+      @Override
+      protected boolean doEquivalent(Object a, Object b) {
+        return false;
+      }
+
+      @Override
+      protected int doHash(Object t) {
+        return 0;
+      }
+    };
+
+    MapMakerInternalMap<Object, Object> map =
+        makeMap(createMapMaker().valueEquivalence(testEquivalence));
+    assertSame(testEquivalence, map.valueEquivalence);
+    assertSame(map.keyStrength.defaultEquivalence(), map.keyEquivalence);
+  }
+
   public void testSetConcurrencyLevel() {
     // round up to nearest power of two
 
@@ -225,6 +244,13 @@ public class MapMakerInternalMapTest extends TestCase {
     MapMakerInternalMap<Object, Object> map = makeMap(createMapMaker().weakKeys());
     checkStrength(map, Strength.WEAK, Strength.STRONG);
     assertSame(EntryFactory.WEAK, map.entryFactory);
+  }
+
+  @SuppressWarnings("deprecation")
+  public void testSetSoftKeys() {
+    MapMakerInternalMap<Object, Object> map = makeMap(createMapMaker().softKeys());
+    checkStrength(map, Strength.SOFT, Strength.STRONG);
+    assertSame(EntryFactory.SOFT, map.entryFactory);
   }
 
   public void testSetWeakValues() {
@@ -1078,7 +1104,7 @@ public class MapMakerInternalMapTest extends TestCase {
     table.set(0, entry);
     segment.count = 1;
     assertTrue(segment.removeEntry(entry, hash, RemovalCause.COLLECTED));
-    assertNotificationEnqueued(map, key, value);
+    assertNotificationEnqueued(map, key, value, hash);
     assertTrue(map.removalNotificationQueue.isEmpty());
     assertFalse(segment.evictionQueue.contains(entry));
     assertFalse(segment.expirationQueue.contains(entry));
@@ -1178,7 +1204,7 @@ public class MapMakerInternalMapTest extends TestCase {
   }
 
   private static <K, V> void assertNotificationEnqueued(
-      MapMakerInternalMap<K, V> map, K key, V value) {
+      MapMakerInternalMap<K, V> map, K key, V value, int hash) {
     RemovalNotification<K, V> notification = map.removalNotificationQueue.poll();
     assertSame(key, notification.getKey());
     assertSame(value, notification.getValue());
@@ -1601,7 +1627,7 @@ public class MapMakerInternalMapTest extends TestCase {
 
   /**
    * Returns an iterable containing all combinations of maximumSize, expireAfterAccess/Write,
-   * weakKeys and weak/softValues.
+   * weak/softKeys and weak/softValues.
    */
   private static Iterable<MapMaker> allEntryTypeMakers() {
     List<MapMaker> result = newArrayList(allKeyValueStrengthMakers());
@@ -1639,15 +1665,19 @@ public class MapMakerInternalMapTest extends TestCase {
   }
 
   /**
-   * Returns an iterable containing all combinations weakKeys and weak/softValues.
+   * Returns an iterable containing all combinations weak/softKeys and weak/softValues.
    */
+  @SuppressWarnings("deprecation")
   private static Iterable<MapMaker> allKeyValueStrengthMakers() {
     return ImmutableList.of(createMapMaker(),
         createMapMaker().weakValues(),
         createMapMaker().softValues(),
         createMapMaker().weakKeys(),
         createMapMaker().weakKeys().weakValues(),
-        createMapMaker().weakKeys().softValues());
+        createMapMaker().weakKeys().softValues(),
+        createMapMaker().softKeys(),
+        createMapMaker().softKeys().weakValues(),
+        createMapMaker().softKeys().softValues());
   }
 
   // listeners
@@ -1826,8 +1856,7 @@ public class MapMakerInternalMapTest extends TestCase {
     }
 
     @Override
-    public ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
+    public ValueReference<K, V> copyFor(ReferenceQueue<V> queue, ReferenceEntry<K, V> entry) {
       return new DummyValueReference<K, V>(value, entry);
     }
 

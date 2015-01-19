@@ -16,8 +16,6 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
-
 import java.util.Iterator;
 
 /**
@@ -29,7 +27,6 @@ import java.util.Iterator;
  *
  * @author George van den Driessche
  */
-@GwtCompatible
 public interface TestIteratorGenerator<E> {
   Iterator<E> get();
 }

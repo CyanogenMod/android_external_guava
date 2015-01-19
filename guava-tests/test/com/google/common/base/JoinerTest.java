@@ -220,7 +220,7 @@ public class JoinerTest extends TestCase {
     Joiner zeroForNull = J.useForNull("0");
     checkIterableIterator(zeroForNull, "1-2-3-4");
   }
-
+  
   private static void checkIterableIterator(Joiner joiner, String expected) {
     assertEquals(expected, joiner.join(new IterableIterator()));
 
@@ -254,7 +254,7 @@ public class JoinerTest extends TestCase {
   public void test_useForNull_skipNulls() {
     Joiner j = Joiner.on("x").useForNull("y");
     try {
-      j = j.skipNulls();
+      j.skipNulls();
       fail();
     } catch (UnsupportedOperationException expected) {
     }
@@ -263,7 +263,7 @@ public class JoinerTest extends TestCase {
   public void test_skipNulls_useForNull() {
     Joiner j = Joiner.on("x").skipNulls();
     try {
-      j = j.useForNull("y");
+      j.useForNull("y");
       fail();
     } catch (UnsupportedOperationException expected) {
     }
@@ -272,7 +272,7 @@ public class JoinerTest extends TestCase {
   public void test_useForNull_twice() {
     Joiner j = Joiner.on("x").useForNull("y");
     try {
-      j = j.useForNull("y");
+      j.useForNull("y");
       fail();
     } catch (UnsupportedOperationException expected) {
     }
@@ -338,7 +338,6 @@ public class JoinerTest extends TestCase {
     assertEquals("1:2;1:3;3:4;5:6;5:10", sb2.toString());
   }
 
-  @SuppressWarnings("ReturnValueIgnored")
   public void test_skipNulls_onMap() {
     Joiner j = Joiner.on(",").skipNulls();
     try {
@@ -397,17 +396,17 @@ public class JoinerTest extends TestCase {
   }
 
   @GwtIncompatible("NullPointerTester")
-  public void testNullPointers() {
-    NullPointerTester tester = new NullPointerTester()
-        // This is necessary because of the generics hackery we have to temporarily support
-        // parameters which implement both Iterator and Iterable.;
-        .setDefault(Object.class, Iterators.emptyIterator());
+  public void testNullPointers() throws Exception {
+    NullPointerTester tester = new NullPointerTester();
+    tester.setDefault(StringBuilder.class, new StringBuilder());
+    // This is necessary because of the generics hackery we have to temporarily support parameters
+    // which implement both Iterator and Iterable.
+    tester.setDefault(Object.class, Iterators.emptyIterator());
     tester.testAllPublicStaticMethods(Joiner.class);
-    tester.testInstanceMethods(Joiner.on(","), NullPointerTester.Visibility.PACKAGE);
-    tester.testInstanceMethods(Joiner.on(",").skipNulls(), NullPointerTester.Visibility.PACKAGE);
-    tester.testInstanceMethods(
-        Joiner.on(",").useForNull("x"), NullPointerTester.Visibility.PACKAGE);
-    tester.testInstanceMethods(
-        Joiner.on(",").withKeyValueSeparator("="), NullPointerTester.Visibility.PACKAGE);
+    tester.testAllPublicInstanceMethods(Joiner.on(","));
+    tester.testAllPublicInstanceMethods(Joiner.on(",").skipNulls());
+    tester.testAllPublicInstanceMethods(Joiner.on(",").useForNull("x"));
+    tester.testAllPublicInstanceMethods(
+        Joiner.on(",").withKeyValueSeparator("="));
   }
 }

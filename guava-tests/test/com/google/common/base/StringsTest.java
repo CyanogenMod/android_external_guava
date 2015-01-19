@@ -221,7 +221,7 @@ public class StringsTest extends TestCase {
   }
 
   @GwtIncompatible("NullPointerTester")
-  public void testNullPointers() {
+  public void testNullPointers() throws Exception {
     NullPointerTester tester = new NullPointerTester();
     tester.testAllPublicStaticMethods(Strings.class);
   }

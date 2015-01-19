@@ -16,7 +16,6 @@
 
 package com.google.common.util.concurrent;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
@@ -46,7 +45,7 @@ import java.util.logging.Logger;
 public final class ExecutionList {
 
   // Logger to log exceptions caught when running runnables.
-  @VisibleForTesting static final Logger log =
+  private static final Logger log =
       Logger.getLogger(ExecutionList.class.getName());
 
   // The runnable,executor pairs to execute.

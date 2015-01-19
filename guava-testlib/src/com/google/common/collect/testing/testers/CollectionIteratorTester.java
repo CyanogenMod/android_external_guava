@@ -21,8 +21,6 @@ import static com.google.common.collect.testing.IteratorFeature.UNMODIFIABLE;
 import static com.google.common.collect.testing.features.CollectionFeature.KNOWN_ORDER;
 import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_REMOVE;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.AbstractCollectionTester;
 import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.IteratorFeature;
@@ -48,7 +46,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author Chris Povirk
  */
-@GwtCompatible(emulated = true)
 public class CollectionIteratorTester<E> extends AbstractCollectionTester<E> {
   public void testIterator() {
     List<E> iteratorElements = new ArrayList<E>();
@@ -123,9 +120,8 @@ public class CollectionIteratorTester<E> extends AbstractCollectionTester<E> {
    * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6570575">Sun bug
    * 6570575</a> is fixed.
    */
-  @GwtIncompatible("reflection")
   public static Method getIteratorKnownOrderRemoveSupportedMethod() {
-    return Helpers.getMethod(
+    return Platform.getMethod(
           CollectionIteratorTester.class, "testIterator_knownOrderRemoveSupported");
   }
 
@@ -134,9 +130,8 @@ public class CollectionIteratorTester<E> extends AbstractCollectionTester<E> {
    * {@link #testIterator_unknownOrderRemoveSupported()} so that tests of
    * classes with unmodifiable iterators can suppress it.
    */
-  @GwtIncompatible("reflection")
   public static Method getIteratorUnknownOrderRemoveSupportedMethod() {
-    return Helpers.getMethod(
+    return Platform.getMethod(
         CollectionIteratorTester.class, "testIterator_unknownOrderRemoveSupported");
   }
 
@@ -160,9 +155,8 @@ public class CollectionIteratorTester<E> extends AbstractCollectionTester<E> {
    * supports {@code remove()} on only the first element, and the iterator
    * tester can't handle that.
    */
-  @GwtIncompatible("reflection")
   public static Method getIteratorKnownOrderRemoveUnsupportedMethod() {
-    return Helpers.getMethod(
+    return Platform.getMethod(
         CollectionIteratorTester.class, "testIterator_knownOrderRemoveUnsupported");
   }
 }

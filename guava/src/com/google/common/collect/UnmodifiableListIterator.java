@@ -37,9 +37,8 @@ public abstract class UnmodifiableListIterator<E>
    * Guaranteed to throw an exception and leave the underlying data unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated @Override public final void add(E e) {
+  @Override public final void add(E e) {
     throw new UnsupportedOperationException();
   }
 
@@ -47,9 +46,8 @@ public abstract class UnmodifiableListIterator<E>
    * Guaranteed to throw an exception and leave the underlying data unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated @Override public final void set(E e) {
+  @Override public final void set(E e) {
     throw new UnsupportedOperationException();
   }
 }

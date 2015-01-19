@@ -17,7 +17,6 @@
 package com.google.common.collect;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -47,20 +46,11 @@ class EmptyImmutableSortedSet<E> extends ImmutableSortedSet<E> {
     return true;
   }
 
-  @Override public boolean contains(@Nullable Object target) {
+  @Override public boolean contains(Object target) {
     return false;
   }
 
-  @Override public boolean containsAll(Collection<?> targets) {
-    return targets.isEmpty();
-  }
-
   @Override public UnmodifiableIterator<E> iterator() {
-    return Iterators.emptyIterator();
-  }
-
-  @GwtIncompatible("NavigableSet")
-  @Override public UnmodifiableIterator<E> descendingIterator() {
     return Iterators.emptyIterator();
   }
 
@@ -68,16 +58,21 @@ class EmptyImmutableSortedSet<E> extends ImmutableSortedSet<E> {
     return false;
   }
 
-  @Override public ImmutableList<E> asList() {
-    return ImmutableList.of();
-  }
+  private static final Object[] EMPTY_ARRAY = new Object[0];
 
   @Override public Object[] toArray() {
-    return ObjectArrays.EMPTY_ARRAY;
+    return EMPTY_ARRAY;
   }
 
   @Override public <T> T[] toArray(T[] a) {
-    return asList().toArray(a);
+    if (a.length > 0) {
+      a[0] = null;
+    }
+    return a;
+  }
+
+  @Override public boolean containsAll(Collection<?> targets) {
+    return targets.isEmpty();
   }
 
   @Override public boolean equals(@Nullable Object object) {
@@ -124,10 +119,5 @@ class EmptyImmutableSortedSet<E> extends ImmutableSortedSet<E> {
 
   @Override int indexOf(@Nullable Object target) {
     return -1;
-  }
-
-  @Override
-  ImmutableSortedSet<E> createDescendingSet() {
-    return new EmptyImmutableSortedSet<E>(Ordering.from(comparator).reverse());
   }
 }

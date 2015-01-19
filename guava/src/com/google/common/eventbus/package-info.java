@@ -21,10 +21,6 @@
  * traditional Java in-process event distribution using explicit registration.
  * It is <em>not</em> a general-purpose publish-subscribe system, nor is it
  * intended for interprocess communication.
- * 
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/EventBusExplained">
- * {@code EventBus}</a>.
  *
  * <h2>One-Minute Guide</h2>
  *
@@ -122,6 +118,20 @@
  *
  * <p>In short, the EventBus is not a singleton because we'd rather not make
  * that decision for you.  Use it how you like.
+ *
+ * <h3>Can I unregister a listener from the Event Bus?</h3>
+ * Currently, no -- a listener registered with an EventBus instance will
+ * continue to receive events until the EventBus itself is disposed.
+ *
+ * <p>In the apps using EventBus so far, this has not been a problem:
+ * <ul>
+ *   <li>Most listeners are registered on startup or lazy initialization, and
+ *       persist for the life of the application.
+ *   <li>Scope-specific EventBus instances can handle temporary event
+ *       distribution (e.g. distributing events among request-scoped objects)
+ *   <li>For testing, EventBus instances can be easily created and thrown away,
+ *       removing the need for explicit unregistration.
+ * </ul>
  *
  * <h3>Why use an annotation to mark handler methods, rather than requiring the
  * listener to implement an interface?</h3>

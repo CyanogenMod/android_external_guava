@@ -69,6 +69,11 @@ final class EmptyContiguousSet<C extends Comparable> extends ContiguousSet<C> {
     return this;
   }
 
+  //Abstract method doesn't exist in GWT emulation
+  /* @Override */ int indexOf(Object target) {
+    return -1;
+  }
+
   @Override public UnmodifiableIterator<C> iterator() {
     return Iterators.emptyIterator();
   }

@@ -16,7 +16,6 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.SampleElements.Unhashables;
 
 import java.util.Collection;
@@ -29,7 +28,6 @@ import java.util.List;
  *
  * @author Regina O'Dell
  */
-@GwtCompatible
 public abstract class
     TestUnhashableCollectionGenerator<T extends Collection<UnhashableObject>>
     implements TestCollectionGenerator<UnhashableObject> {

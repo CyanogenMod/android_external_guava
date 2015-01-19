@@ -19,6 +19,7 @@ package com.google.common.base;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -185,6 +186,7 @@ public final class Strings {
    *
    * @since 11.0
    */
+  @Beta
   public static String commonPrefix(CharSequence a, CharSequence b) {
     checkNotNull(a);
     checkNotNull(b);
@@ -208,6 +210,7 @@ public final class Strings {
    *
    * @since 11.0
    */
+  @Beta
   public static String commonSuffix(CharSequence a, CharSequence b) {
     checkNotNull(a);
     checkNotNull(b);

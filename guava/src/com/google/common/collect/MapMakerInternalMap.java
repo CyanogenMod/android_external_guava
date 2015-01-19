@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Equivalence;
+import com.google.common.base.Equivalences;
 import com.google.common.base.Ticker;
 import com.google.common.collect.GenericMapMaker.NullListener;
 import com.google.common.collect.MapMaker.RemovalCause;
@@ -199,7 +200,7 @@ class MapMakerInternalMap<K, V>
     valueStrength = builder.getValueStrength();
 
     keyEquivalence = builder.getKeyEquivalence();
-    valueEquivalence = valueStrength.defaultEquivalence();
+    valueEquivalence = builder.getValueEquivalence();
 
     maximumSize = builder.maximumSize;
     expireAfterAccessNanos = builder.getExpireAfterAccessNanos();
@@ -301,7 +302,7 @@ class MapMakerInternalMap<K, V>
 
       @Override
       Equivalence<Object> defaultEquivalence() {
-        return Equivalence.equals();
+        return Equivalences.equals();
       }
     },
 
@@ -314,7 +315,7 @@ class MapMakerInternalMap<K, V>
 
       @Override
       Equivalence<Object> defaultEquivalence() {
-        return Equivalence.identity();
+        return Equivalences.identity();
       }
     },
 
@@ -327,7 +328,7 @@ class MapMakerInternalMap<K, V>
 
       @Override
       Equivalence<Object> defaultEquivalence() {
-        return Equivalence.identity();
+        return Equivalences.identity();
       }
     };
 
@@ -391,6 +392,60 @@ class MapMakerInternalMap<K, V>
       <K, V> ReferenceEntry<K, V> newEntry(
           Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
         return new StrongExpirableEvictableEntry<K, V>(key, hash, next);
+      }
+
+      @Override
+      <K, V> ReferenceEntry<K, V> copyEntry(
+          Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
+        ReferenceEntry<K, V> newEntry = super.copyEntry(segment, original, newNext);
+        copyExpirableEntry(original, newEntry);
+        copyEvictableEntry(original, newEntry);
+        return newEntry;
+      }
+    },
+
+    SOFT {
+      @Override
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
+        return new SoftEntry<K, V>(segment.keyReferenceQueue, key, hash, next);
+      }
+    },
+    SOFT_EXPIRABLE {
+      @Override
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
+        return new SoftExpirableEntry<K, V>(segment.keyReferenceQueue, key, hash, next);
+      }
+
+      @Override
+      <K, V> ReferenceEntry<K, V> copyEntry(
+          Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
+        ReferenceEntry<K, V> newEntry = super.copyEntry(segment, original, newNext);
+        copyExpirableEntry(original, newEntry);
+        return newEntry;
+      }
+    },
+    SOFT_EVICTABLE {
+      @Override
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
+        return new SoftEvictableEntry<K, V>(segment.keyReferenceQueue, key, hash, next);
+      }
+
+      @Override
+      <K, V> ReferenceEntry<K, V> copyEntry(
+          Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
+        ReferenceEntry<K, V> newEntry = super.copyEntry(segment, original, newNext);
+        copyEvictableEntry(original, newEntry);
+        return newEntry;
+      }
+    },
+    SOFT_EXPIRABLE_EVICTABLE {
+      @Override
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
+        return new SoftExpirableEvictableEntry<K, V>(segment.keyReferenceQueue, key, hash, next);
       }
 
       @Override
@@ -469,7 +524,7 @@ class MapMakerInternalMap<K, V>
      */
     static final EntryFactory[][] factories = {
       { STRONG, STRONG_EXPIRABLE, STRONG_EVICTABLE, STRONG_EXPIRABLE_EVICTABLE },
-      {}, // no support for SOFT keys
+      { SOFT, SOFT_EXPIRABLE, SOFT_EVICTABLE, SOFT_EXPIRABLE_EVICTABLE },
       { WEAK, WEAK_EXPIRABLE, WEAK_EVICTABLE, WEAK_EXPIRABLE_EVICTABLE }
     };
 
@@ -550,11 +605,8 @@ class MapMakerInternalMap<K, V>
 
     /**
      * Creates a copy of this reference for the given entry.
-     *
-     * <p>{@code value} may be null only for a loading reference.
      */
-    ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, @Nullable V value, ReferenceEntry<K, V> entry);
+    ValueReference<K, V> copyFor(ReferenceQueue<V> queue, ReferenceEntry<K, V> entry);
 
     /**
      * Clears this reference object.
@@ -587,8 +639,8 @@ class MapMakerInternalMap<K, V>
     }
 
     @Override
-    public ValueReference<Object, Object> copyFor(ReferenceQueue<Object> queue,
-        @Nullable Object value, ReferenceEntry<Object, Object> entry) {
+    public ValueReference<Object, Object> copyFor(
+        ReferenceQueue<Object> queue, ReferenceEntry<Object, Object> entry) {
       return this;
     }
 
@@ -783,7 +835,7 @@ class MapMakerInternalMap<K, V>
     public void setPreviousEvictable(ReferenceEntry<Object, Object> previous) {}
   }
 
-  abstract static class AbstractReferenceEntry<K, V> implements ReferenceEntry<K, V> {
+  static abstract class AbstractReferenceEntry<K, V> implements ReferenceEntry<K, V> {
     @Override
     public ValueReference<K, V> getValueReference() {
       throw new UnsupportedOperationException();
@@ -1704,8 +1756,8 @@ class MapMakerInternalMap<K, V>
 
     @Override
     public ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
-      return new WeakValueReference<K, V>(queue, value, entry);
+        ReferenceQueue<V> queue, ReferenceEntry<K, V> entry) {
+      return new WeakValueReference<K, V>(queue, get(), entry);
     }
 
     @Override
@@ -1742,9 +1794,8 @@ class MapMakerInternalMap<K, V>
     }
 
     @Override
-    public ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
-      return new SoftValueReference<K, V>(queue, value, entry);
+    public ValueReference<K, V> copyFor(ReferenceQueue<V> queue, ReferenceEntry<K, V> entry) {
+      return new SoftValueReference<K, V>(queue, get(), entry);
     }
 
     @Override
@@ -1779,8 +1830,7 @@ class MapMakerInternalMap<K, V>
     }
 
     @Override
-    public ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
+    public ValueReference<K, V> copyFor(ReferenceQueue<V> queue, ReferenceEntry<K, V> entry) {
       return this;
     }
 
@@ -2129,26 +2179,11 @@ class MapMakerInternalMap<K, V>
       return map.entryFactory.newEntry(this, key, hash, next);
     }
 
-    /**
-     * Copies {@code original} into a new entry chained to {@code newNext}. Returns the new entry,
-     * or {@code null} if {@code original} was already garbage collected.
-     */
     @GuardedBy("Segment.this")
     ReferenceEntry<K, V> copyEntry(ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
-      if (original.getKey() == null) {
-        // key collected
-        return null;
-      }
-
       ValueReference<K, V> valueReference = original.getValueReference();
-      V value = valueReference.get();
-      if ((value == null) && !valueReference.isComputingReference()) {
-        // value collected
-        return null;
-      }
-
       ReferenceEntry<K, V> newEntry = map.entryFactory.copyEntry(this, original, newNext);
-      newEntry.setValueReference(valueReference.copyFor(this.valueReferenceQueue, value, newEntry));
+      newEntry.setValueReference(valueReference.copyFor(this.valueReferenceQueue, newEntry));
       return newEntry;
     }
 
@@ -2617,14 +2652,14 @@ class MapMakerInternalMap<K, V>
 
             // Clone nodes leading up to the tail.
             for (ReferenceEntry<K, V> e = head; e != tail; e = e.getNext()) {
-              int newIndex = e.getHash() & newMask;
-              ReferenceEntry<K, V> newNext = newTable.get(newIndex);
-              ReferenceEntry<K, V> newFirst = copyEntry(e, newNext);
-              if (newFirst != null) {
-                newTable.set(newIndex, newFirst);
-              } else {
+              if (isCollected(e)) {
                 removeCollectedEntry(e);
                 newCount--;
+              } else {
+                int newIndex = e.getHash() & newMask;
+                ReferenceEntry<K, V> newNext = newTable.get(newIndex);
+                ReferenceEntry<K, V> newFirst = copyEntry(e, newNext);
+                newTable.set(newIndex, newFirst);
               }
             }
           }
@@ -2867,12 +2902,11 @@ class MapMakerInternalMap<K, V>
       int newCount = count;
       ReferenceEntry<K, V> newFirst = entry.getNext();
       for (ReferenceEntry<K, V> e = first; e != entry; e = e.getNext()) {
-        ReferenceEntry<K, V> next = copyEntry(e, newFirst);
-        if (next != null) {
-          newFirst = next;
-        } else {
+        if (isCollected(e)) {
           removeCollectedEntry(e);
           newCount--;
+        } else {
+          newFirst = copyEntry(e, newFirst);
         }
       }
       this.count = newCount;
@@ -3005,6 +3039,17 @@ class MapMakerInternalMap<K, V>
       }
 
       return false;
+    }
+
+    /**
+     * Returns {@code true} if the entry has been partially collected, meaning that either the key
+     * is null, or the value is null and it is not computing.
+     */
+    boolean isCollected(ReferenceEntry<K, V> entry) {
+      if (entry.getKey() == null) {
+        return true;
+      }
+      return isCollected(entry.getValueReference());
     }
 
     /**
@@ -3215,7 +3260,7 @@ class MapMakerInternalMap<K, V>
 
     @Override
     public Iterator<ReferenceEntry<K, V>> iterator() {
-      return new AbstractSequentialIterator<ReferenceEntry<K, V>>(peek()) {
+      return new AbstractLinkedIterator<ReferenceEntry<K, V>>(peek()) {
         @Override
         protected ReferenceEntry<K, V> computeNext(ReferenceEntry<K, V> previous) {
           ReferenceEntry<K, V> next = previous.getNextEvictable();
@@ -3351,7 +3396,7 @@ class MapMakerInternalMap<K, V>
 
     @Override
     public Iterator<ReferenceEntry<K, V>> iterator() {
-      return new AbstractSequentialIterator<ReferenceEntry<K, V>>(peek()) {
+      return new AbstractLinkedIterator<ReferenceEntry<K, V>>(peek()) {
         @Override
         protected ReferenceEntry<K, V> computeNext(ReferenceEntry<K, V> previous) {
           ReferenceEntry<K, V> next = previous.getNextExpirable();
@@ -3446,6 +3491,17 @@ class MapMakerInternalMap<K, V>
     return segmentFor(hash).getEntry(key, hash);
   }
 
+  /**
+   * Returns the live internal entry for the specified key. Does not impact recency ordering.
+   */
+  ReferenceEntry<K, V> getLiveEntry(@Nullable Object key) {
+    if (key == null) {
+      return null;
+    }
+    int hash = hash(key);
+    return segmentFor(hash).getLiveEntry(key, hash);
+  }
+
   @Override
   public boolean containsKey(@Nullable Object key) {
     if (key == null) {
@@ -3466,7 +3522,7 @@ class MapMakerInternalMap<K, V>
     // such that none of the subsequent iterations observed it, despite the fact that at every point
     // in time it was present somewhere int the map. This becomes increasingly unlikely as
     // CONTAINS_VALUE_RETRIES increases, though without locking it is theoretically possible.
-    final Segment<K, V>[] segments = this.segments;
+    final Segment<K,V>[] segments = this.segments;
     long last = -1L;
     for (int i = 0; i < CONTAINS_VALUE_RETRIES; i++) {
       long sum = 0L;
@@ -3476,7 +3532,7 @@ class MapMakerInternalMap<K, V>
         int c = segment.count; // read-volatile
 
         AtomicReferenceArray<ReferenceEntry<K, V>> table = segment.table;
-        for (int j = 0; j < table.length(); j++) {
+        for (int j = 0 ; j < table.length(); j++) {
           for (ReferenceEntry<K, V> e = table.get(j); e != null; e = e.getNext()) {
             V v = segment.getLiveValue(e);
             if (v != null && valueEquivalence.equivalent(value, v)) {
@@ -3561,7 +3617,7 @@ class MapMakerInternalMap<K, V>
     }
   }
 
-  transient Set<K> keySet;
+  Set<K> keySet;
 
   @Override
   public Set<K> keySet() {
@@ -3569,7 +3625,7 @@ class MapMakerInternalMap<K, V>
     return (ks != null) ? ks : (keySet = new KeySet());
   }
 
-  transient Collection<V> values;
+  Collection<V> values;
 
   @Override
   public Collection<V> values() {
@@ -3577,7 +3633,7 @@ class MapMakerInternalMap<K, V>
     return (vs != null) ? vs : (values = new Values());
   }
 
-  transient Set<Entry<K, V>> entrySet;
+  Set<Entry<K, V>> entrySet;
 
   @Override
   public Set<Entry<K, V>> entrySet() {
@@ -3587,7 +3643,7 @@ class MapMakerInternalMap<K, V>
 
   // Iterator Support
 
-  abstract class HashIterator<E> implements Iterator<E> {
+  abstract class HashIterator {
 
     int nextSegmentIndex;
     int nextTableIndex;
@@ -3602,8 +3658,6 @@ class MapMakerInternalMap<K, V>
       nextTableIndex = -1;
       advance();
     }
-
-    public abstract E next();
 
     final void advance() {
       nextExternal = null;
@@ -3696,7 +3750,7 @@ class MapMakerInternalMap<K, V>
     }
   }
 
-  final class KeyIterator extends HashIterator<K> {
+  final class KeyIterator extends HashIterator implements Iterator<K> {
 
     @Override
     public K next() {
@@ -3704,7 +3758,7 @@ class MapMakerInternalMap<K, V>
     }
   }
 
-  final class ValueIterator extends HashIterator<V> {
+  final class ValueIterator extends HashIterator implements Iterator<V> {
 
     @Override
     public V next() {
@@ -3759,7 +3813,7 @@ class MapMakerInternalMap<K, V>
     }
   }
 
-  final class EntryIterator extends HashIterator<Entry<K, V>> {
+  final class EntryIterator extends HashIterator implements Iterator<Entry<K, V>> {
 
     @Override
     public Entry<K, V> next() {
@@ -3945,6 +3999,7 @@ class MapMakerInternalMap<K, V>
           .setKeyStrength(keyStrength)
           .setValueStrength(valueStrength)
           .keyEquivalence(keyEquivalence)
+          .valueEquivalence(valueEquivalence)
           .concurrencyLevel(concurrencyLevel);
       mapMaker.removalListener(removalListener);
       if (expireAfterWriteNanos > 0) {

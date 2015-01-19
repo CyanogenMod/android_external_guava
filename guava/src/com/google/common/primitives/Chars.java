@@ -40,10 +40,6 @@ import java.util.RandomAccess;
  * <p>All the operations in this class treat {@code char} values strictly
  * numerically; they are neither Unicode-aware nor locale-dependent.
  *
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
- * primitive utilities</a>.
- *
  * @author Kevin Bourrillion
  * @since 1.0
  */
@@ -523,8 +519,7 @@ public final class Chars {
     @Override public Character set(int index, Character element) {
       checkElementIndex(index, size());
       char oldValue = array[start + index];
-      // checkNotNull for GWT (do not optimize)
-      array[start + index] = checkNotNull(element);
+      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
       return oldValue;
     }
 
@@ -575,7 +570,7 @@ public final class Chars {
     }
 
     char[] toCharArray() {
-      // Arrays.copyOfRange() is not available under GWT
+      // Arrays.copyOfRange() requires Java 6
       int size = size();
       char[] result = new char[size];
       System.arraycopy(array, start, result, 0, size);

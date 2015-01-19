@@ -16,8 +16,6 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -50,7 +48,6 @@ import java.util.Iterator;
  *
  * @author Kevin Bourrillion
  */
-@GwtCompatible
 public final class MinimalIterable<E> implements Iterable<E> {
   /**
    * Returns an iterable whose iterator returns the given elements in order.

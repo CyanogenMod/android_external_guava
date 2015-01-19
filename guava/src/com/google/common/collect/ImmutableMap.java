@@ -19,15 +19,12 @@ package com.google.common.collect;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.getOnlyElement;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -50,10 +47,6 @@ import javax.annotation.Nullable;
  * having your element type cache its own hash codes, and by making use of the
  * cached values to short-circuit a slow {@code equals} algorithm.
  *
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/ImmutableCollectionsExplained">
- * immutable collections</a>.
- *
  * @author Jesse Wilson
  * @author Kevin Bourrillion
  * @since 2.0 (imported from Google Collections Library)
@@ -66,8 +59,10 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
    * {@link Collections#emptyMap}, and is preferable mainly for consistency
    * and maintainability of your code.
    */
+  // Casting to any type is safe because the set will never hold any elements.
+  @SuppressWarnings("unchecked")
   public static <K, V> ImmutableMap<K, V> of() {
-    return ImmutableBiMap.of();
+    return (ImmutableMap<K, V>) EmptyImmutableMap.INSTANCE;
   }
 
   /**
@@ -77,7 +72,8 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
    * maintainability of your code.
    */
   public static <K, V> ImmutableMap<K, V> of(K k1, V v1) {
-    return ImmutableBiMap.of(k1, v1);
+    return new SingletonImmutableMap<K, V>(
+        checkNotNull(k1), checkNotNull(v1));
   }
 
   /**
@@ -140,9 +136,9 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
    * throw {@link UnsupportedOperationException}.
    */
   static <K, V> Entry<K, V> entryOf(K key, V value) {
-    checkNotNull(key, "null key in entry: null=%s", value);
-    checkNotNull(value, "null value in entry: %s=null", key);
-    return Maps.immutableEntry(key, value);
+    return Maps.immutableEntry(
+        checkNotNull(key, "null key"),
+        checkNotNull(value, "null value"));
   }
 
   /**
@@ -193,7 +189,7 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
     public Builder<K, V> put(Entry<? extends K, ? extends V> entry) {
       K key = entry.getKey();
       V value = entry.getValue();
-      if (entry instanceof ImmutableEntry) {
+      if (entry instanceof ImmutableEntry<?, ?>) {
         checkNotNull(key);
         checkNotNull(value);
         @SuppressWarnings("unchecked") // all supported methods are covariant
@@ -242,7 +238,7 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
         case 0:
           return of();
         case 1:
-          return new SingletonImmutableBiMap<K, V>(getOnlyElement(entries));
+          return new SingletonImmutableMap<K, V>(getOnlyElement(entries));
         default:
           Entry<?, ?>[] entryArray
               = entries.toArray(new Entry<?, ?>[entries.size()]);
@@ -274,16 +270,6 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
       if (!kvMap.isPartialView()) {
         return kvMap;
       }
-    } else if (map instanceof EnumMap) {
-      EnumMap<?, ?> enumMap = (EnumMap<?, ?>) map;
-      for (Map.Entry<?, ?> entry : enumMap.entrySet()) {
-        checkNotNull(entry.getKey());
-        checkNotNull(entry.getValue());
-      }
-      @SuppressWarnings("unchecked")
-      // immutable collections are safe for covariant casts
-      ImmutableMap<K, V> result = ImmutableEnumMap.asImmutable(new EnumMap(enumMap));
-      return result;
     }
 
     @SuppressWarnings("unchecked") // we won't write to this array
@@ -292,7 +278,7 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
       case 0:
         return of();
       case 1:
-        return new SingletonImmutableBiMap<K, V>(entryOf(
+        return new SingletonImmutableMap<K, V>(entryOf(
             entries[0].getKey(), entries[0].getValue()));
       default:
         for (int i = 0; i < entries.length; i++) {
@@ -310,9 +296,7 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
    * Guaranteed to throw an exception and leave the map unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
   public final V put(K k, V v) {
     throw new UnsupportedOperationException();
@@ -322,9 +306,7 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
    * Guaranteed to throw an exception and leave the map unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
   public final V remove(Object o) {
     throw new UnsupportedOperationException();
@@ -334,9 +316,7 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
    * Guaranteed to throw an exception and leave the map unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
   public final void putAll(Map<? extends K, ? extends V> map) {
     throw new UnsupportedOperationException();
@@ -346,9 +326,7 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
    * Guaranteed to throw an exception and leave the map unmodified.
    *
    * @throws UnsupportedOperationException always
-   * @deprecated Unsupported operation.
    */
-  @Deprecated
   @Override
   public final void clear() {
     throw new UnsupportedOperationException();
@@ -364,132 +342,44 @@ public abstract class ImmutableMap<K, V> implements Map<K, V>, Serializable {
     return get(key) != null;
   }
 
+  // Overriding to mark it Nullable
   @Override
-  public boolean containsValue(@Nullable Object value) {
-    return value != null && Maps.containsValueImpl(this, value);
-  }
+  public abstract boolean containsValue(@Nullable Object value);
 
   // Overriding to mark it Nullable
   @Override
   public abstract V get(@Nullable Object key);
-
-  private transient ImmutableSet<Entry<K, V>> entrySet;
 
   /**
    * Returns an immutable set of the mappings in this map. The entries are in
    * the same order as the parameters used to build this map.
    */
   @Override
-  public ImmutableSet<Entry<K, V>> entrySet() {
-    ImmutableSet<Entry<K, V>> result = entrySet;
-    return (result == null) ? entrySet = createEntrySet() : result;
-  }
-
-  abstract ImmutableSet<Entry<K, V>> createEntrySet();
-
-  private transient ImmutableSet<K> keySet;
+  public abstract ImmutableSet<Entry<K, V>> entrySet();
 
   /**
    * Returns an immutable set of the keys in this map. These keys are in
    * the same order as the parameters used to build this map.
    */
   @Override
-  public ImmutableSet<K> keySet() {
-    ImmutableSet<K> result = keySet;
-    return (result == null) ? keySet = createKeySet() : result;
-  }
-
-  ImmutableSet<K> createKeySet() {
-    return new ImmutableMapKeySet<K, V>(this);
-  }
-
-  private transient ImmutableCollection<V> values;
+  public abstract ImmutableSet<K> keySet();
 
   /**
    * Returns an immutable collection of the values in this map. The values are
    * in the same order as the parameters used to build this map.
    */
   @Override
-  public ImmutableCollection<V> values() {
-    ImmutableCollection<V> result = values;
-    return (result == null) ? values = new ImmutableMapValues<K, V>(this) : result;
-  }
-
-  // cached so that this.multimapView().inverse() only computes inverse once
-  private transient ImmutableSetMultimap<K, V> multimapView;
-
-  /**
-   * Returns a multimap view of the map.
-   *
-   * @since 14.0
-   */
-  @Beta
-  public ImmutableSetMultimap<K, V> asMultimap() {
-    ImmutableSetMultimap<K, V> result = multimapView;
-    return (result == null) ? (multimapView = createMultimapView()) : result;
-  }
-
-  private ImmutableSetMultimap<K, V> createMultimapView() {
-    ImmutableMap<K, ImmutableSet<V>> map = viewMapValuesAsSingletonSets();
-    return new ImmutableSetMultimap<K, V>(map, map.size(), null);
-  }
-
-  private ImmutableMap<K, ImmutableSet<V>> viewMapValuesAsSingletonSets() {
-    class MapViewOfValuesAsSingletonSets extends ImmutableMap<K, ImmutableSet<V>> {
-      @Override public int size() {
-        return ImmutableMap.this.size();
-      }
-
-      @Override public boolean containsKey(@Nullable Object key) {
-        return ImmutableMap.this.containsKey(key);
-      }
-
-      @Override public ImmutableSet<V> get(@Nullable Object key) {
-        V outerValue = ImmutableMap.this.get(key);
-        return (outerValue == null) ? null : ImmutableSet.of(outerValue);
-      }
-
-      @Override boolean isPartialView() {
-        return false;
-      }
-
-      @Override ImmutableSet<Entry<K, ImmutableSet<V>>> createEntrySet() {
-        return new ImmutableMapEntrySet<K, ImmutableSet<V>>() {
-          @Override ImmutableMap<K, ImmutableSet<V>> map() {
-            return MapViewOfValuesAsSingletonSets.this;
-          }
-
-          @Override
-          public UnmodifiableIterator<Entry<K, ImmutableSet<V>>> iterator() {
-            final Iterator<Entry<K,V>> backingIterator = ImmutableMap.this
-                .entrySet().iterator();
-            return new UnmodifiableIterator<Entry<K, ImmutableSet<V>>>() {
-              @Override public boolean hasNext() {
-                return backingIterator.hasNext();
-              }
-
-              @Override public Entry<K, ImmutableSet<V>> next() {
-                final Entry<K, V> backingEntry = backingIterator.next();
-                return new AbstractMapEntry<K, ImmutableSet<V>>() {
-                  @Override public K getKey() {
-                    return backingEntry.getKey();
-                  }
-
-                  @Override public ImmutableSet<V> getValue() {
-                    return ImmutableSet.of(backingEntry.getValue());
-                  }
-                };
-              }
-            };
-          }
-        };
-      }
-    }
-    return new MapViewOfValuesAsSingletonSets();
-  }
+  public abstract ImmutableCollection<V> values();
 
   @Override public boolean equals(@Nullable Object object) {
-    return Maps.equalsImpl(this, object);
+    if (object == this) {
+      return true;
+    }
+    if (object instanceof Map) {
+      Map<?, ?> that = (Map<?, ?>) object;
+      return this.entrySet().equals(that.entrySet());
+    }
+    return false;
   }
 
   abstract boolean isPartialView();

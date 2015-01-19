@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Iterator;
 
-import javax.annotation.Nullable;
-
 /**
  * A {@link Reader} that concatenates multiple readers.
  *
@@ -50,7 +48,7 @@ class MultiReader extends Reader {
     }
   }
 
-  @Override public int read(@Nullable char cbuf[], int off, int len) throws IOException {
+  @Override public int read(char cbuf[], int off, int len) throws IOException {
     if (current == null) {
       return -1;
     }

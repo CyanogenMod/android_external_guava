@@ -16,7 +16,6 @@
 
 package com.google.common.collect.testing.testers;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.AbstractMapTester;
 
 /**
@@ -28,7 +27,6 @@ import com.google.common.collect.testing.AbstractMapTester;
  *
  * @author George van den Driessche
  */
-@GwtCompatible
 public class MapSizeTester<K, V> extends AbstractMapTester<K, V> {
   public void testSize() {
     assertEquals("size():", getNumElements(), getMap().size());

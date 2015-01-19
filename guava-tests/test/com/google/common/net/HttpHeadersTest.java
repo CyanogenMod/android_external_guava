@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Tests for the HttpHeaders class.
  *
- * @author Kurt Alfred Kluever
+ * @author Kurt Aflred Kluever
  */
 public class HttpHeadersTest extends TestCase {
   public void testConstantNameMatchesString() throws Exception {
@@ -47,8 +47,7 @@ public class HttpHeadersTest extends TestCase {
   }
 
   private static final ImmutableSet<String> UPPERCASE_ACRONYMS = ImmutableSet.of(
-      "ID", "DNT", "GFE", "GSE", "IP", "MD5", "P3P", "TE", "UID", "URL",
-      "WWW", "XSS");
+      "ID", "DNT", "GFE", "IP", "MD5", "P3P", "TE", "UID", "URL", "WWW", "XSS");
 
   private static final Splitter SPLITTER = Splitter.on('_');
   private static final Joiner JOINER = Joiner.on('-');

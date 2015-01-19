@@ -143,7 +143,7 @@ import javax.annotation.Nullable;
      */
     NEXT_LOWER {
       @Override
-      int resultIndex(int higherIndex) {
+      <E> int resultIndex(int higherIndex) {
         return higherIndex - 1;
       }
     },
@@ -153,7 +153,7 @@ import javax.annotation.Nullable;
      */
     NEXT_HIGHER {
       @Override
-      public int resultIndex(int higherIndex) {
+      public <E> int resultIndex(int higherIndex) {
         return higherIndex;
       }
     },
@@ -171,12 +171,12 @@ import javax.annotation.Nullable;
      */
     INVERTED_INSERTION_INDEX {
       @Override
-      public int resultIndex(int higherIndex) {
+      public <E> int resultIndex(int higherIndex) {
         return ~higherIndex;
       }
     };
 
-    abstract int resultIndex(int higherIndex);
+    abstract <E> int resultIndex(int higherIndex);
   }
 
   /**
@@ -200,7 +200,7 @@ import javax.annotation.Nullable;
    * KeyAbsentBehavior)} using {@link Ordering#natural}.
    */
   public static <E, K extends Comparable> int binarySearch(List<E> list,
-      Function<? super E, K> keyFunction, @Nullable K key, KeyPresentBehavior presentBehavior,
+      Function<? super E, K> keyFunction, K key, KeyPresentBehavior presentBehavior,
       KeyAbsentBehavior absentBehavior) {
     return binarySearch(
         list,
@@ -221,7 +221,7 @@ import javax.annotation.Nullable;
   public static <E, K> int binarySearch(
       List<E> list,
       Function<? super E, K> keyFunction,
-      @Nullable K key,
+      K key,
       Comparator<? super K> keyComparator,
       KeyPresentBehavior presentBehavior,
       KeyAbsentBehavior absentBehavior) {

@@ -17,7 +17,6 @@
 package com.google.common.base;
 
 import com.google.common.base.internal.Finalizer;
-import com.google.common.testing.GcFinalization;
 
 import junit.framework.TestCase;
 
@@ -41,14 +40,19 @@ public class FinalizableReferenceQueueTest extends TestCase {
   }
 
   public void testFinalizeReferentCalled() {
-    final MockReference reference = new MockReference(
+    MockReference reference = new MockReference(
         frq = new FinalizableReferenceQueue());
-
-    GcFinalization.awaitDone(new GcFinalization.FinalizationPredicate() {
-        public boolean isDone() {
-          return reference.finalizeReferentCalled;
-        }
-      });
+    // wait up to 5s
+    for (int i = 0; i < 500; i++) {
+      if (reference.finalizeReferentCalled) {
+        return;
+      }
+      try {
+        System.gc();
+        Thread.sleep(10);
+      } catch (InterruptedException e) { /* ignore */ }
+    }
+    fail();
   }
 
   static class MockReference extends FinalizableWeakReference<Object> {
@@ -74,7 +78,18 @@ public class FinalizableReferenceQueueTest extends TestCase {
 
   public void testThatFinalizerStops() {
     weaklyReferenceQueue();
-    GcFinalization.awaitClear(queueReference);
+
+    // wait up to 5s
+    for (int i = 0; i < 500; i++) {
+      if (queueReference.get() == null) {
+        return;
+      }
+      try {
+        System.gc();
+        Thread.sleep(10);
+      } catch (InterruptedException e) { /* ignore */ }
+    }
+    fail();
   }
 
   /**

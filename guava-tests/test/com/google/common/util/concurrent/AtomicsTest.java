@@ -82,7 +82,7 @@ public class AtomicsTest extends TestCase {
     }
   }
 
-  public void testNullPointers() {
+  public void testNullPointers() throws Exception {
     NullPointerTester tester = new NullPointerTester();
     tester.testAllPublicConstructors(Atomics.class); // there aren't any
     tester.testAllPublicStaticMethods(Atomics.class);

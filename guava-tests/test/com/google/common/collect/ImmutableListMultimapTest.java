@@ -16,23 +16,16 @@
 
 package com.google.common.collect;
 
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.ImmutableListMultimap.Builder;
-import com.google.common.collect.testing.features.CollectionFeature;
-import com.google.common.collect.testing.features.CollectionSize;
-import com.google.common.collect.testing.features.MapFeature;
-import com.google.common.collect.testing.google.ListMultimapTestSuiteBuilder;
-import com.google.common.collect.testing.google.TestStringListMultimapGenerator;
 import com.google.common.collect.testing.google.UnmodifiableCollectionTests;
 import com.google.common.testing.EqualsTester;
 import com.google.common.testing.SerializableTester;
 
-import junit.framework.Test;
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,31 +39,6 @@ import java.util.Map.Entry;
  */
 @GwtCompatible(emulated = true)
 public class ImmutableListMultimapTest extends TestCase {
-  public static class ImmutableListMultimapGenerator extends TestStringListMultimapGenerator {
-    @Override
-    protected ListMultimap<String, String> create(Entry<String, String>[] entries) {
-      ImmutableListMultimap.Builder<String, String> builder = ImmutableListMultimap.builder();
-      for (Entry<String, String> entry : entries) {
-        builder.put(entry.getKey(), entry.getValue());
-      }
-      return builder.build();
-    }
-  }
-
-  @GwtIncompatible("suite")
-  public static Test suite() {
-    TestSuite suite = new TestSuite();
-    suite.addTest(ListMultimapTestSuiteBuilder.using(new ImmutableListMultimapGenerator())
-      .named("ImmutableListMultimap")
-      .withFeatures(
-          MapFeature.ALLOWS_NULL_QUERIES,
-          CollectionFeature.SERIALIZABLE,
-          CollectionFeature.KNOWN_ORDER,
-          CollectionSize.ANY)
-      .createTestSuite());
-    suite.addTestSuite(ImmutableListMultimapTest.class);
-    return suite;
-  }
 
   public void testBuilder_withImmutableEntry() {
     ImmutableListMultimap<String, Integer> multimap = new Builder<String, Integer>()
@@ -263,32 +231,10 @@ public class ImmutableListMultimapTest extends TestCase {
     builder.put("a", 2);
     builder.put("b", 6);
     ImmutableListMultimap<String, Integer> multimap = builder.build();
-    ASSERT.that(multimap.keySet()).has().allOf("d", "c", "b", "a").inOrder();
-    ASSERT.that(multimap.values()).has().allOf(2, 4, 3, 6, 5, 2).inOrder();
-    ASSERT.that(multimap.get("a")).has().allOf(5, 2).inOrder();
-    ASSERT.that(multimap.get("b")).has().allOf(3, 6).inOrder();
-  }
-
-  public void testBuilderOrderKeysByDuplicates() {
-    ImmutableListMultimap.Builder<String, Integer> builder
-        = ImmutableListMultimap.builder();
-    builder.put("bb", 3);
-    builder.put("d", 2);
-    builder.put("a", 5);
-    builder.orderKeysBy(new Ordering<String>() {
-      @Override
-      public int compare(String left, String right) {
-        return left.length() - right.length();
-      }
-    });
-    builder.put("cc", 4);
-    builder.put("a", 2);
-    builder.put("bb", 6);
-    ImmutableListMultimap<String, Integer> multimap = builder.build();
-    ASSERT.that(multimap.keySet()).has().allOf("d", "a", "bb", "cc").inOrder();
-    ASSERT.that(multimap.values()).has().allOf(2, 5, 2, 3, 6, 4).inOrder();
-    ASSERT.that(multimap.get("a")).has().allOf(5, 2).inOrder();
-    ASSERT.that(multimap.get("bb")).has().allOf(3, 6).inOrder();
+    ASSERT.that(multimap.keySet()).hasContentsInOrder("d", "c", "b", "a");
+    ASSERT.that(multimap.values()).hasContentsInOrder(2, 4, 3, 6, 5, 2);
+    ASSERT.that(multimap.get("a")).hasContentsInOrder(5, 2);
+    ASSERT.that(multimap.get("b")).hasContentsInOrder(3, 6);
   }
 
   public void testBuilderOrderValuesBy() {
@@ -302,10 +248,10 @@ public class ImmutableListMultimapTest extends TestCase {
     builder.put("a", 2);
     builder.put("b", 6);
     ImmutableListMultimap<String, Integer> multimap = builder.build();
-    ASSERT.that(multimap.keySet()).has().allOf("b", "d", "a", "c").inOrder();
-    ASSERT.that(multimap.values()).has().allOf(6, 3, 2, 5, 2, 4).inOrder();
-    ASSERT.that(multimap.get("a")).has().allOf(5, 2).inOrder();
-    ASSERT.that(multimap.get("b")).has().allOf(6, 3).inOrder();
+    ASSERT.that(multimap.keySet()).hasContentsInOrder("b", "d", "a", "c");
+    ASSERT.that(multimap.values()).hasContentsInOrder(6, 3, 2, 5, 2, 4);
+    ASSERT.that(multimap.get("a")).hasContentsInOrder(5, 2);
+    ASSERT.that(multimap.get("b")).hasContentsInOrder(6, 3);
   }
 
   public void testBuilderOrderKeysAndValuesBy() {
@@ -320,10 +266,10 @@ public class ImmutableListMultimapTest extends TestCase {
     builder.put("a", 2);
     builder.put("b", 6);
     ImmutableListMultimap<String, Integer> multimap = builder.build();
-    ASSERT.that(multimap.keySet()).has().allOf("d", "c", "b", "a").inOrder();
-    ASSERT.that(multimap.values()).has().allOf(2, 4, 6, 3, 5, 2).inOrder();
-    ASSERT.that(multimap.get("a")).has().allOf(5, 2).inOrder();
-    ASSERT.that(multimap.get("b")).has().allOf(6, 3).inOrder();
+    ASSERT.that(multimap.keySet()).hasContentsInOrder("d", "c", "b", "a");
+    ASSERT.that(multimap.values()).hasContentsInOrder(2, 4, 6, 3, 5, 2);
+    ASSERT.that(multimap.get("a")).hasContentsInOrder(5, 2);
+    ASSERT.that(multimap.get("b")).hasContentsInOrder(6, 3);
   }
 
   public void testCopyOf() {
@@ -515,7 +461,7 @@ public class ImmutableListMultimapTest extends TestCase {
         SerializableTester.reserialize(multimap).size());
     SerializableTester.reserializeAndAssert(multimap.get("foo"));
     LenientSerializableTester.reserializeAndAssertLenient(multimap.keySet());
-    LenientSerializableTester.reserializeAndAssertLenient(multimap.keys());
+    SerializableTester.reserializeAndAssert(multimap.keys());
     SerializableTester.reserializeAndAssert(multimap.asMap());
     Collection<Integer> valuesCopy
         = SerializableTester.reserialize(multimap.values());

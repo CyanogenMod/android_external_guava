@@ -16,7 +16,6 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.features.CollectionSize;
 
 import java.util.ArrayList;
@@ -31,7 +30,6 @@ import java.util.List;
  *
  * @author George van den Driessche
  */
-@GwtCompatible
 public final class OneSizeGenerator<T, E>
     implements OneSizeTestContainerGenerator<T, E> {
   private final TestContainerGenerator<T, E> generator;

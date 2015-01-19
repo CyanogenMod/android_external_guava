@@ -17,10 +17,8 @@
 package com.google.common.collect;
 
 import static java.util.Arrays.asList;
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.base.Objects;
 import com.google.common.collect.Table.Cell;
 import com.google.common.testing.EqualsTester;
@@ -35,7 +33,6 @@ import java.util.Map;
  *
  * @author Jared Levy
  */
-@GwtCompatible(emulated = true)
 public class ArrayTableTest extends AbstractTableTest {
 
   @Override protected ArrayTable<String, Integer, Character> create(
@@ -242,8 +239,7 @@ public class ArrayTableTest extends AbstractTableTest {
     SerializableTester.reserializeAndAssert(table);
   }
 
-  @GwtIncompatible("reflection")
-  public void testNullPointerStatic() {
+  public void testNullPointerStatic() throws Exception {
     new NullPointerTester().testAllPublicStaticMethods(ArrayTable.class);
   }
 
@@ -286,13 +282,13 @@ public class ArrayTableTest extends AbstractTableTest {
   public void testRowKeyList() {
     ArrayTable<String, Integer, Character> table
         = create("foo", 1, 'a', "bar", 1, 'b', "foo", 3, 'c');
-    ASSERT.that(table.rowKeyList()).has().allOf("foo", "bar", "cat").inOrder();
+    ASSERT.that(table.rowKeyList()).hasContentsInOrder("foo", "bar", "cat");
   }
 
   public void testColumnKeyList() {
     ArrayTable<String, Integer, Character> table
         = create("foo", 1, 'a', "bar", 1, 'b', "foo", 3, 'c');
-    ASSERT.that(table.columnKeyList()).has().allOf(1, 2, 3).inOrder();
+    ASSERT.that(table.columnKeyList()).hasContentsInOrder(1, 2, 3);
   }
 
   public void testGetMissingKeys() {
@@ -394,15 +390,14 @@ public class ArrayTableTest extends AbstractTableTest {
     assertNull(table.erase("bar", null));
   }
 
-  @GwtIncompatible("ArrayTable.toArray(Class)")
   public void testToArray() {
     ArrayTable<String, Integer, Character> table
         = create("foo", 1, 'a', "bar", 1, 'b', "foo", 3, 'c');
     Character[][] array = table.toArray(Character.class);
     assertEquals(3, array.length);
-    ASSERT.that(array[0]).has().allOf('a', null, 'c').inOrder();
-    ASSERT.that(array[1]).has().allOf('b', null, null).inOrder();
-    ASSERT.that(array[2]).has().allOf(null, null, null).inOrder();
+    ASSERT.that(array[0]).hasContentsInOrder('a', null, 'c');
+    ASSERT.that(array[1]).hasContentsInOrder('b', null, null);
+    ASSERT.that(array[2]).hasContentsInOrder(null, null, null);
     table.set(0, 2, 'd');
     assertEquals((Character) 'c', array[0][2]);
     array[0][2] = 'e';
@@ -457,15 +452,5 @@ public class ArrayTableTest extends AbstractTableTest {
     } catch (IllegalArgumentException expected) {
       assertEquals("Row dog not in [foo, bar, cat]", expected.getMessage());
     }
-  }
-
-  @GwtIncompatible("reflection")
-  public void testNulls() {
-    new NullPointerTester().testAllPublicInstanceMethods(create());
-  }
-
-  @GwtIncompatible("serialize")
-  public void testSerializable() {
-    SerializableTester.reserializeAndAssert(create());
   }
 }

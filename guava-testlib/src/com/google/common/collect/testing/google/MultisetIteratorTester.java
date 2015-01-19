@@ -18,8 +18,6 @@ import static com.google.common.collect.testing.features.CollectionFeature.KNOWN
 import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_REMOVE;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
-import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.IteratorFeature;
 import com.google.common.collect.testing.IteratorTester;
 import com.google.common.collect.testing.features.CollectionFeature;
@@ -35,7 +33,7 @@ import java.util.List;
  * 
  * @author Louis Wasserman
  */
-@GwtCompatible(emulated = true)
+@GwtCompatible
 public class MultisetIteratorTester<E> extends AbstractMultisetTester<E> {
   @SuppressWarnings("unchecked")
   @CollectionFeature.Require({SUPPORTS_REMOVE, KNOWN_ORDER})
@@ -95,30 +93,11 @@ public class MultisetIteratorTester<E> extends AbstractMultisetTester<E> {
    * Returns {@link Method} instances for the tests that assume multisets support duplicates so that
    * the test of {@code Multisets.forSet()} can suppress them.
    */
-  @GwtIncompatible("reflection")
   public static List<Method> getIteratorDuplicateInitializingMethods() {
     return Arrays.asList(
-        Helpers.getMethod(MultisetIteratorTester.class, "testIteratorKnownOrder"),
-        Helpers.getMethod(MultisetIteratorTester.class, "testIteratorUnknownOrder"),
-        Helpers.getMethod(MultisetIteratorTester.class, "testRemovingIteratorKnownOrder"),
-        Helpers.getMethod(MultisetIteratorTester.class, "testRemovingIteratorUnknownOrder"));
-  }
-  
-  /**
-   * Returns the {@link Method} instance for the test that assumes the multiset iterator supports 
-   * {@code remove()} so that the test for {@code Multisets.filter} can suppress it.
-   */
-  @GwtIncompatible("reflection")
-  public static Method getIteratorKnownOrderRemoveSupportedMethod() {
-    return Helpers.getMethod(MultisetIteratorTester.class, "testRemovingIteratorKnownOrder");
-  }
-  
-  /**
-   * Returns the {@link Method} instance for the test that assumes the multiset iterator supports 
-   * {@code remove()} so that the test for {@code Multisets.filter} can suppress it.
-   */
-  @GwtIncompatible("reflection")
-  public static Method getIteratorUnknownOrderRemoveSupportedMethod() {
-    return Helpers.getMethod(MultisetIteratorTester.class, "testRemovingIteratorUnknownOrder");
+        Platform.getMethod(MultisetIteratorTester.class, "testIteratorKnownOrder"),
+        Platform.getMethod(MultisetIteratorTester.class, "testIteratorUnknownOrder"),
+        Platform.getMethod(MultisetIteratorTester.class, "testRemovingIteratorKnownOrder"),
+        Platform.getMethod(MultisetIteratorTester.class, "testRemovingIteratorUnknownOrder"));
   }
 }

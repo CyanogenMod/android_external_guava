@@ -115,7 +115,7 @@ public abstract class PerCollectionSizeTestSuiteBuilder<
     return suite;
   }
 
-  protected List<TestSuite> createDerivedSuites(FeatureSpecificTestSuiteBuilder<
+  List<TestSuite> createDerivedSuites(FeatureSpecificTestSuiteBuilder<
       ?, ? extends OneSizeTestContainerGenerator<T, E>> parentBuilder) {
     return new ArrayList<TestSuite>();
   }

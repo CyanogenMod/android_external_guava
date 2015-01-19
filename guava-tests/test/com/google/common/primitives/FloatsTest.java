@@ -17,11 +17,10 @@
 package com.google.common.primitives;
 
 import static java.lang.Float.NaN;
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.testing.Helpers;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
@@ -330,31 +329,13 @@ public class FloatsTest extends TestCase {
     }
   }
 
-  public void testToArray_withConversion() {
-    float[] array = {(float) 0, (float) 1, (float) 2};
-
-    List<Byte> bytes = Arrays.asList((byte) 0, (byte) 1, (byte) 2);
-    List<Short> shorts = Arrays.asList((short) 0, (short) 1, (short) 2);
-    List<Integer> ints = Arrays.asList(0, 1, 2);
-    List<Float> floats = Arrays.asList((float) 0, (float) 1, (float) 2);
-    List<Long> longs = Arrays.asList((long) 0, (long) 1, (long) 2);
-    List<Double> doubles = Arrays.asList((double) 0, (double) 1, (double) 2);
-
-    assertTrue(Arrays.equals(array, Floats.toArray(bytes)));
-    assertTrue(Arrays.equals(array, Floats.toArray(shorts)));
-    assertTrue(Arrays.equals(array, Floats.toArray(ints)));
-    assertTrue(Arrays.equals(array, Floats.toArray(floats)));
-    assertTrue(Arrays.equals(array, Floats.toArray(longs)));
-    assertTrue(Arrays.equals(array, Floats.toArray(doubles)));
-  }
-
   public void testAsList_isAView() {
     float[] array = {(float) 0, (float) 1};
     List<Float> list = Floats.asList(array);
     list.set(0, (float) 2);
     assertTrue(Arrays.equals(new float[] {(float) 2, (float) 1}, array));
     array[1] = (float) 3;
-    ASSERT.that(list).has().allOf((float) 2, (float) 3).inOrder();
+    ASSERT.that(list).hasContentsInOrder((float) 2, (float) 3);
   }
 
   public void testAsList_toArray_roundTrip() {
@@ -384,103 +365,10 @@ public class FloatsTest extends TestCase {
     assertSame(Collections.emptyList(), Floats.asList(EMPTY));
   }
 
-  /**
-   * A reference implementation for {@code tryParse} that just catches the exception from
-   * {@link Float#valueOf}.
-   */
-  private static Float referenceTryParse(String input) {
-    if (input.trim().length() < input.length()) {
-      return null;
-    }
-    try {
-      return Float.valueOf(input);
-    } catch (NumberFormatException e) {
-      return null;
-    }
- }
-
-  @GwtIncompatible("Floats.tryParse")
-  private static void checkTryParse(String input) {
-    assertEquals(referenceTryParse(input), Floats.tryParse(input));
-  }
-
-  @GwtIncompatible("Floats.tryParse")
-  private static void checkTryParse(float expected, String input) {
-    assertEquals(Float.valueOf(expected), Floats.tryParse(input));
-  }
-
-  @GwtIncompatible("Floats.tryParse")
-  public void testTryParseHex() {
-    for (String signChar : ImmutableList.of("", "+", "-")) {
-      for (String hexPrefix : ImmutableList.of("0x", "0X")) {
-        for (String iPart : ImmutableList.of("", "0", "1", "F", "f", "c4", "CE")) {
-          for (String fPart : ImmutableList.of("", ".", ".F", ".52", ".a")) {
-            for (String expMarker : ImmutableList.of("p", "P")) {
-              for (String exponent : ImmutableList.of("0", "-5", "+20", "52")) {
-                for (String typePart : ImmutableList.of("", "D", "F", "d", "f")) {
-                  checkTryParse(
-                      signChar + hexPrefix + iPart + fPart + expMarker + exponent + typePart);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @GwtIncompatible("Floats.tryParse")
-  public void testTryParseAllCodePoints() {
-    // Exercise non-ASCII digit test cases and the like.
-    char[] tmp = new char[2];
-    for (int i = Character.MIN_CODE_POINT; i < Character.MAX_CODE_POINT; i++) {
-      Character.toChars(i, tmp, 0);
-      checkTryParse(String.copyValueOf(tmp, 0, Character.charCount(i)));
-    }
-  }
-
-  @GwtIncompatible("Floats.tryParse")
-  public void testTryParseOfToStringIsOriginal() {
-    for (float f : NUMBERS) {
-      checkTryParse(f, Float.toString(f));
-    }
-  }
-
-  @GwtIncompatible("Floats.tryParse")
-  public void testTryParseOfToHexStringIsOriginal() {
-    for (float f : NUMBERS) {
-      checkTryParse(f, Float.toHexString(f));
-    }
-  }
-
-  @GwtIncompatible("Floats.tryParse")
-  public void testTryParseNaN() {
-    checkTryParse("NaN");
-    checkTryParse("+NaN");
-    checkTryParse("-NaN");
-  }
-
-  @GwtIncompatible("Floats.tryParse")
-  public void testTryParseInfinity() {
-    checkTryParse(Float.POSITIVE_INFINITY, "Infinity");
-    checkTryParse(Float.POSITIVE_INFINITY, "+Infinity");
-    checkTryParse(Float.NEGATIVE_INFINITY, "-Infinity");
-  }
-
-  private static final String[] BAD_TRY_PARSE_INPUTS =
-    { "", "+-", "+-0", " 5", "32 ", " 55 ", "infinity", "POSITIVE_INFINITY", "0x9A", "0x9A.bE-5",
-      ".", ".e5", "NaNd", "InfinityF" };
-
-  @GwtIncompatible("Floats.tryParse")
-  public void testTryParseFailures() {
-    for (String badInput : BAD_TRY_PARSE_INPUTS) {
-      assertEquals(referenceTryParse(badInput), Floats.tryParse(badInput));
-      assertNull(Floats.tryParse(badInput));
-    }
-  }
-
   @GwtIncompatible("NullPointerTester")
-  public void testNulls() {
-    new NullPointerTester().testAllPublicStaticMethods(Floats.class);
+  public void testNulls() throws Exception {
+    NullPointerTester tester = new NullPointerTester();
+    tester.setDefault(float[].class, new float[0]);
+    tester.testAllPublicStaticMethods(Floats.class);
   }
 }

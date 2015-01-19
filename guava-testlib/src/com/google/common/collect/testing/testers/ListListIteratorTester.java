@@ -24,8 +24,6 @@ import static com.google.common.collect.testing.features.ListFeature.SUPPORTS_SE
 import static com.google.common.collect.testing.testers.Platform.listListIteratorTesterNumIterations;
 import static java.util.Collections.singleton;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.IteratorFeature;
 import com.google.common.collect.testing.ListIteratorTester;
@@ -48,7 +46,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author Chris Povirk
  * @author Kevin Bourrillion
  */
-@GwtCompatible(emulated = true)
 public class ListListIteratorTester<E> extends AbstractListTester<E> {
   // TODO: switch to DerivedIteratorTestSuiteBuilder
 
@@ -71,7 +68,7 @@ public class ListListIteratorTester<E> extends AbstractListTester<E> {
   private void runListIteratorTest(Set<IteratorFeature> features) {
     new ListIteratorTester<E>(
         listListIteratorTesterNumIterations(), singleton(samples.e4), features,
-        Helpers.copyToList(getOrderedElements()), 0) {
+        Helpers.copyToList(getSampleElements()), 0) {
       {
         // TODO: don't set this universally
         stopTestingWhenAddThrowsException();
@@ -117,9 +114,8 @@ public class ListListIteratorTester<E> extends AbstractListTester<E> {
    * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6570575">Sun bug
    * 6570575</a> is fixed.
    */
-  @GwtIncompatible("reflection")
   public static Method getListIteratorFullyModifiableMethod() {
-    return Helpers.getMethod(
+    return Platform.getMethod(
         ListListIteratorTester.class, "testListIterator_fullyModifiable");
   }
 
@@ -128,9 +124,8 @@ public class ListListIteratorTester<E> extends AbstractListTester<E> {
    * {@link #testListIterator_unmodifiable()} so that it can be suppressed in
    * GWT tests.
    */
-  @GwtIncompatible("reflection")
   public static Method getListIteratorUnmodifiableMethod() {
-    return Helpers.getMethod(
+    return Platform.getMethod(
         ListListIteratorTester.class, "testListIterator_unmodifiable");
   }
 }
