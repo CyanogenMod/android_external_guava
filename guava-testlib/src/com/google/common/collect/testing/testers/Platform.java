@@ -16,15 +16,26 @@
 
 package com.google.common.collect.testing.testers;
 
-import com.google.common.annotations.GwtCompatible;
+import java.lang.reflect.Method;
 
 /**
  * This class is emulated in GWT.
  *
  * @author Hayward Chan
  */
-@GwtCompatible
 class Platform {
+
+  /**
+   * Delegate to {@link Class#getMethod(String, Class[])}.  Not
+   * usable in GWT.
+   */
+  static Method getMethod(Class<?> clazz, String methodName) {
+    try {
+      return clazz.getMethod(methodName);
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   /**
    * Format the template with args, only supports the placeholder

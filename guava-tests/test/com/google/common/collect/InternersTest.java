@@ -17,7 +17,6 @@
 package com.google.common.collect;
 
 import com.google.common.base.Function;
-import com.google.common.testing.GcFinalization;
 import com.google.common.testing.NullPointerTester;
 
 import junit.framework.TestCase;
@@ -73,10 +72,17 @@ public class InternersTest extends TestCase {
     assertSame(canonical, pool.intern(canonical));
 
     WeakReference<Integer> signal = new WeakReference<Integer>(canonical);
-    canonical = null;  // Hint to the JIT that canonical is unreachable
+    canonical = null;
 
-    GcFinalization.awaitClear(signal);
-    assertSame(not, pool.intern(not));
+    for (int i = 0; i < 3000; i++) {
+      System.gc();
+      if (signal.get() == null) { // it was collected
+        assertSame(not, pool.intern(not));
+        return;
+      }
+      Thread.sleep(1);
+    }
+    fail("reference didn't get cleaned up");
   }
 
   public void testAsFunction_simplistic() {
@@ -90,7 +96,7 @@ public class InternersTest extends TestCase {
     assertSame(canonical, internerFunction.apply(not));
   }
 
-  public void testNullPointerExceptions() {
+  public void testNullPointerExceptions() throws Exception {
     new NullPointerTester().testAllPublicStaticMethods(Interners.class);
   }
 }

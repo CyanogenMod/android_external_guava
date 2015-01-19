@@ -16,8 +16,6 @@
 
 package com.google.common.eventbus;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.annotations.Beta;
 
 /**
@@ -44,8 +42,8 @@ public class DeadEvent {
    * @param event   the event that could not be delivered.
    */
   public DeadEvent(Object source, Object event) {
-    this.source = checkNotNull(source);
-    this.event = checkNotNull(event);
+    this.source = source;
+    this.event = event;
   }
 
   /**

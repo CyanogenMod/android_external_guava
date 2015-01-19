@@ -16,8 +16,6 @@
 
 package com.google.common.util.concurrent;
 
-import javax.annotation.Nullable;
-
 /**
  * Unchecked version of {@link java.util.concurrent.TimeoutException}.
  *
@@ -27,15 +25,15 @@ import javax.annotation.Nullable;
 public class UncheckedTimeoutException extends RuntimeException {
   public UncheckedTimeoutException() {}
 
-  public UncheckedTimeoutException(@Nullable String message) {
+  public UncheckedTimeoutException(String message) {
     super(message);
   }
 
-  public UncheckedTimeoutException(@Nullable Throwable cause) {
+  public UncheckedTimeoutException(Throwable cause) {
     super(cause);
   }
 
-  public UncheckedTimeoutException(@Nullable String message, @Nullable Throwable cause) {
+  public UncheckedTimeoutException(String message, Throwable cause) {
     super(message, cause);
   }
 

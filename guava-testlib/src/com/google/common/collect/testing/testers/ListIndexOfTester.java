@@ -20,7 +20,6 @@ import static com.google.common.collect.testing.features.CollectionFeature.REJEC
 import static com.google.common.collect.testing.features.CollectionSize.ONE;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 
@@ -33,7 +32,6 @@ import com.google.common.collect.testing.features.CollectionSize;
  *
  * @author Chris Povirk
  */
-@GwtCompatible
 public class ListIndexOfTester<E> extends AbstractListIndexOfTester<E> {
   @Override protected int find(Object o) {
     return getList().indexOf(o);

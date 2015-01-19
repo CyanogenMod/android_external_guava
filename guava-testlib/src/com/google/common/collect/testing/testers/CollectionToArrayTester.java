@@ -19,8 +19,6 @@ package com.google.common.collect.testing.testers;
 import static com.google.common.collect.testing.features.CollectionFeature.KNOWN_ORDER;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.AbstractCollectionTester;
 import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.WrongType;
@@ -42,7 +40,6 @@ import java.util.List;
  * @author Kevin Bourrillion
  * @author Chris Povirk
  */
-@GwtCompatible(emulated = true)
 public class CollectionToArrayTester<E> extends AbstractCollectionTester<E> {
   public void testToArray_noArgs() {
     Object[] array = collection.toArray();
@@ -195,8 +192,7 @@ public class CollectionToArrayTester<E> extends AbstractCollectionTester<E> {
    * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6260652">Sun bug
    * 6260652</a> is fixed.
    */
-  @GwtIncompatible("reflection")
   public static Method getToArrayIsPlainObjectArrayMethod() {
-    return Helpers.getMethod(CollectionToArrayTester.class, "testToArray_isPlainObjectArray");
+    return Platform.getMethod(CollectionToArrayTester.class, "testToArray_isPlainObjectArray");
   }
 }

@@ -25,8 +25,7 @@ import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.FLOOR;
 import static java.math.RoundingMode.HALF_EVEN;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
+import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 
 import java.math.BigDecimal;
@@ -47,7 +46,7 @@ import java.util.List;
  * @author Louis Wasserman
  * @since 11.0
  */
-@GwtCompatible(emulated = true)
+@Beta
 public final class BigIntegerMath {
   /**
    * Returns {@code true} if {@code x} represents a power of two.
@@ -65,7 +64,6 @@ public final class BigIntegerMath {
    *         is not a power of two
    */
   @SuppressWarnings("fallthrough")
-  // TODO(kevinb): remove after this warning is disabled globally
   public static int log2(BigInteger x, RoundingMode mode) {
     checkPositive("x", checkNotNull(x));
     int logFloor = x.bitLength() - 1;
@@ -124,7 +122,6 @@ public final class BigIntegerMath {
    * @throws ArithmeticException if {@code mode} is {@link RoundingMode#UNNECESSARY} and {@code x}
    *         is not a power of ten
    */
-  @GwtIncompatible("TODO")
   @SuppressWarnings("fallthrough")
   public static int log10(BigInteger x, RoundingMode mode) {
     checkPositive("x", x);
@@ -132,45 +129,27 @@ public final class BigIntegerMath {
       return LongMath.log10(x.longValue(), mode);
     }
 
-    int approxLog10 = (int) (log2(x, FLOOR) * LN_2 / LN_10);
-    BigInteger approxPow = BigInteger.TEN.pow(approxLog10);
-    int approxCmp = approxPow.compareTo(x);
-
-    /*
-     * We adjust approxLog10 and approxPow until they're equal to floor(log10(x)) and
-     * 10^floor(log10(x)).
-     */
-
-    if (approxCmp > 0) {
-      /*
-       * The code is written so that even completely incorrect approximations will still yield the
-       * correct answer eventually, but in practice this branch should almost never be entered,
-       * and even then the loop should not run more than once.
-       */
-      do {
-        approxLog10--;
-        approxPow = approxPow.divide(BigInteger.TEN);
-        approxCmp = approxPow.compareTo(x);
-      } while (approxCmp > 0);
-    } else {
-      BigInteger nextPow = BigInteger.TEN.multiply(approxPow);
-      int nextCmp = nextPow.compareTo(x);
-      while (nextCmp <= 0) {
-        approxLog10++;
-        approxPow = nextPow;
-        approxCmp = nextCmp;
-        nextPow = BigInteger.TEN.multiply(approxPow);
-        nextCmp = nextPow.compareTo(x);
+    // capacity of 10 suffices for all x <= 10^(2^10).
+    List<BigInteger> powersOf10 = new ArrayList<BigInteger>(10);
+    BigInteger powerOf10 = BigInteger.TEN;
+    while (x.compareTo(powerOf10) >= 0) {
+      powersOf10.add(powerOf10);
+      powerOf10 = powerOf10.pow(2);
+    }
+    BigInteger floorPow = BigInteger.ONE;
+    int floorLog = 0;
+    for (int i = powersOf10.size() - 1; i >= 0; i--) {
+      BigInteger powOf10 = powersOf10.get(i);
+      floorLog *= 2;
+      BigInteger tenPow = powOf10.multiply(floorPow);
+      if (x.compareTo(tenPow) >= 0) {
+        floorPow = tenPow;
+        floorLog++;
       }
     }
-
-    int floorLog = approxLog10;
-    BigInteger floorPow = approxPow;
-    int floorCmp = approxCmp;
-
     switch (mode) {
       case UNNECESSARY:
-        checkRoundingUnnecessary(floorCmp == 0);
+        checkRoundingUnnecessary(floorPow.equals(x));
         // fall through
       case FLOOR:
       case DOWN:
@@ -192,9 +171,6 @@ public final class BigIntegerMath {
     }
   }
 
-  private static final double LN_10 = Math.log(10);
-  private static final double LN_2 = Math.log(2);
-
   /**
    * Returns the square root of {@code x}, rounded with the specified rounding mode.
    *
@@ -202,7 +178,6 @@ public final class BigIntegerMath {
    * @throws ArithmeticException if {@code mode} is {@link RoundingMode#UNNECESSARY} and
    *         {@code sqrt(x)} is not an integer
    */
-  @GwtIncompatible("TODO")
   @SuppressWarnings("fallthrough")
   public static BigInteger sqrt(BigInteger x, RoundingMode mode) {
     checkNonNegative("x", x);
@@ -234,7 +209,6 @@ public final class BigIntegerMath {
     }
   }
 
-  @GwtIncompatible("TODO")
   private static BigInteger sqrtFloor(BigInteger x) {
     /*
      * Adapted from Hacker's Delight, Figure 11-1.
@@ -257,7 +231,7 @@ public final class BigIntegerMath {
      */
     BigInteger sqrt0;
     int log2 = log2(x, FLOOR);
-    if(log2 < Double.MAX_EXPONENT) {
+    if(log2 < DoubleUtils.MAX_DOUBLE_EXPONENT) {
       sqrt0 = sqrtApproxWithDoubles(x);
     } else {
       int shift = (log2 - DoubleUtils.SIGNIFICAND_BITS) & ~1; // even!
@@ -278,7 +252,6 @@ public final class BigIntegerMath {
     return sqrt0;
   }
 
-  @GwtIncompatible("TODO")
   private static BigInteger sqrtApproxWithDoubles(BigInteger x) {
     return DoubleMath.roundToBigInteger(Math.sqrt(DoubleUtils.bigToDouble(x)), HALF_EVEN);
   }
@@ -290,7 +263,6 @@ public final class BigIntegerMath {
    * @throws ArithmeticException if {@code q == 0}, or if {@code mode == UNNECESSARY} and {@code a}
    *         is not an integer multiple of {@code b}
    */
-  @GwtIncompatible("TODO")
   public static BigInteger divide(BigInteger p, BigInteger q, RoundingMode mode){
     BigDecimal pDec = new BigDecimal(p);
     BigDecimal qDec = new BigDecimal(q);
@@ -313,8 +285,8 @@ public final class BigIntegerMath {
     checkNonNegative("n", n);
 
     // If the factorial is small enough, just use LongMath to do it.
-    if (n < LongMath.factorials.length) {
-      return BigInteger.valueOf(LongMath.factorials[n]);
+    if (n < LongMath.FACTORIALS.length) {
+      return BigInteger.valueOf(LongMath.FACTORIALS[n]);
     }
 
     // Pre-allocate space for our list of intermediate BigIntegers.
@@ -322,8 +294,8 @@ public final class BigIntegerMath {
     ArrayList<BigInteger> bignums = new ArrayList<BigInteger>(approxSize);
 
     // Start from the pre-computed maximum long factorial.
-    int startingNumber = LongMath.factorials.length;
-    long product = LongMath.factorials[startingNumber - 1];
+    int startingNumber = LongMath.FACTORIALS.length;
+    long product = LongMath.FACTORIALS[startingNumber - 1];
     // Strip off 2s from this value.
     int shift = Long.numberOfTrailingZeros(product);
     product >>= shift;
@@ -400,48 +372,18 @@ public final class BigIntegerMath {
     if (k > (n >> 1)) {
       k = n - k;
     }
-    if (k < LongMath.biggestBinomials.length && n <= LongMath.biggestBinomials[k]) {
+    if (k < LongMath.BIGGEST_BINOMIALS.length && n <= LongMath.BIGGEST_BINOMIALS[k]) {
       return BigInteger.valueOf(LongMath.binomial(n, k));
     }
-
-    BigInteger accum = BigInteger.ONE;
-
-    long numeratorAccum = n;
-    long denominatorAccum = 1;
-
-    int bits = LongMath.log2(n, RoundingMode.CEILING);
-
-    int numeratorBits = bits;
-
-    for (int i = 1; i < k; i++) {
-      int p = n - i;
-      int q = i + 1;
-
-      // log2(p) >= bits - 1, because p >= n/2
-
-      if (numeratorBits + bits >= Long.SIZE - 1) {
-        // The numerator is as big as it can get without risking overflow.
-        // Multiply numeratorAccum / denominatorAccum into accum.
-        accum = accum
-            .multiply(BigInteger.valueOf(numeratorAccum))
-            .divide(BigInteger.valueOf(denominatorAccum));
-        numeratorAccum = p;
-        denominatorAccum = q;
-        numeratorBits = bits;
-      } else {
-        // We can definitely multiply into the long accumulators without overflowing them.
-        numeratorAccum *= p;
-        denominatorAccum *= q;
-        numeratorBits += bits;
-      }
+    BigInteger result = BigInteger.ONE;
+    for (int i = 0; i < k; i++) {
+      result = result.multiply(BigInteger.valueOf(n - i));
+      result = result.divide(BigInteger.valueOf(i + 1));
     }
-    return accum
-        .multiply(BigInteger.valueOf(numeratorAccum))
-        .divide(BigInteger.valueOf(denominatorAccum));
+    return result;
   }
 
   // Returns true if BigInteger.valueOf(x.longValue()).equals(x).
-  @GwtIncompatible("TODO")
   static boolean fitsInLong(BigInteger x) {
     return x.bitLength() <= Long.SIZE - 1;
   }

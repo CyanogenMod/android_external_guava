@@ -16,10 +16,9 @@
 
 package com.google.common.collect.testing.testers;
 
-import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_ADD;
+import static com.google.common.collect.testing.features.CollectionFeature.SUPPORTS_ADD_ALL;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.MinimalCollection;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
@@ -34,9 +33,8 @@ import com.google.common.collect.testing.features.CollectionSize;
  * @author Chris Povirk
  */
 @SuppressWarnings("unchecked") // too many "unchecked generic array creations"
-@GwtCompatible
 public class ListAddAllTester<E> extends AbstractListTester<E> {
-  @CollectionFeature.Require(SUPPORTS_ADD)
+  @CollectionFeature.Require(SUPPORTS_ADD_ALL)
   @CollectionSize.Require(absent = ZERO)
   public void testAddAll_supportedAllPresent() {
     assertTrue("addAll(allPresent) should return true",
@@ -44,7 +42,7 @@ public class ListAddAllTester<E> extends AbstractListTester<E> {
     expectAdded(samples.e0);
   }
 
-  @CollectionFeature.Require(absent = SUPPORTS_ADD)
+  @CollectionFeature.Require(absent = SUPPORTS_ADD_ALL)
   @CollectionSize.Require(absent = ZERO)
   public void testAddAll_unsupportedAllPresent() {
     try {
@@ -55,7 +53,7 @@ public class ListAddAllTester<E> extends AbstractListTester<E> {
     expectUnchanged();
   }
 
-  @CollectionFeature.Require(SUPPORTS_ADD)
+  @CollectionFeature.Require(SUPPORTS_ADD_ALL)
   public void testAddAll_withDuplicates() {
     MinimalCollection<E> elementsToAdd
         = MinimalCollection.of(samples.e0, samples.e1, samples.e0, samples.e1);

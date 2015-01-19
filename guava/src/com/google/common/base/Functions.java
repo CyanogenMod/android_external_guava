@@ -30,11 +30,7 @@ import javax.annotation.Nullable;
 /**
  * Static utility methods pertaining to {@code Function} instances.
  *
- * <p>All methods return serializable functions as long as they're given serializable parameters.
- * 
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/FunctionalExplained">the use of {@code
- * Function}</a>.
+ * <p>All methods returns serializable functions as long as they're given serializable parameters.
  *
  * @author Mike Bostock
  * @author Jared Levy
@@ -84,8 +80,7 @@ public final class Functions {
     INSTANCE;
 
     @Override
-    @Nullable
-    public Object apply(@Nullable Object o) {
+    public Object apply(Object o) {
       return o;
     }
 
@@ -110,7 +105,7 @@ public final class Functions {
     }
 
     @Override
-    public V apply(@Nullable K key) {
+    public V apply(K key) {
       V result = map.get(key);
       checkArgument(result != null || map.containsKey(key), "Key '%s' not present in map", key);
       return result;
@@ -159,7 +154,7 @@ public final class Functions {
     }
 
     @Override
-    public V apply(@Nullable K key) {
+    public V apply(K key) {
       V result = map.get(key);
       return (result != null || map.containsKey(key)) ? result : defaultValue;
     }
@@ -206,7 +201,7 @@ public final class Functions {
     }
 
     @Override
-    public C apply(@Nullable A a) {
+    public C apply(A a) {
       return g.apply(f.apply(a));
     }
 
@@ -248,7 +243,7 @@ public final class Functions {
     }
 
     @Override
-    public Boolean apply(@Nullable T t) {
+    public Boolean apply(T t) {
       return predicate.apply(t);
     }
 

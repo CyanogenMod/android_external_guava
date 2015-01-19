@@ -16,12 +16,11 @@
 
 package com.google.common.util.concurrent;
 
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
 
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,37 +63,23 @@ public class AbstractFutureTest extends TestCase {
     checkStackTrace(ee2);
   }
 
-  public void testCancel_notDoneNoInterrupt() throws Exception {
+  public void testCancel_notDoneNoInterrupt() {
     InterruptibleFuture future = new InterruptibleFuture();
     assertTrue(future.cancel(false));
     assertTrue(future.isCancelled());
     assertTrue(future.isDone());
-    assertFalse(future.wasInterrupted());
-    assertFalse(future.interruptTaskWasCalled);
-    try {
-      future.get();
-      fail("Expected CancellationException");
-    } catch (CancellationException e) {
-      assertNotNull(e.getCause());
-    }
+    assertFalse(future.wasInterrupted);
   }
 
-  public void testCancel_notDoneInterrupt() throws Exception {
+  public void testCancel_notDoneInterrupt() {
     InterruptibleFuture future = new InterruptibleFuture();
     assertTrue(future.cancel(true));
     assertTrue(future.isCancelled());
     assertTrue(future.isDone());
-    assertTrue(future.wasInterrupted());
-    assertTrue(future.interruptTaskWasCalled);
-    try {
-      future.get();
-      fail("Expected CancellationException");
-    } catch (CancellationException e) {
-      assertNotNull(e.getCause());
-    }
+    assertTrue(future.wasInterrupted);
   }
 
-  public void testCancel_done() throws Exception {
+  public void testCancel_done() {
     AbstractFuture<String> future = new AbstractFuture<String>() {
       {
         set("foo");
@@ -192,11 +177,10 @@ public class AbstractFutureTest extends TestCase {
 
   private static final class InterruptibleFuture
       extends AbstractFuture<String> {
-    boolean interruptTaskWasCalled;
+    boolean wasInterrupted;
 
     @Override protected void interruptTask() {
-      assertFalse(interruptTaskWasCalled);
-      interruptTaskWasCalled = true;
+      wasInterrupted = true;
     }
   }
 }

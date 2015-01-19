@@ -23,7 +23,7 @@ import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.google.common.testing.ClassSanityTester;
+import com.google.common.testing.NullPointerTester;
 import com.google.common.util.concurrent.FuturesTest.ExecutorSpy;
 import com.google.common.util.concurrent.FuturesTest.SingleCallListener;
 
@@ -206,10 +206,9 @@ public class JdkFutureAdaptersTest extends TestCase {
     assertTrue(lateListener.wasRun.await(1, SECONDS));
   }
 
-  public void testAdapters_nullChecks() throws Exception {
-    new ClassSanityTester()
-        .forAllPublicStaticMethods(JdkFutureAdapters.class)
-        .thatReturn(Future.class)
-        .testNulls();
+  public void testNullArguments() throws Exception {
+    NullPointerTester tester = new NullPointerTester();
+    tester.setDefault(Future.class, immediateFuture(DATA1));
+    tester.testAllPublicStaticMethods(JdkFutureAdapters.class);
   }
 }

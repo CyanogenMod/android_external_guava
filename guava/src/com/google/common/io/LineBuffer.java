@@ -75,9 +75,6 @@ abstract class LineBuffer {
           finishLine(true);
           start = pos + 1;
           break;
-
-        default:
-          // do nothing
       }
     }
     line.append(cbuf, start, off + len - start);

@@ -19,6 +19,8 @@ package com.google.common.math;
 import static com.google.common.math.MathTesting.ALL_BIGINTEGER_CANDIDATES;
 import static com.google.common.math.MathTesting.ALL_ROUNDING_MODES;
 import static com.google.common.math.MathTesting.ALL_SAFE_ROUNDING_MODES;
+import static com.google.common.math.MathTesting.NEGATIVE_BIGINTEGER_CANDIDATES;
+import static com.google.common.math.MathTesting.NEGATIVE_INTEGER_CANDIDATES;
 import static com.google.common.math.MathTesting.NONZERO_BIGINTEGER_CANDIDATES;
 import static com.google.common.math.MathTesting.POSITIVE_BIGINTEGER_CANDIDATES;
 import static java.math.BigInteger.ONE;
@@ -34,8 +36,6 @@ import static java.math.RoundingMode.UNNECESSARY;
 import static java.math.RoundingMode.UP;
 import static java.util.Arrays.asList;
 
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.testing.NullPointerTester;
 
 import junit.framework.TestCase;
@@ -49,15 +49,13 @@ import java.math.RoundingMode;
  *
  * @author Louis Wasserman
  */
-@GwtCompatible(emulated = true)
 public class BigIntegerMathTest extends TestCase {
-  @GwtIncompatible("TODO")
   public void testConstantSqrt2PrecomputedBits() {
     assertEquals(BigIntegerMath.sqrt(
         BigInteger.ZERO.setBit(2 * BigIntegerMath.SQRT2_PRECOMPUTE_THRESHOLD + 1), FLOOR),
         BigIntegerMath.SQRT2_PRECOMPUTED_BITS);
   }
-
+  
   public void testIsPowerOfTwo() {
     for (BigInteger x : ALL_BIGINTEGER_CANDIDATES) {
       // Checks for a single bit set.
@@ -76,11 +74,13 @@ public class BigIntegerMathTest extends TestCase {
   }
 
   public void testLog2NegativeAlwaysThrows() {
-    for (RoundingMode mode : ALL_ROUNDING_MODES) {
-      try {
-        BigIntegerMath.log2(BigInteger.valueOf(-1), mode);
-        fail("Expected IllegalArgumentException");
-      } catch (IllegalArgumentException expected) {}
+    for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
+      for (RoundingMode mode : ALL_ROUNDING_MODES) {
+        try {
+          BigIntegerMath.log2(x.negate(), mode);
+          fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {}
+      }
     }
   }
 
@@ -151,7 +151,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testLog10ZeroAlwaysThrows() {
     for (RoundingMode mode : ALL_ROUNDING_MODES) {
       try {
@@ -161,17 +160,17 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testLog10NegativeAlwaysThrows() {
-    for (RoundingMode mode : ALL_ROUNDING_MODES) {
-      try {
-        BigIntegerMath.log10(BigInteger.valueOf(-1), mode);
-        fail("Expected IllegalArgumentException");
-      } catch (IllegalArgumentException expected) {}
+    for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
+      for (RoundingMode mode : ALL_ROUNDING_MODES) {
+        try {
+          BigIntegerMath.log10(x.negate(), mode);
+          fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {}
+      }
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testLog10Floor() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       for (RoundingMode mode : asList(FLOOR, DOWN)) {
@@ -182,7 +181,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testLog10Ceiling() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       for (RoundingMode mode : asList(CEILING, UP)) {
@@ -194,7 +192,6 @@ public class BigIntegerMathTest extends TestCase {
   }
 
   // Relies on the correctness of log10(BigInteger, FLOOR).
-  @GwtIncompatible("TODO")
   public void testLog10Exact() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       int logFloor = BigIntegerMath.log10(x, FLOOR);
@@ -208,7 +205,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testLog10HalfUp() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       int result = BigIntegerMath.log10(x, HALF_UP);
@@ -220,7 +216,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testLog10HalfDown() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       int result = BigIntegerMath.log10(x, HALF_DOWN);
@@ -233,7 +228,6 @@ public class BigIntegerMathTest extends TestCase {
   }
 
   // Relies on the correctness of log10(BigInteger, {HALF_UP,HALF_DOWN}).
-  @GwtIncompatible("TODO")
   public void testLog10HalfEven() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       int halfEven = BigIntegerMath.log10(x, HALF_EVEN);
@@ -244,7 +238,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testLog10TrivialOnPowerOf10() {
     BigInteger x = BigInteger.TEN.pow(100);
     for (RoundingMode mode : ALL_ROUNDING_MODES) {
@@ -252,24 +245,23 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testSqrtZeroAlwaysZero() {
     for (RoundingMode mode : ALL_ROUNDING_MODES) {
       assertEquals(ZERO, BigIntegerMath.sqrt(ZERO, mode));
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testSqrtNegativeAlwaysThrows() {
-    for (RoundingMode mode : ALL_ROUNDING_MODES) {
-      try {
-        BigIntegerMath.sqrt(BigInteger.valueOf(-1), mode);
-        fail("Expected IllegalArgumentException");
-      } catch (IllegalArgumentException expected) {}
+    for (BigInteger x : NEGATIVE_BIGINTEGER_CANDIDATES) {
+      for (RoundingMode mode : ALL_ROUNDING_MODES) {
+        try {
+          BigIntegerMath.sqrt(x, mode);
+          fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {}
+      }
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testSqrtFloor() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       for (RoundingMode mode : asList(FLOOR, DOWN)) {
@@ -281,7 +273,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testSqrtCeiling() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       for (RoundingMode mode : asList(CEILING, UP)) {
@@ -294,7 +285,6 @@ public class BigIntegerMathTest extends TestCase {
   }
 
   // Relies on the correctness of sqrt(BigInteger, FLOOR).
-  @GwtIncompatible("TODO")
   public void testSqrtExact() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       BigInteger floor = BigIntegerMath.sqrt(x, FLOOR);
@@ -309,7 +299,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testSqrtHalfUp() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       BigInteger result = BigIntegerMath.sqrt(x, HALF_UP);
@@ -325,7 +314,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testSqrtHalfDown() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       BigInteger result = BigIntegerMath.sqrt(x, HALF_DOWN);
@@ -342,7 +330,6 @@ public class BigIntegerMathTest extends TestCase {
   }
 
   // Relies on the correctness of sqrt(BigInteger, {HALF_UP,HALF_DOWN}).
-  @GwtIncompatible("TODO")
   public void testSqrtHalfEven() {
     for (BigInteger x : POSITIVE_BIGINTEGER_CANDIDATES) {
       BigInteger halfEven = BigIntegerMath.sqrt(x, HALF_EVEN);
@@ -353,7 +340,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testDivNonZero() {
     for (BigInteger p : NONZERO_BIGINTEGER_CANDIDATES) {
       for (BigInteger q : NONZERO_BIGINTEGER_CANDIDATES) {
@@ -366,7 +352,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testDivNonZeroExact() {
     for (BigInteger p : NONZERO_BIGINTEGER_CANDIDATES) {
       for (BigInteger q : NONZERO_BIGINTEGER_CANDIDATES) {
@@ -382,7 +367,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testZeroDivIsAlwaysZero() {
     for (BigInteger q : NONZERO_BIGINTEGER_CANDIDATES) {
       for (RoundingMode mode : ALL_ROUNDING_MODES) {
@@ -391,7 +375,6 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("TODO")
   public void testDivByZeroAlwaysFails() {
     for (BigInteger p : ALL_BIGINTEGER_CANDIDATES) {
       for (RoundingMode mode : ALL_ROUNDING_MODES) {
@@ -405,7 +388,7 @@ public class BigIntegerMathTest extends TestCase {
 
   public void testFactorial() {
     BigInteger expected = BigInteger.ONE;
-    for (int i = 1; i <= 200; i++) {
+    for (int i = 1; i <= 300; i++) {
       expected = expected.multiply(BigInteger.valueOf(i));
       assertEquals(expected, BigIntegerMath.factorial(i));
     }
@@ -416,24 +399,17 @@ public class BigIntegerMathTest extends TestCase {
   }
 
   public void testFactorialNegative() {
-    try {
-      BigIntegerMath.factorial(-1);
-      fail("Expected IllegalArgumentException");
-    } catch (IllegalArgumentException expected) {}
+    for (int n : NEGATIVE_INTEGER_CANDIDATES) {
+      try {
+        BigIntegerMath.factorial(n);
+        fail("Expected IllegalArgumentException");
+      } catch (IllegalArgumentException expected) {}
+    }
   }
-
-  public void testBinomialSmall() {
-    runBinomialTest(0, 30);
-  }
-
-  @GwtIncompatible("too slow")
-  public void testBinomialLarge() {
-    runBinomialTest(31, 100);
-  }
-
+  
   // Depends on the correctness of BigIntegerMath.factorial
-  private static void runBinomialTest(int firstN, int lastN) {
-    for (int n = firstN; n <= lastN; n++) {
+  public void testBinomial() {
+    for (int n = 0; n <= 50; n++) {
       for (int k = 0; k <= n; k++) {
         BigInteger expected = BigIntegerMath
             .factorial(n)
@@ -457,10 +433,10 @@ public class BigIntegerMathTest extends TestCase {
     }
   }
 
-  @GwtIncompatible("NullPointerTester")
-  public void testNullPointers() {
+  public void testNullPointers() throws Exception {
     NullPointerTester tester = new NullPointerTester();
     tester.setDefault(BigInteger.class, ONE);
+    tester.setDefault(RoundingMode.class, FLOOR);
     tester.setDefault(int.class, 1);
     tester.setDefault(long.class, 1L);
     tester.testAllPublicStaticMethods(BigIntegerMath.class);

@@ -25,13 +25,14 @@ import static org.easymock.EasyMock.verify;
 import junit.framework.TestCase;
 
 import java.io.Closeable;
+import java.io.Flushable;
 import java.io.IOException;
 
 /**
- * Unit tests for {@link Closeables}.
+ * Unit tests for {@link Closeables} and {@link Flushables}.
  *
- * <p>Checks proper closing behavior, and ensures that
- * IOExceptions on Closeable.close() are not
+ * <p>Checks proper closing and flushing behavior, and ensures that
+ * IOExceptions on Closeable.close() or Flushable.flush() are not
  * propagated out from the {@link Closeables#close} method if {@code
  * swallowException} is true.
  *
@@ -39,6 +40,7 @@ import java.io.IOException;
  */
 public class CloseablesTest extends TestCase {
   private Closeable mockCloseable;
+  private Flushable mockFlushable;
 
   public void testClose_closeableClean() throws IOException {
     // make sure that no exception is thrown regardless of value of
@@ -67,9 +69,41 @@ public class CloseablesTest extends TestCase {
   public void testCloseQuietly_closeableWithEatenException()
       throws IOException {
     // make sure that no exception is thrown by CloseQuietly when the mock does
-    // throw an exception on close
+    // throw an exception, either on close, on flush, or both.
     setupCloseable(true);
     Closeables.closeQuietly(mockCloseable);
+  }
+
+  public void testFlush_clean() throws IOException {
+    // make sure that no exception is thrown regardless of value of
+    // 'swallowException' when the mock does not throw an exception.
+    setupFlushable(false);
+    doFlush(mockFlushable, false, false);
+
+    setupFlushable(false);
+    doFlush(mockFlushable, true, false);
+  }
+
+  public void testFlush_flushableWithEatenException() throws IOException {
+    // make sure that no exception is thrown if 'swallowException' is true
+    // when the mock does throw an exception on flush.
+    setupFlushable(true);
+    doFlush(mockFlushable, true, false);
+  }
+
+  public void testFlush_flushableWithThrownException() throws IOException {
+    // make sure that the exception is thrown if 'swallowException' is false
+    // when the mock does throw an exception on flush.
+    setupFlushable(true);
+    doFlush(mockFlushable, false, true);
+  }
+
+  public void testFlushQuietly_flushableWithEatenException()
+      throws IOException {
+    // make sure that no exception is thrown by CloseQuietly when the mock does
+    // throw an exception on flush.
+    setupFlushable(true);
+    Flushables.flushQuietly(mockFlushable);
   }
 
   public void testCloseNull() throws IOException {
@@ -80,6 +114,7 @@ public class CloseablesTest extends TestCase {
 
   @Override protected void setUp() throws Exception {
     mockCloseable = createStrictMock(Closeable.class);
+    mockFlushable = createStrictMock(Flushable.class);
   }
 
   private void expectThrown() {
@@ -96,6 +131,17 @@ public class CloseablesTest extends TestCase {
       expectThrown();
     }
     replay(mockCloseable);
+  }
+
+  // Set up a flushable to expect to be flushed and closed, and optionally to
+  // throw an exception.
+  private void setupFlushable(boolean shouldThrowOnFlush) throws IOException {
+    reset(mockFlushable);
+    mockFlushable.flush();
+    if (shouldThrowOnFlush) {
+      expectThrown();
+    }
+    replay(mockFlushable);
   }
 
   private void doClose(Closeable closeable, boolean swallowException) {
@@ -118,5 +164,23 @@ public class CloseablesTest extends TestCase {
       }
     }
     verify(closeable);
+  }
+
+  // Flush the flushable using the Flushables, passing in the swallowException
+  // parameter. expectThrown determines whether we expect an exception to
+  // be thrown by Flushables.flush;
+  private void doFlush(Flushable flushable, boolean swallowException,
+      boolean expectThrown) {
+    try {
+      Flushables.flush(flushable, swallowException);
+      if (expectThrown) {
+        fail("Didn't throw exception.");
+      }
+    } catch (IOException e) {
+      if (!expectThrown) {
+        fail("Threw exception");
+      }
+    }
+    verify(flushable);
   }
 }

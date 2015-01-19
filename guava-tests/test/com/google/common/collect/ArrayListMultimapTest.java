@@ -17,22 +17,12 @@
 package com.google.common.collect;
 
 import static java.util.Arrays.asList;
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
-import com.google.common.collect.testing.features.CollectionFeature;
-import com.google.common.collect.testing.features.CollectionSize;
-import com.google.common.collect.testing.features.MapFeature;
-import com.google.common.collect.testing.google.ListMultimapTestSuiteBuilder;
-import com.google.common.collect.testing.google.TestStringListMultimapGenerator;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.RandomAccess;
 
 /**
@@ -40,34 +30,8 @@ import java.util.RandomAccess;
  *
  * @author Jared Levy
  */
-@GwtCompatible(emulated = true)
+@GwtCompatible
 public class ArrayListMultimapTest extends AbstractListMultimapTest {
-
-  @GwtIncompatible("suite")
-  public static Test suite() {
-    TestSuite suite = new TestSuite();
-    suite.addTest(ListMultimapTestSuiteBuilder.using(new TestStringListMultimapGenerator() {
-        @Override
-        protected ListMultimap<String, String> create(Entry<String, String>[] entries) {
-          ListMultimap<String, String> multimap = ArrayListMultimap.create();
-          for (Entry<String, String> entry : entries) {
-            multimap.put(entry.getKey(), entry.getValue());
-          }
-          return multimap;
-        }
-      })
-      .named("ArrayListMultimap")
-      .withFeatures(
-          MapFeature.ALLOWS_NULL_KEYS,
-          MapFeature.ALLOWS_NULL_VALUES,
-          MapFeature.GENERAL_PURPOSE,
-          MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
-          CollectionFeature.SERIALIZABLE,
-          CollectionSize.ANY)
-      .createTestSuite());
-    suite.addTestSuite(ArrayListMultimapTest.class);
-    return suite;
-  }
 
   @Override protected ListMultimap<String, Integer> create() {
     return ArrayListMultimap.create();
@@ -116,9 +80,9 @@ public class ArrayListMultimapTest extends AbstractListMultimapTest {
     ListMultimap<String, Integer> multimap = create();
     multimap.putAll("foo", asList(1, 2, 3, 4, 5));
     List<Integer> list = multimap.get("foo");
-    ASSERT.that(multimap.get("foo")).has().allOf(1, 2, 3, 4, 5).inOrder();
+    ASSERT.that(multimap.get("foo")).hasContentsInOrder(1, 2, 3, 4, 5);
     List<Integer> sublist = list.subList(0, 5);
-    ASSERT.that(sublist).has().allOf(1, 2, 3, 4, 5).inOrder();
+    ASSERT.that(sublist).hasContentsInOrder(1, 2, 3, 4, 5);
 
     sublist.clear();
     assertTrue(sublist.isEmpty());
@@ -140,7 +104,7 @@ public class ArrayListMultimapTest extends AbstractListMultimapTest {
   public void testCreate() {
     ArrayListMultimap<String, Integer> multimap
         = ArrayListMultimap.create();
-    assertEquals(3, multimap.expectedValuesPerKey);
+    assertEquals(10, multimap.expectedValuesPerKey);
   }
 
   public void testCreateFromSizes() {
@@ -165,7 +129,7 @@ public class ArrayListMultimapTest extends AbstractListMultimapTest {
     Multimap<String, Integer> original = HashMultimap.create();
     ArrayListMultimap<String, Integer> multimap
         = ArrayListMultimap.create(original);
-    assertEquals(3, multimap.expectedValuesPerKey);
+    assertEquals(10, multimap.expectedValuesPerKey);
   }
 
   public void testCreateFromArrayListMultimap() {
@@ -184,7 +148,7 @@ public class ArrayListMultimapTest extends AbstractListMultimapTest {
     multimap.put("bar", 3);
     multimap.trimToSize();
     assertEquals(3, multimap.size());
-    ASSERT.that(multimap.get("foo")).has().allOf(1, 2).inOrder();
-    ASSERT.that(multimap.get("bar")).has().item(3);
+    ASSERT.that(multimap.get("foo")).hasContentsInOrder(1, 2);
+    ASSERT.that(multimap.get("bar")).hasContentsInOrder(3);
   }
 }

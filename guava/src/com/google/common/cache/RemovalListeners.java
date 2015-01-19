@@ -16,8 +16,6 @@
 
 package com.google.common.cache;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.annotations.Beta;
 
 import java.util.concurrent.Executor;
@@ -43,8 +41,6 @@ public final class RemovalListeners {
    */
   public static <K, V> RemovalListener<K, V> asynchronous(
       final RemovalListener<K, V> listener, final Executor executor) {
-    checkNotNull(listener);
-    checkNotNull(executor);
     return new RemovalListener<K, V>() {
       @Override
       public void onRemoval(final RemovalNotification<K, V> notification) {

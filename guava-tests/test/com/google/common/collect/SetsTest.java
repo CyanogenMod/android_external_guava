@@ -20,22 +20,21 @@ import static com.google.common.collect.Iterables.unmodifiableIterable;
 import static com.google.common.collect.Sets.newEnumSet;
 import static com.google.common.collect.Sets.newHashSet;
 import static com.google.common.collect.Sets.powerSet;
-import static com.google.common.collect.Sets.unmodifiableNavigableSet;
 import static com.google.common.collect.testing.IteratorFeature.UNMODIFIABLE;
 import static com.google.common.collect.testing.testers.CollectionIteratorTester.getIteratorKnownOrderRemoveSupportedMethod;
 import static java.io.ObjectStreamConstants.TC_REFERENCE;
 import static java.io.ObjectStreamConstants.baseWireHandle;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.testing.AnEnum;
 import com.google.common.collect.testing.IteratorTester;
 import com.google.common.collect.testing.MinimalIterable;
-import com.google.common.collect.testing.NavigableSetTestSuiteBuilder;
-import com.google.common.collect.testing.SafeTreeSet;
 import com.google.common.collect.testing.SetTestSuiteBuilder;
 import com.google.common.collect.testing.TestEnumSetGenerator;
 import com.google.common.collect.testing.TestStringSetGenerator;
@@ -70,12 +69,10 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.annotation.Nullable;
 
@@ -174,36 +171,6 @@ public class SetsTest extends TestCase {
             CollectionFeature.ALLOWS_NULL_QUERIES)
         .createTestSuite());
 
-    suite.addTest(NavigableSetTestSuiteBuilder.using(new TestStringSetGenerator() {
-          @Override protected Set<String> create(String[] elements) {
-            SafeTreeSet<String> set = new SafeTreeSet<String>(Arrays.asList(elements));
-            return Sets.unmodifiableNavigableSet(set);
-          }
-
-          @Override
-          public List<String> order(List<String> insertionOrder) {
-            return Ordering.natural().sortedCopy(insertionOrder);
-          }
-        })
-        .named("Sets.unmodifiableNavigableSet[TreeSet]")
-        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER)
-        .createTestSuite());
-
-    suite.addTest(NavigableSetTestSuiteBuilder.using(new TestStringSetGenerator() {
-          @Override protected Set<String> create(String[] elements) {
-            SafeTreeSet<String> set = new SafeTreeSet<String>(Arrays.asList(elements));
-            return SerializableTester.reserialize(Sets.unmodifiableNavigableSet(set));
-          }
-
-          @Override
-          public List<String> order(List<String> insertionOrder) {
-            return Ordering.natural().sortedCopy(insertionOrder);
-          }
-        })
-        .named("Sets.unmodifiableNavigableSet[TreeSet], reserialized")
-        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER)
-        .createTestSuite());
-
     suite.addTest(testsForFilter());
     suite.addTest(testsForFilterNoNulls());
     suite.addTest(testsForFilterFiltered());
@@ -234,8 +201,7 @@ public class SetsTest extends TestCase {
 
   @GwtIncompatible("suite")
   private static Test testsForFilterNoNulls() {
-    TestSuite suite = new TestSuite();
-    suite.addTest(SetTestSuiteBuilder.using(new TestStringSetGenerator() {
+    return SetTestSuiteBuilder.using(new TestStringSetGenerator() {
           @Override public Set<String> create(String[] elements) {
             Set<String> unfiltered = Sets.newLinkedHashSet();
             unfiltered.add("yyy");
@@ -251,30 +217,7 @@ public class SetsTest extends TestCase {
             CollectionSize.ANY,
             CollectionFeature.ALLOWS_NULL_QUERIES)
         .suppressing(getIteratorKnownOrderRemoveSupportedMethod())
-        .createTestSuite());
-    suite.addTest(NavigableSetTestSuiteBuilder.using(new TestStringSetGenerator() {
-          @Override public NavigableSet<String> create(String[] elements) {
-            NavigableSet<String> unfiltered = Sets.newTreeSet();
-            unfiltered.add("yyy");
-            unfiltered.addAll(ImmutableList.copyOf(elements));
-            unfiltered.add("zzz");
-            return Sets.filter(unfiltered, Collections2Test.LENGTH_1);
-          }
-
-          @Override
-          public List<String> order(List<String> insertionOrder) {
-            return Ordering.natural().sortedCopy(insertionOrder);
-          }
-        })
-        .named("Sets.filter[NavigableSet]")
-        .withFeatures(
-            SetFeature.GENERAL_PURPOSE,
-            CollectionFeature.KNOWN_ORDER,
-            CollectionSize.ANY,
-            CollectionFeature.ALLOWS_NULL_QUERIES)
-        .suppressing(getIteratorKnownOrderRemoveSupportedMethod())
-        .createTestSuite());
-    return suite;
+        .createTestSuite();
   }
 
   @GwtIncompatible("suite")
@@ -306,7 +249,7 @@ public class SetsTest extends TestCase {
   public void testImmutableEnumSet() {
     Set<SomeEnum> units = Sets.immutableEnumSet(SomeEnum.D, SomeEnum.B);
 
-    ASSERT.that(units).has().allOf(SomeEnum.B, SomeEnum.D).inOrder();
+    ASSERT.that(units).hasContentsInOrder(SomeEnum.B, SomeEnum.D);
     try {
       units.remove(SomeEnum.B);
       fail("ImmutableEnumSet should throw an exception on remove()");
@@ -321,7 +264,7 @@ public class SetsTest extends TestCase {
   public void testImmutableEnumSet_serialized() {
     Set<SomeEnum> units = Sets.immutableEnumSet(SomeEnum.D, SomeEnum.B);
 
-    ASSERT.that(units).has().allOf(SomeEnum.B, SomeEnum.D).inOrder();
+    ASSERT.that(units).hasContentsInOrder(SomeEnum.B, SomeEnum.D);
 
     Set<SomeEnum> copy = SerializableTester.reserializeAndAssert(units);
     assertTrue(copy instanceof ImmutableEnumSet);
@@ -330,15 +273,15 @@ public class SetsTest extends TestCase {
   public void testImmutableEnumSet_fromIterable() {
     ImmutableSet<SomeEnum> none
         = Sets.immutableEnumSet(MinimalIterable.<SomeEnum>of());
-    ASSERT.that(none).isEmpty();
+    ASSERT.that(none).hasContentsInOrder();
 
     ImmutableSet<SomeEnum> one
         = Sets.immutableEnumSet(MinimalIterable.of(SomeEnum.B));
-    ASSERT.that(one).has().item(SomeEnum.B);
+    ASSERT.that(one).hasContentsInOrder(SomeEnum.B);
 
     ImmutableSet<SomeEnum> two
         = Sets.immutableEnumSet(MinimalIterable.of(SomeEnum.D, SomeEnum.B));
-    ASSERT.that(two).has().allOf(SomeEnum.B, SomeEnum.D).inOrder();
+    ASSERT.that(two).hasContentsInOrder(SomeEnum.B, SomeEnum.D);
   }
 
   @GwtIncompatible("java serialization not supported in GWT.")
@@ -483,7 +426,7 @@ public class SetsTest extends TestCase {
     assertTrue(set.isEmpty());
     set.add(new Derived("foo"));
     set.add(new Derived("bar"));
-    ASSERT.that(set).has().allOf(new Derived("bar"), new Derived("foo")).inOrder();
+    ASSERT.that(set).hasContentsInOrder(new Derived("bar"), new Derived("foo"));
   }
 
   public void testNewTreeSetEmptyNonGeneric() {
@@ -491,8 +434,7 @@ public class SetsTest extends TestCase {
     assertTrue(set.isEmpty());
     set.add(new LegacyComparable("foo"));
     set.add(new LegacyComparable("bar"));
-    ASSERT.that(set).has()
-        .allOf(new LegacyComparable("bar"), new LegacyComparable("foo")).inOrder();
+    ASSERT.that(set).hasContentsInOrder(new LegacyComparable("bar"), new LegacyComparable("foo"));
   }
 
   public void testNewTreeSetFromCollection() {
@@ -509,16 +451,16 @@ public class SetsTest extends TestCase {
     Iterable<Derived> iterable =
         Arrays.asList(new Derived("foo"), new Derived("bar"));
     TreeSet<Derived> set = Sets.newTreeSet(iterable);
-    ASSERT.that(set).has().allOf(
-        new Derived("bar"), new Derived("foo")).inOrder();
+    ASSERT.that(set).hasContentsInOrder(
+        new Derived("bar"), new Derived("foo"));
   }
 
   public void testNewTreeSetFromIterableNonGeneric() {
     Iterable<LegacyComparable> iterable =
         Arrays.asList(new LegacyComparable("foo"), new LegacyComparable("bar"));
     TreeSet<LegacyComparable> set = Sets.newTreeSet(iterable);
-    ASSERT.that(set).has().allOf(
-        new LegacyComparable("bar"), new LegacyComparable("foo")).inOrder();
+    ASSERT.that(set).hasContentsInOrder(
+        new LegacyComparable("bar"), new LegacyComparable("foo"));
   }
 
   public void testNewTreeSetEmptyWithComparator() {
@@ -535,18 +477,6 @@ public class SetsTest extends TestCase {
     assertTrue(set.contains(value1));
     assertTrue(set.add(value2));
     assertEquals(2, set.size());
-  }
-
-  @GwtIncompatible("CopyOnWriteArraySet")
-  public void testNewCOWASEmpty() {
-    CopyOnWriteArraySet<Integer> set = Sets.newCopyOnWriteArraySet();
-    verifySetContents(set, EMPTY_COLLECTION);
-  }
-
-  @GwtIncompatible("CopyOnWriteArraySet")
-  public void testNewCOWASFromIterable() {
-    CopyOnWriteArraySet<Integer> set = Sets.newCopyOnWriteArraySet(SOME_ITERABLE);
-    verifySetContents(set, SOME_COLLECTION);
   }
 
   public void testComplementOfEnumSet() {
@@ -600,11 +530,15 @@ public class SetsTest extends TestCase {
   }
 
   @GwtIncompatible("NullPointerTester")
-  public void testNullPointerExceptions() {
-    new NullPointerTester()
-        .setDefault(Enum.class, SomeEnum.A)
-        .setDefault(Class.class, SomeEnum.class) // for newEnumSet
-        .testAllPublicStaticMethods(Sets.class);
+  public void testNullPointerExceptions() throws Exception {
+    NullPointerTester tester = new NullPointerTester();
+    tester.setDefault(Enum.class, SomeEnum.A);
+
+    // TODO: make NPT create empty arrays for defaults automatically
+    tester.setDefault(Collection[].class, new Collection[0]);
+    tester.setDefault(Enum[].class, new Enum[0]);
+    tester.setDefault(Set[].class, new Set[0]);
+    tester.testAllPublicStaticMethods(Sets.class);
   }
 
   public void testNewSetFromMap() {
@@ -619,7 +553,7 @@ public class SetsTest extends TestCase {
         Sets.newSetFromMap(new LinkedHashMap<Integer, Boolean>());
     set.addAll(SOME_COLLECTION);
     Set<Integer> copy = SerializableTester.reserializeAndAssert(set);
-    ASSERT.that(copy).has().allOf(0, 1).inOrder();
+    ASSERT.that(copy).hasContentsInOrder(0, 1);
   }
 
   public void testNewSetFromMapIllegal() {
@@ -639,7 +573,7 @@ public class SetsTest extends TestCase {
    */
   @SuppressWarnings("unchecked") // varargs!
   public void testCartesianProduct_zeroary() {
-    ASSERT.that(Sets.cartesianProduct()).has().allOf(list());
+    ASSERT.that(Sets.cartesianProduct()).hasContentsAnyOrder(list());
   }
 
   /**
@@ -648,7 +582,7 @@ public class SetsTest extends TestCase {
    */
   @SuppressWarnings("unchecked") // varargs!
   public void testCartesianProduct_unary() {
-    ASSERT.that(Sets.cartesianProduct(set(1, 2))).has().allOf(list(1), list(2));
+    ASSERT.that(Sets.cartesianProduct(set(1, 2))).hasContentsAnyOrder(list(1), list(2));
   }
 
   @SuppressWarnings("unchecked") // varargs!
@@ -677,26 +611,26 @@ public class SetsTest extends TestCase {
 
   @SuppressWarnings("unchecked") // varargs!
   public void testCartesianProduct_binary1x1() {
-    ASSERT.that(Sets.cartesianProduct(set(1), set(2))).has().item(list(1, 2));
+    ASSERT.that(Sets.cartesianProduct(set(1), set(2))).hasContentsAnyOrder(list(1, 2));
   }
 
   @SuppressWarnings("unchecked") // varargs!
   public void testCartesianProduct_binary1x2() {
-    ASSERT.that(Sets.cartesianProduct(set(1), set(2, 3)))
-        .has().allOf(list(1, 2), list(1, 3)).inOrder();
+    ASSERT.that(Sets.cartesianProduct(set(1), set(2, 3))).hasContentsAnyOrder(
+        list(1, 2), list(1, 3));
   }
 
   @SuppressWarnings("unchecked") // varargs!
   public void testCartesianProduct_binary2x2() {
-    ASSERT.that(Sets.cartesianProduct(set(1, 2), set(3, 4)))
-        .has().allOf(list(1, 3), list(1, 4), list(2, 3), list(2, 4)).inOrder();
+    ASSERT.that(Sets.cartesianProduct(set(1, 2), set(3, 4))).hasContentsAnyOrder(
+        list(1, 3), list(1, 4), list(2, 3), list(2, 4));
   }
 
   @SuppressWarnings("unchecked") // varargs!
   public void testCartesianProduct_2x2x2() {
-    ASSERT.that(Sets.cartesianProduct(set(0, 1), set(0, 1), set(0, 1))).has().allOf(
+    ASSERT.that(Sets.cartesianProduct(set(0, 1), set(0, 1), set(0, 1))).hasContentsAnyOrder(
         list(0, 0, 0), list(0, 0, 1), list(0, 1, 0), list(0, 1, 1),
-        list(1, 0, 0), list(1, 0, 1), list(1, 1, 0), list(1, 1, 1)).inOrder();
+        list(1, 0, 0), list(1, 0, 1), list(1, 1, 0), list(1, 1, 1));
   }
 
   @SuppressWarnings("unchecked") // varargs!
@@ -719,14 +653,14 @@ public class SetsTest extends TestCase {
     List<Object> exp3 = list((Object) 2, "3");
     List<Object> exp4 = list((Object) 2, "4");
 
-    ASSERT.that(Sets.<Object>cartesianProduct(x, y)).has().allOf(exp1, exp2, exp3, exp4).inOrder();
+    ASSERT.that(Sets.<Object>cartesianProduct(x, y)).hasContentsAnyOrder(exp1, exp2, exp3, exp4);
   }
 
   @SuppressWarnings("unchecked") // varargs!
   public void testCartesianProductTooBig() {
-    Set<Integer> set = Range.closed(0, 10000).asSet(DiscreteDomain.integers());
+    Set<Integer> set = Ranges.closed(0, 10000).asSet(DiscreteDomains.integers());
     try {
-      Sets.cartesianProduct(set, set, set, set, set);
+      Set<List<Integer>> productSet = Sets.cartesianProduct(set, set, set, set, set);
       fail("Expected IAE");
     } catch (IllegalArgumentException expected) {}
   }
@@ -1063,113 +997,105 @@ public class SetsTest extends TestCase {
     private static final long serialVersionUID = 0;
   }
 
-  @GwtIncompatible("NavigableSet")
-  public void testUnmodifiableNavigableSet() {
-    TreeSet<Integer> mod = Sets.newTreeSet();
-    mod.add(1);
-    mod.add(2);
-    mod.add(3);
+  public void testFilterFiltered() {
+    Set<String> unfiltered = Sets.newHashSet();
+    Set<String> filtered = Sets.filter(
+        Sets.filter(unfiltered, Collections2Test.LENGTH_1),
+        Collections2Test.STARTS_WITH_VOWEL);
+    unfiltered.add("a");
+    unfiltered.add("b");
+    unfiltered.add("apple");
+    unfiltered.add("banana");
+    unfiltered.add("e");
+    assertEquals(ImmutableSet.of("a", "e"), filtered);
+    assertEquals(ImmutableSet.of("a", "b", "apple", "banana", "e"), unfiltered);
 
-    NavigableSet<Integer> unmod = unmodifiableNavigableSet(mod);
-
-    /* Unmodifiable is a view. */
-    mod.add(4);
-    assertTrue(unmod.contains(4));
-    assertTrue(unmod.descendingSet().contains(4));
-
-    ensureNotDirectlyModifiable(unmod);
-    ensureNotDirectlyModifiable(unmod.descendingSet());
-    ensureNotDirectlyModifiable(unmod.headSet(2));
-    ensureNotDirectlyModifiable(unmod.headSet(2, true));
-    ensureNotDirectlyModifiable(unmod.tailSet(2));
-    ensureNotDirectlyModifiable(unmod.tailSet(2, true));
-    ensureNotDirectlyModifiable(unmod.subSet(1, 3));
-    ensureNotDirectlyModifiable(unmod.subSet(1, true, 3, true));
-
-    /* UnsupportedOperationException on indirect modifications. */
-    NavigableSet<Integer> reverse = unmod.descendingSet();
     try {
-      reverse.add(4);
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
+      filtered.add("d");
+      fail();
+    } catch (IllegalArgumentException expected) {}
     try {
-      reverse.addAll(Collections.singleton(4));
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
-    try {
-      reverse.remove(4);
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
+      filtered.add("egg");
+      fail();
+    } catch (IllegalArgumentException expected) {}
+    assertEquals(ImmutableSet.of("a", "e"), filtered);
+    assertEquals(ImmutableSet.of("a", "b", "apple", "banana", "e"), unfiltered);
+
+    filtered.clear();
+    assertTrue(filtered.isEmpty());
+    assertEquals(ImmutableSet.of("b", "apple", "banana"), unfiltered);
   }
 
-  void ensureNotDirectlyModifiable(SortedSet<Integer> unmod) {
-    try {
-      unmod.add(4);
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
+  public void testFilterSorted() {
+    SortedSet<Long> sorted = Sets.newTreeSet();
+    for (long i = 1; i < 11; i++) {
+      sorted.add(i);
     }
-    try {
-      unmod.remove(4);
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
-    try {
-      unmod.addAll(Collections.singleton(4));
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
-    try {
-      Iterator<Integer> iterator = unmod.iterator();
-      iterator.next();
-      iterator.remove();
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
+    SortedSet<Long> filteredEven = Sets.filter(sorted, new Predicate<Long>() {
+      @Override
+      public boolean apply(Long input) {
+        return input % 2 == 0;
+      }
+    });
+
+    assertEquals("filteredSortedSet", ImmutableSet.of(2L, 4L, 6L, 8L, 10L), filteredEven);
+    assertEquals("First", 2L, filteredEven.first().longValue());
+    assertEquals("Last", 10L, filteredEven.last().longValue());
+    assertEquals("subSet", ImmutableSet.of(4L, 6L), filteredEven.subSet(4L, 8L));
+    assertEquals("headSet", ImmutableSet.of(2L, 4L), filteredEven.headSet(5L));
+    assertEquals("tailSet", ImmutableSet.of(8L, 10L), filteredEven.tailSet(7L));
+    assertEquals("comparator", sorted.comparator(), filteredEven.comparator());
+
+    sorted.add(12L);
+    sorted.add(0L);
+    assertEquals("addingElementsToSet", ImmutableSet.of(0L, 2L, 4L, 6L, 8L, 10L, 12L),
+        filteredEven);
+    assertEquals("FirstOnModifiedSortedSet", 0L, filteredEven.first().longValue());
+    assertEquals("LastOnModifiedSortedSet", 12L, filteredEven.last().longValue());
   }
 
-  @GwtIncompatible("NavigableSet")
-  void ensureNotDirectlyModifiable(NavigableSet<Integer> unmod) {
+  static SortedSet<Long> filteredEmpty = Sets.filter(new TreeSet<Long>(), Predicates.alwaysTrue());
+  public void testFilteredSortedEmpty_size() {
+    assertEquals("filterEmptySize", 0, filteredEmpty.size());
+  }
+
+  public void testFilteredSortedEmpty_first() {
     try {
-      unmod.add(4);
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
+      filteredEmpty.first();
+      fail("CallFirstOnEmptySetThrowsException");
+    } catch (NoSuchElementException expected) {}
+  }
+
+  public void testFilteredSortedEmpty_last() {
     try {
-      unmod.remove(4);
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
+      filteredEmpty.last();
+      fail("CallLastOnEmptySetThrowsException");
+    } catch (NoSuchElementException expected) {}
+  }
+
+  static SortedSet<Long> sorted = Sets.newTreeSet();
+  static {
+    for (long i = 1; i < 11; i++) {
+      sorted.add(i);
     }
+  }
+  static SortedSet<Long> filterAllElements = Sets.filter(sorted, Predicates.alwaysFalse());
+
+  public void testFilteredSortedAllFiltered_size() {
+    assertEquals("filterAllElementsSize", 0, filterAllElements.size());
+  }
+
+  public void testFilteredSortedAllFiltered_first() {
     try {
-      unmod.addAll(Collections.singleton(4));
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
+      filterAllElements.first();
+      fail("CallFirstOnSetWithAllElementsFilteredThrowsException");
+    } catch (NoSuchElementException expected) {}
+  }
+
+  public void testFilteredSortedAllFiltered_last() {
     try {
-      unmod.pollFirst();
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
-    try {
-      unmod.pollLast();
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
-    try {
-      Iterator<Integer> iterator = unmod.iterator();
-      iterator.next();
-      iterator.remove();
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
-    try {
-      Iterator<Integer> iterator = unmod.descendingIterator();
-      iterator.next();
-      iterator.remove();
-      fail("UnsupportedOperationException expected");
-    } catch (UnsupportedOperationException expected) {
-    }
+      filterAllElements.last();
+      fail("CallLastOnSetWithAllElementsFilteredThrowsException");
+    } catch (NoSuchElementException expected) {}
   }
 }

@@ -16,8 +16,6 @@
 
 package com.google.common.base;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +24,6 @@ import java.util.Map;
  * This class provides default values for all Java types, as defined by the JLS.
  *
  * @author Ben Yu
- * @since 1.0
  */
 public final class Defaults {
   private Defaults() {}
@@ -57,6 +54,6 @@ public final class Defaults {
    */
   @SuppressWarnings("unchecked")
   public static <T> T defaultValue(Class<T> type) {
-    return (T) DEFAULTS.get(checkNotNull(type));
+    return (T) DEFAULTS.get(type);
   }
 }

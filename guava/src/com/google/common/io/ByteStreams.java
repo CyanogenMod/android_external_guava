@@ -16,13 +16,8 @@
 
 package com.google.common.io;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkPositionIndex;
-
 import com.google.common.annotations.Beta;
-import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
+import com.google.common.base.Preconditions;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,21 +26,22 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.EOFException;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.zip.Checksum;
 
 /**
  * Provides utility methods for working with byte arrays and I/O streams.
  *
+ * <p>All method parameters must be non-null unless documented otherwise.
+ *
  * @author Chris Nokleberg
- * @author Colin Decker
  * @since 1.0
  */
 @Beta
@@ -63,7 +59,7 @@ public final class ByteStreams {
    */
   public static InputSupplier<ByteArrayInputStream> newInputStreamSupplier(
       byte[] b) {
-    return ByteStreams.asInputSupplier(asByteSource(b));
+    return newInputStreamSupplier(b, 0, b.length);
   }
 
   /**
@@ -77,58 +73,12 @@ public final class ByteStreams {
    */
   public static InputSupplier<ByteArrayInputStream> newInputStreamSupplier(
       final byte[] b, final int off, final int len) {
-    return ByteStreams.asInputSupplier(asByteSource(b).slice(off, len));
-  }
-
-  /**
-   * Returns a new {@link ByteSource} that reads bytes from the given byte array.
-   *
-   * @since 14.0
-   */
-  public static ByteSource asByteSource(byte[] b) {
-    return new ByteArrayByteSource(b);
-  }
-
-  private static final class ByteArrayByteSource extends ByteSource {
-
-    private final byte[] bytes;
-
-    private ByteArrayByteSource(byte[] bytes) {
-      this.bytes = checkNotNull(bytes);
-    }
-
-    @Override
-    public InputStream openStream() throws IOException {
-      return new ByteArrayInputStream(bytes);
-    }
-
-    @Override
-    public long size() throws IOException {
-      return bytes.length;
-    }
-
-    @Override
-    public byte[] read() throws IOException {
-      return bytes.clone();
-    }
-
-    @Override
-    public long copyTo(OutputStream output) throws IOException {
-      output.write(bytes);
-      return bytes.length;
-    }
-
-    @Override
-    public HashCode hash(HashFunction hashFunction) throws IOException {
-      return hashFunction.hashBytes(bytes);
-    }
-
-    // TODO(user): Possibly override slice()
-
-    @Override
-    public String toString() {
-      return "ByteStreams.asByteSource(" + BaseEncoding.base16().encode(bytes) + ")";
-    }
+    return new InputSupplier<ByteArrayInputStream>() {
+      @Override
+      public ByteArrayInputStream getInput() {
+        return new ByteArrayInputStream(b, off, len);
+      }
+    };
   }
 
   /**
@@ -140,7 +90,15 @@ public final class ByteStreams {
    */
   public static void write(byte[] from,
       OutputSupplier<? extends OutputStream> to) throws IOException {
-    asByteSink(to).write(from);
+    Preconditions.checkNotNull(from);
+    boolean threw = true;
+    OutputStream out = to.getOutput();
+    try {
+      out.write(from);
+      threw = false;
+    } finally {
+      Closeables.close(out, threw);
+    }
   }
 
   /**
@@ -154,7 +112,21 @@ public final class ByteStreams {
    */
   public static long copy(InputSupplier<? extends InputStream> from,
       OutputSupplier<? extends OutputStream> to) throws IOException {
-    return asByteSource(from).copyTo(asByteSink(to));
+    int successfulOps = 0;
+    InputStream in = from.getInput();
+    try {
+      OutputStream out = to.getOutput();
+      try {
+        long count = copy(in, out);
+        successfulOps++;
+        return count;
+      } finally {
+        Closeables.close(out, successfulOps < 1);
+        successfulOps++;
+      }
+    } finally {
+      Closeables.close(in, successfulOps < 2);
+    }
   }
 
   /**
@@ -169,13 +141,21 @@ public final class ByteStreams {
    */
   public static long copy(InputSupplier<? extends InputStream> from,
       OutputStream to) throws IOException {
-    return asByteSource(from).copyTo(to);
+    boolean threw = true;
+    InputStream in = from.getInput();
+    try {
+      long count = copy(in, to);
+      threw = false;
+      return count;
+    } finally {
+      Closeables.close(in, threw);
+    }
   }
 
   /**
    * Opens an output stream from the supplier, copies all bytes from the input
    * to the output, and closes the output stream. Does not close or flush the
-   * input stream.
+   * output stream.
    *
    * @param from the input stream to read from
    * @param to the output factory
@@ -185,7 +165,15 @@ public final class ByteStreams {
    */
   public static long copy(InputStream from,
       OutputSupplier<? extends OutputStream> to) throws IOException {
-    return asByteSink(to).writeFrom(from);
+    boolean threw = true;
+    OutputStream out = to.getOutput();
+    try {
+      long count = copy(from, out);
+      threw = false;
+      return count;
+    } finally {
+      Closeables.close(out, threw);
+    }
   }
 
   /**
@@ -199,8 +187,6 @@ public final class ByteStreams {
    */
   public static long copy(InputStream from, OutputStream to)
       throws IOException {
-    checkNotNull(from);
-    checkNotNull(to);
     byte[] buf = new byte[BUF_SIZE];
     long total = 0;
     while (true) {
@@ -225,8 +211,6 @@ public final class ByteStreams {
    */
   public static long copy(ReadableByteChannel from,
       WritableByteChannel to) throws IOException {
-    checkNotNull(from);
-    checkNotNull(to);
     ByteBuffer buf = ByteBuffer.allocate(BUF_SIZE);
     long total = 0;
     while (from.read(buf) != -1) {
@@ -261,7 +245,15 @@ public final class ByteStreams {
    */
   public static byte[] toByteArray(
       InputSupplier<? extends InputStream> supplier) throws IOException {
-    return asByteSource(supplier).read();
+    boolean threw = true;
+    InputStream in = supplier.getInput();
+    try {
+      byte[] result = toByteArray(in);
+      threw = false;
+      return result;
+    } finally {
+      Closeables.close(in, threw);
+    }
   }
 
   /**
@@ -280,7 +272,7 @@ public final class ByteStreams {
    *     than the length of the array
    */
   public static ByteArrayDataInput newDataInput(byte[] bytes, int start) {
-    checkPositionIndex(start, bytes.length);
+    Preconditions.checkPositionIndex(start, bytes.length);
     return new ByteArrayDataInputStream(bytes, start);
   }
 
@@ -433,7 +425,7 @@ public final class ByteStreams {
    * @throws IllegalArgumentException if {@code size} is negative
    */
   public static ByteArrayDataOutput newDataOutput(int size) {
-    checkArgument(size >= 0, "Invalid size: %s", size);
+    Preconditions.checkArgument(size >= 0, "Invalid size: %s", size);
     return new ByteArrayDataOutputStream(size);
   }
 
@@ -572,121 +564,33 @@ public final class ByteStreams {
     @Override public byte[] toByteArray() {
       return byteArrayOutputSteam.toByteArray();
     }
+
   }
 
-  private static final OutputStream NULL_OUTPUT_STREAM =
-      new OutputStream() {
-        /** Discards the specified byte. */
-        @Override public void write(int b) {
-        }
-        /** Discards the specified byte array. */
-        @Override public void write(byte[] b) {
-          checkNotNull(b);
-        }
-        /** Discards the specified byte array. */
-        @Override public void write(byte[] b, int off, int len) {
-          checkNotNull(b);
-        }
-
-        @Override
-        public String toString() {
-          return "ByteStreams.nullOutputStream()";
-        }
-      };
-
-  /**
-   * Returns an {@link OutputStream} that simply discards written bytes.
-   *
-   * @since 14.0 (since 1.0 as com.google.common.io.NullOutputStream)
-   */
-  public static OutputStream nullOutputStream() {
-    return NULL_OUTPUT_STREAM;
-  }
-
-  /**
-   * Wraps a {@link InputStream}, limiting the number of bytes which can be
-   * read.
-   *
-   * @param in the input stream to be wrapped
-   * @param limit the maximum number of bytes to be read
-   * @return a length-limited {@link InputStream}
-   * @since 14.0 (since 1.0 as com.google.common.io.LimitInputStream)
-   */
-  public static InputStream limit(InputStream in, long limit) {
-    return new LimitedInputStream(in, limit);
-  }
-
-  private static final class LimitedInputStream extends FilterInputStream {
-
-    private long left;
-    private long mark = -1;
-
-    LimitedInputStream(InputStream in, long limit) {
-      super(in);
-      checkNotNull(in);
-      checkArgument(limit >= 0, "limit must be non-negative");
-      left = limit;
-    }
-
-    @Override public int available() throws IOException {
-      return (int) Math.min(in.available(), left);
-    }
-
-    // it's okay to mark even if mark isn't supported, as reset won't work
-    @Override public synchronized void mark(int readLimit) {
-      in.mark(readLimit);
-      mark = left;
-    }
-
-    @Override public int read() throws IOException {
-      if (left == 0) {
-        return -1;
-      }
-
-      int result = in.read();
-      if (result != -1) {
-        --left;
-      }
-      return result;
-    }
-
-    @Override public int read(byte[] b, int off, int len) throws IOException {
-      if (left == 0) {
-        return -1;
-      }
-
-      len = (int) Math.min(len, left);
-      int result = in.read(b, off, len);
-      if (result != -1) {
-        left -= result;
-      }
-      return result;
-    }
-
-    @Override public synchronized void reset() throws IOException {
-      if (!in.markSupported()) {
-        throw new IOException("Mark not supported");
-      }
-      if (mark == -1) {
-        throw new IOException("Mark not set");
-      }
-
-      in.reset();
-      left = mark;
-    }
-
-    @Override public long skip(long n) throws IOException {
-      n = Math.min(n, left);
-      long skipped = in.skip(n);
-      left -= skipped;
-      return skipped;
-    }
-  }
-
+  // TODO(chrisn): Not all streams support skipping.
   /** Returns the length of a supplied input stream, in bytes. */
-  public static long length(
-      InputSupplier<? extends InputStream> supplier) throws IOException {
-    return asByteSource(supplier).size();
+  public static long length(InputSupplier<? extends InputStream> supplier)
+      throws IOException {
+    long count = 0;
+    boolean threw = true;
+    InputStream in = supplier.getInput();
+    try {
+      while (true) {
+        // We skip only Integer.MAX_VALUE due to JDK overflow bugs.
+        long amt = in.skip(Integer.MAX_VALUE);
+        if (amt == 0) {
+          if (in.read() == -1) {
+            threw = false;
+            return count;
+          }
+          count++;
+        } else {
+          count += amt;
+        }
+      }
+    } finally {
+      Closeables.close(in, threw);
+    }
   }
 
   /**
@@ -696,7 +600,31 @@ public final class ByteStreams {
    */
   public static boolean equal(InputSupplier<? extends InputStream> supplier1,
       InputSupplier<? extends InputStream> supplier2) throws IOException {
-    return asByteSource(supplier1).contentEquals(asByteSource(supplier2));
+    byte[] buf1 = new byte[BUF_SIZE];
+    byte[] buf2 = new byte[BUF_SIZE];
+
+    boolean threw = true;
+    InputStream in1 = supplier1.getInput();
+    try {
+      InputStream in2 = supplier2.getInput();
+      try {
+        while (true) {
+          int read1 = read(in1, buf1, 0, BUF_SIZE);
+          int read2 = read(in2, buf2, 0, BUF_SIZE);
+          if (read1 != read2 || !Arrays.equals(buf1, buf2)) {
+            threw = false;
+            return false;
+          } else if (read1 != BUF_SIZE) {
+            threw = false;
+            return true;
+          }
+        }
+      } finally {
+        Closeables.close(in2, threw);
+      }
+    } finally {
+      Closeables.close(in1, threw);
+    }
   }
 
   /**
@@ -728,12 +656,10 @@ public final class ByteStreams {
    *     the bytes.
    * @throws IOException if an I/O error occurs.
    */
-  public static void readFully(
-      InputStream in, byte[] b, int off, int len) throws IOException {
-    int read = read(in, b, off, len);
-    if (read != len) {
-      throw new EOFException("reached end of stream after reading "
-          + read + " bytes; " + len + " bytes expected");
+  public static void readFully(InputStream in, byte[] b, int off, int len)
+      throws IOException {
+    if (read(in, b, off, len) != len) {
+      throw new EOFException();
     }
   }
 
@@ -750,15 +676,12 @@ public final class ByteStreams {
    *     support skipping
    */
   public static void skipFully(InputStream in, long n) throws IOException {
-    long toSkip = n;
     while (n > 0) {
       long amt = in.skip(n);
       if (amt == 0) {
         // Force a blocking read to avoid infinite loop
         if (in.read() == -1) {
-          long skipped = toSkip - n;
-          throw new EOFException("reached end of stream after skipping "
-              + skipped + " bytes; " + toSkip + " bytes expected");
+          throw new EOFException();
         }
         n--;
       } else {
@@ -775,43 +698,24 @@ public final class ByteStreams {
    * @return the result of the byte processor
    * @throws IOException if an I/O error occurs
    */
-  public static <T> T readBytes(
-      InputSupplier<? extends InputStream> supplier,
+  public static <T> T readBytes(InputSupplier<? extends InputStream> supplier,
       ByteProcessor<T> processor) throws IOException {
-    checkNotNull(supplier);
-    checkNotNull(processor);
-
-    Closer closer = Closer.create();
-    try {
-      InputStream in = closer.register(supplier.getInput());
-      return readBytes(in, processor);
-    } catch (Throwable e) {
-      throw closer.rethrow(e);
-    } finally {
-      closer.close();
-    }
-  }
-
-  /**
-   * Process the bytes of the given input stream using the given processor.
-   *
-   * @param input the input stream to process
-   * @param processor the object to which to pass the bytes of the stream
-   * @return the result of the byte processor
-   * @throws IOException if an I/O error occurs
-   * @since 14.0
-   */
-  public static <T> T readBytes(
-      InputStream input, ByteProcessor<T> processor) throws IOException {
-    checkNotNull(input);
-    checkNotNull(processor);
-
     byte[] buf = new byte[BUF_SIZE];
-    int read;
-    do {
-      read = input.read(buf);
-    } while (read != -1 && processor.processBytes(buf, 0, read));
-    return processor.getResult();
+    boolean threw = true;
+    InputStream in = supplier.getInput();
+    try {
+      int amt;
+      do {
+        amt = in.read(buf);
+        if (amt == -1) {
+          threw = false;
+          break;
+        }
+      } while (processor.processBytes(buf, 0, amt));
+      return processor.getResult();
+    } finally {
+      Closeables.close(in, threw);
+    }
   }
 
   /**
@@ -823,21 +727,16 @@ public final class ByteStreams {
    * @return the result of {@link Checksum#getValue} after updating the
    *     checksum object with all of the bytes in the stream
    * @throws IOException if an I/O error occurs
-   * @deprecated Use {@code hash} with the {@code Hashing.crc32()} or
-   *     {@code Hashing.adler32()} hash functions instead. This method is
-   *     scheduled to be removed in Guava 15.0.
    */
-  @Deprecated
-  public static long getChecksum(
-      InputSupplier<? extends InputStream> supplier, final Checksum checksum)
-      throws IOException {
-    checkNotNull(checksum);
+  public static long getChecksum(InputSupplier<? extends InputStream> supplier,
+      final Checksum checksum) throws IOException {
     return readBytes(supplier, new ByteProcessor<Long>() {
       @Override
       public boolean processBytes(byte[] buf, int off, int len) {
         checksum.update(buf, off, len);
         return true;
       }
+
       @Override
       public Long getResult() {
         long result = checksum.getValue();
@@ -848,19 +747,29 @@ public final class ByteStreams {
   }
 
   /**
-   * Computes the hash code of the data supplied by {@code supplier} using {@code
-   * hashFunction}.
+   * Computes and returns the digest value for a supplied input stream.
+   * The digest object is reset when this method returns successfully.
    *
    * @param supplier the input stream factory
-   * @param hashFunction the hash function to use to hash the data
-   * @return the {@link HashCode} of all of the bytes in the input stream
+   * @param md the digest object
+   * @return the result of {@link MessageDigest#digest()} after updating the
+   *     digest object with all of the bytes in the stream
    * @throws IOException if an I/O error occurs
-   * @since 12.0
    */
-  public static HashCode hash(
-      InputSupplier<? extends InputStream> supplier, HashFunction hashFunction)
-      throws IOException {
-    return asByteSource(supplier).hash(hashFunction);
+  public static byte[] getDigest(InputSupplier<? extends InputStream> supplier,
+      final MessageDigest md) throws IOException {
+    return readBytes(supplier, new ByteProcessor<byte[]>() {
+      @Override
+      public boolean processBytes(byte[] buf, int off, int len) {
+        md.update(buf, off, len);
+        return true;
+      }
+
+      @Override
+      public byte[] getResult() {
+        return md.digest();
+      }
+    });
   }
 
   /**
@@ -889,8 +798,6 @@ public final class ByteStreams {
    */
   public static int read(InputStream in, byte[] b, int off, int len)
       throws IOException {
-    checkNotNull(in);
-    checkNotNull(b);
     if (len < 0) {
       throw new IndexOutOfBoundsException("len is negative");
     }
@@ -920,7 +827,23 @@ public final class ByteStreams {
       final InputSupplier<? extends InputStream> supplier,
       final long offset,
       final long length) {
-    return asInputSupplier(asByteSource(supplier).slice(offset, length));
+    Preconditions.checkNotNull(supplier);
+    Preconditions.checkArgument(offset >= 0, "offset is negative");
+    Preconditions.checkArgument(length >= 0, "length is negative");
+    return new InputSupplier<InputStream>() {
+      @Override public InputStream getInput() throws IOException {
+        InputStream in = supplier.getInput();
+        if (offset > 0) {
+          try {
+            skipFully(in, offset);
+          } catch (IOException e) {
+            Closeables.closeQuietly(in);
+            throw e;
+          }
+        }
+        return new LimitInputStream(in, length);
+      }
+    };
   }
 
   /**
@@ -940,7 +863,6 @@ public final class ByteStreams {
    */
   public static InputSupplier<InputStream> join(
       final Iterable<? extends InputSupplier<? extends InputStream>> suppliers) {
-    checkNotNull(suppliers);
     return new InputSupplier<InputStream>() {
       @Override public InputStream getInput() throws IOException {
         return new MultiInputStream(suppliers.iterator());
@@ -952,53 +874,5 @@ public final class ByteStreams {
   public static InputSupplier<InputStream> join(
       InputSupplier<? extends InputStream>... suppliers) {
     return join(Arrays.asList(suppliers));
-  }
-
-  // TODO(user): Remove these once Input/OutputSupplier methods are removed
-
-  static <S extends InputStream> InputSupplier<S> asInputSupplier(
-      final ByteSource source) {
-    checkNotNull(source);
-    return new InputSupplier<S>() {
-      @SuppressWarnings("unchecked") // used internally where known to be safe
-      @Override
-      public S getInput() throws IOException {
-        return (S) source.openStream();
-      }
-    };
-  }
-
-  static <S extends OutputStream> OutputSupplier<S> asOutputSupplier(
-      final ByteSink sink) {
-    checkNotNull(sink);
-    return new OutputSupplier<S>() {
-      @SuppressWarnings("unchecked") // used internally where known to be safe
-      @Override
-      public S getOutput() throws IOException {
-        return (S) sink.openStream();
-      }
-    };
-  }
-
-  static ByteSource asByteSource(
-      final InputSupplier<? extends InputStream> supplier) {
-    checkNotNull(supplier);
-    return new ByteSource() {
-      @Override
-      public InputStream openStream() throws IOException {
-        return supplier.getInput();
-      }
-    };
-  }
-
-  static ByteSink asByteSink(
-      final OutputSupplier<? extends OutputStream> supplier) {
-    checkNotNull(supplier);
-    return new ByteSink() {
-      @Override
-      public OutputStream openStream() throws IOException {
-        return supplier.getOutput();
-      }
-    };
   }
 }

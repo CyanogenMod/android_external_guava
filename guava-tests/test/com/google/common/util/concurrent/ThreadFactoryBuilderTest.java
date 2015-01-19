@@ -16,7 +16,7 @@
 
 package com.google.common.util.concurrent;
 
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.testing.NullPointerTester;
 
@@ -93,20 +93,11 @@ public class ThreadFactoryBuilderTest extends TestCase {
     assertTrue(thread.getName().matches("^pool-\\d+-thread-" + threadId + "$"));
   }
 
-  public void testNameFormatWithPercentS_custom() {
-    String format = "super-duper-thread-%s";
-    ThreadFactory factory = builder.setNameFormat(format).build();
-    for (int i = 0; i < 11; i++) {
-      assertEquals(String.format(format, i),
-          factory.newThread(monitoredRunnable).getName());
-    }
-  }
-
-  public void testNameFormatWithPercentD_custom() {
-    String format = "super-duper-thread-%d";
-    ThreadFactory factory = builder.setNameFormat(format).build();
-    for (int i = 0; i < 11; i++) {
-      assertEquals(String.format(format, i),
+  public void testNameFormat_custom() {
+    final String NAME_FORMAT = "super duper thread #%s";
+    ThreadFactory factory = builder.setNameFormat(NAME_FORMAT).build();
+    for (int i = 0; i < 10; i++) {
+      assertEquals(String.format(NAME_FORMAT, i),
           factory.newThread(monitoredRunnable).getName());
     }
   }
@@ -206,7 +197,7 @@ public class ThreadFactoryBuilderTest extends TestCase {
     assertTrue(completed);
   }
 
-  public void testNulls() {
+  public void testNulls() throws Exception {
     NullPointerTester npTester = new NullPointerTester();
     npTester.testAllPublicConstructors(ThreadFactoryBuilder.class);
     npTester.testAllPublicStaticMethods(ThreadFactoryBuilder.class);

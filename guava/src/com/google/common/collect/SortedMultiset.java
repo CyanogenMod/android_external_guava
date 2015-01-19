@@ -22,7 +22,7 @@ import com.google.common.annotations.GwtCompatible;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.NavigableSet;
+import java.util.SortedSet;
 
 /**
  * A {@link Multiset} which maintains the ordering of its elements, according to
@@ -36,16 +36,12 @@ import java.util.NavigableSet;
  * resulting multiset will violate the {@link Collection} contract, which it is
  * specified in terms of {@link Object#equals}.
  * 
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multiset">
- * {@code Multiset}</a>.
- * 
  * @author Louis Wasserman
  * @since 11.0
  */
 @Beta
-@GwtCompatible(emulated = true)
-public interface SortedMultiset<E> extends SortedMultisetBridge<E>, SortedIterable<E> {
+@GwtCompatible
+public interface SortedMultiset<E> extends Multiset<E>, SortedIterable<E> {
   /**
    * Returns the comparator that orders this multiset, or
    * {@link Ordering#natural()} if the natural ordering of the elements is used.
@@ -77,11 +73,9 @@ public interface SortedMultiset<E> extends SortedMultisetBridge<E>, SortedIterab
   Entry<E> pollLastEntry();
 
   /**
-   * Returns a {@link NavigableSet} view of the distinct elements in this multiset.
-   * 
-   * @since 14.0 (present with return type {@code SortedSet} since 11.0)
+   * Returns a {@link SortedSet} view of the distinct elements in this multiset.
    */
-  @Override NavigableSet<E> elementSet();
+  @Override SortedSet<E> elementSet();
 
   /**
    * {@inheritDoc}

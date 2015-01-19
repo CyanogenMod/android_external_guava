@@ -19,8 +19,6 @@ package com.google.common.collect.testing;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.fail;
 
-import com.google.common.annotations.GwtCompatible;
-
 import junit.framework.AssertionFailedError;
 
 import java.util.ArrayList;
@@ -47,7 +45,6 @@ import java.util.Stack;
  * @author Kevin Bourrillion
  * @author Chris Povirk
  */
-@GwtCompatible
 abstract class AbstractIteratorTester<E, I extends Iterator<E>> {
   private boolean whenNextThrowsExceptionStopTestingCallsToRemove;
   private boolean whenAddThrowsExceptionStopTesting;
@@ -425,7 +422,7 @@ abstract class AbstractIteratorTester<E, I extends Iterator<E>> {
 
   private static List<Object> subListCopy(Object[] source, int size) {
     final Object[] copy = new Object[size];
-    System.arraycopy(source, 0, copy, 0, size);
+    Platform.unsafeArrayCopy(source, 0, copy, 0, size);
     return Arrays.asList(copy);
   }
 

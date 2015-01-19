@@ -16,7 +16,7 @@
 
 package com.google.common.collect.testing;
 
-import com.google.common.annotations.GwtCompatible;
+import java.lang.reflect.Method;
 
 /**
  * Methods factored out so that they can be emulated differently in GWT.
@@ -25,7 +25,6 @@ import com.google.common.annotations.GwtCompatible;
  *
  * @author Hayward Chan
  */
-@GwtCompatible
 class Platform {
 
   /**
@@ -49,6 +48,31 @@ class Platform {
 
   static String format(String template, Object... args) {
     return String.format(template, args);
+  }
+
+  /**
+   * Wrapper around {@link System#arraycopy} so that it can be emulated
+   * correctly in GWT.
+   *
+   * <p>It is only intended for the case {@code src} and {@code dest} are
+   * different.  It also doesn't validate the types and indices.
+   *
+   * <p>As of GWT 2.0, The built-in {@link System#arraycopy} doesn't work
+   * in general case.  See
+   * http://code.google.com/p/google-web-toolkit/issues/detail?id=3621
+   * for more details.
+   */
+  static void unsafeArrayCopy(
+      Object[] src, int srcPos, Object[] dest, int destPos, int length) {
+    System.arraycopy(src, srcPos, dest, destPos, length);
+  }
+
+  static Method getMethod(Class<?> clazz, String name) {
+    try {
+      return clazz.getMethod(name);
+    } catch (Exception e) {
+      throw new IllegalArgumentException(e);
+    }
   }
 
   static String classGetSimpleName(Class<?> clazz) {

@@ -16,6 +16,7 @@
 
 package com.google.common.base;
 
+import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 
 /**
@@ -213,7 +214,7 @@ public final class Ascii {
   public static final byte DLE = 16;
 
   /**
-   * Device Control 1. Characters for the control
+   * Device Controls: Characters for the control
    * of ancillary devices associated with data processing or
    * telecommunication systems, more especially switching devices "on" or
    * "off."  (If a single "stop" control is required to interrupt or turn
@@ -224,7 +225,7 @@ public final class Ascii {
   public static final byte DC1 = 17; // aka XON
 
   /**
-   * Transmission On: Although originally defined as DC1, this ASCII
+   * Transmission on/off: Although originally defined as DC1, this ASCII
    * control character is now better known as the XON code used for software
    * flow control in serial communications.  The main use is restarting
    * the transmission after the communication has been stopped by the XOFF
@@ -235,40 +236,28 @@ public final class Ascii {
   public static final byte XON = 17; // aka DC1
 
   /**
-   * Device Control 2. Characters for the control
-   * of ancillary devices associated with data processing or
-   * telecommunication systems, more especially switching devices "on" or
-   * "off."  (If a single "stop" control is required to interrupt or turn
-   * off ancillary devices, DC4 is the preferred assignment.)
+   * @see #DC1
    *
    * @since 8.0
    */
   public static final byte DC2 = 18;
 
   /**
-   * Device Control 3. Characters for the control
-   * of ancillary devices associated with data processing or
-   * telecommunication systems, more especially switching devices "on" or
-   * "off."  (If a single "stop" control is required to interrupt or turn
-   * off ancillary devices, DC4 is the preferred assignment.)
+   * @see #DC1
    *
    * @since 8.0
    */
   public static final byte DC3 = 19; // aka XOFF
 
   /**
-   * Transmission off. See {@link #XON} for explanation.
+   * Transmission off. @see #XON
    *
    * @since 8.0
    */
   public static final byte XOFF = 19; // aka DC3
 
   /**
-   * Device Control 4. Characters for the control
-   * of ancillary devices associated with data processing or
-   * telecommunication systems, more especially switching devices "on" or
-   * "off."  (If a single "stop" control is required to interrupt or turn
-   * off ancillary devices, DC4 is the preferred assignment.)
+   * @see #DC1
    *
    * @since 8.0
    */
@@ -341,7 +330,7 @@ public final class Ascii {
   public static final byte ESC = 27;
 
   /**
-   * File Separator: These four information separators may be
+   * File/Group/Record/Unit Separator: These information separators may be
    * used within data in optional fashion, except that their hierarchical
    * relationship shall be: FS is the most inclusive, then GS, then RS,
    * and US is least inclusive.  (The content and length of a File, Group,
@@ -352,33 +341,21 @@ public final class Ascii {
   public static final byte FS = 28;
 
   /**
-   * Group Separator: These four information separators may be
-   * used within data in optional fashion, except that their hierarchical
-   * relationship shall be: FS is the most inclusive, then GS, then RS,
-   * and US is least inclusive.  (The content and length of a File, Group,
-   * Record, or Unit are not specified.)
+   * @see #FS
    *
    * @since 8.0
    */
   public static final byte GS = 29;
 
   /**
-   * Record Separator: These four information separators may be
-   * used within data in optional fashion, except that their hierarchical
-   * relationship shall be: FS is the most inclusive, then GS, then RS,
-   * and US is least inclusive.  (The content and length of a File, Group,
-   * Record, or Unit are not specified.)
+   * @see #FS
    *
    * @since 8.0
    */
   public static final byte RS = 30;
 
   /**
-   * Unit Separator: These four information separators may be
-   * used within data in optional fashion, except that their hierarchical
-   * relationship shall be: FS is the most inclusive, then GS, then RS,
-   * and US is least inclusive.  (The content and length of a File, Group,
-   * Record, or Unit are not specified.)
+   * @see #FS
    *
    * @since 8.0
    */
@@ -412,16 +389,18 @@ public final class Ascii {
   /**
    * The minimum value of an ASCII character.
    *
-   * @since 9.0 (was type {@code int} before 12.0)
+   * @since 9.0
    */
-  public static final char MIN = 0;
+  @Beta
+  public static final int MIN = 0;
 
   /**
    * The maximum value of an ASCII character.
    *
-   * @since 9.0 (was type {@code int} before 12.0)
+   * @since 9.0
    */
-  public static final char MAX = 127;
+  @Beta
+  public static final int MAX = 127;
 
   /**
    * Returns a copy of the input string in which all {@linkplain #isUpperCase(char) uppercase ASCII
@@ -429,21 +408,10 @@ public final class Ascii {
    * modification.
    */
   public static String toLowerCase(String string) {
-    return toLowerCase((CharSequence) string);
-  }
-
-  /**
-   * Returns a copy of the input character sequence in which all {@linkplain #isUpperCase(char)
-   * uppercase ASCII characters} have been converted to lowercase. All other characters are copied
-   * without modification.
-   * 
-   * @since 14.0
-   */
-  public static String toLowerCase(CharSequence chars) {
-    int length = chars.length();
+    int length = string.length();
     StringBuilder builder = new StringBuilder(length);
     for (int i = 0; i < length; i++) {
-      builder.append(toLowerCase(chars.charAt(i)));
+      builder.append(toLowerCase(string.charAt(i)));
     }
     return builder.toString();
   }
@@ -455,28 +423,17 @@ public final class Ascii {
   public static char toLowerCase(char c) {
     return isUpperCase(c) ? (char) (c ^ 0x20) : c;
   }
-  
+
   /**
    * Returns a copy of the input string in which all {@linkplain #isLowerCase(char) lowercase ASCII
    * characters} have been converted to uppercase. All other characters are copied without
    * modification.
    */
   public static String toUpperCase(String string) {
-    return toUpperCase((CharSequence) string);
-  }
-
-  /**
-   * Returns a copy of the input character sequence in which all {@linkplain #isLowerCase(char)
-   * lowercase ASCII characters} have been converted to uppercase. All other characters are copied
-   * without modification.
-   * 
-   * @since 14.0
-   */
-  public static String toUpperCase(CharSequence chars) {
-    int length = chars.length();
+    int length = string.length();
     StringBuilder builder = new StringBuilder(length);
     for (int i = 0; i < length; i++) {
-      builder.append(toUpperCase(chars.charAt(i)));
+      builder.append(toUpperCase(string.charAt(i)));
     }
     return builder.toString();
   }

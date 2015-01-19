@@ -127,7 +127,7 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E>
    *
    * @since 7.0
    */
-  protected boolean standardAdd(E element){
+  @Beta protected boolean standardAdd(E element){
     add(size(), element);
     return true;
   }
@@ -140,7 +140,7 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E>
    *
    * @since 7.0
    */
-  protected boolean standardAddAll(
+  @Beta protected boolean standardAddAll(
       int index, Iterable<? extends E> elements) {
     return Lists.addAllImpl(this, index, elements);
   }
@@ -152,7 +152,7 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E>
    *
    * @since 7.0
    */
-  protected int standardIndexOf(@Nullable Object element) {
+  @Beta protected int standardIndexOf(@Nullable Object element) {
     return Lists.indexOfImpl(this, element);
   }
 
@@ -164,7 +164,7 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E>
    *
    * @since 7.0
    */
-  protected int standardLastIndexOf(@Nullable Object element) {
+  @Beta protected int standardLastIndexOf(@Nullable Object element) {
     return Lists.lastIndexOfImpl(this, element);
   }
 
@@ -175,7 +175,7 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E>
    *
    * @since 7.0
    */
-  protected Iterator<E> standardIterator() {
+  @Beta protected Iterator<E> standardIterator() {
     return listIterator();
   }
 
@@ -187,15 +187,14 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E>
    *
    * @since 7.0
    */
-  protected ListIterator<E> standardListIterator() {
+  @Beta protected ListIterator<E> standardListIterator(){
     return listIterator(0);
   }
 
   /**
    * A sensible default implementation of {@link #listIterator(int)}, in terms
-   * of {@link #size}, {@link #get(int)}, {@link #set(int, Object)}, {@link
-   * #add(int, Object)}, and {@link #remove(int)}. If you override any of these
-   * methods, you may wish to override {@link #listIterator(int)} to forward to
+   * of {@link #size} and {@link #get(int)}. If you override either of these
+   * methods you may wish to override {@link #listIterator(int)} to forward to
    * this implementation.
    *
    * @since 7.0

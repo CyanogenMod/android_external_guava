@@ -27,17 +27,12 @@ import javax.annotation.Nullable;
  * interface.  Unlike {@code FutureTask}, {@code ListenableFutureTask} does not
  * provide an overrideable {@link FutureTask#done() done()} method.  For similar
  * functionality, call {@link #addListener}.
- * 
- * <p>
  *
  * @author Sven Mawson
  * @since 1.0
  */
-public class ListenableFutureTask<V> extends FutureTask<V>
+public final class ListenableFutureTask<V> extends FutureTask<V>
     implements ListenableFuture<V> {
-  // TODO(cpovirk): explore ways of making ListenableFutureTask final. There are
-  // some valid reasons such as BoundedQueueExecutorService to allow extends but it
-  // would be nice to make it final to avoid unintended usage.
 
   // The execution list to hold our listeners.
   private final ExecutionList executionList = new ExecutionList();
@@ -70,11 +65,11 @@ public class ListenableFutureTask<V> extends FutureTask<V>
     return new ListenableFutureTask<V>(runnable, result);
   }
 
-  ListenableFutureTask(Callable<V> callable) {
+  private ListenableFutureTask(Callable<V> callable) {
     super(callable);
   }
 
-  ListenableFutureTask(Runnable runnable, @Nullable V result) {
+  private ListenableFutureTask(Runnable runnable, @Nullable V result) {
     super(runnable, result);
   }
 

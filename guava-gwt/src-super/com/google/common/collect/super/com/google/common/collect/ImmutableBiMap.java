@@ -16,8 +16,7 @@
 
 package com.google.common.collect;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -25,18 +24,20 @@ import java.util.Map;
  *
  * @author Hayward Chan
  */
-public abstract class ImmutableBiMap<K, V> extends ForwardingImmutableMap<K, V>
+public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K,V>
     implements BiMap<K, V> {
+
+  private static final ImmutableBiMap<Object, Object> EMPTY_IMMUTABLE_BIMAP
+      = new EmptyBiMap();
 
   // Casting to any type is safe because the set will never hold any elements.
   @SuppressWarnings("unchecked")
   public static <K, V> ImmutableBiMap<K, V> of() {
-    return (ImmutableBiMap<K, V>) EmptyImmutableBiMap.INSTANCE;
+    return (ImmutableBiMap<K, V>) EMPTY_IMMUTABLE_BIMAP;
   }
 
   public static <K, V> ImmutableBiMap<K, V> of(K k1, V v1) {
-    return new SingletonImmutableBiMap<K, V>(
-        checkNotNull(k1), checkNotNull(v1));
+    return new RegularImmutableBiMap<K, V>(ImmutableMap.of(k1, v1));
   }
 
   public static <K, V> ImmutableBiMap<K, V> of(K k1, V v1, K k2, V v2) {
@@ -116,5 +117,15 @@ public abstract class ImmutableBiMap<K, V> extends ForwardingImmutableMap<K, V>
 
   public final V forcePut(K key, V value) {
     throw new UnsupportedOperationException();
+  }
+
+  @SuppressWarnings("serial")
+  static class EmptyBiMap extends ImmutableBiMap<Object, Object> {
+    EmptyBiMap() {
+      super(Collections.emptyMap());
+    }
+    @Override public ImmutableBiMap<Object, Object> inverse() {
+      return this;
+    }
   }
 }

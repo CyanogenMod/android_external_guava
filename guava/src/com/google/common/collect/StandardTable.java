@@ -391,13 +391,17 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
 
     @Override
     public V remove(Object key) {
-      Map<C, V> backingRowMap = backingRowMap();
-      if (backingRowMap == null) {
+      try {
+        Map<C, V> backingRowMap = backingRowMap();
+        if (backingRowMap == null) {
+          return null;
+        }
+        V result = backingRowMap.remove(key);
+        maintainEmptyInvariant();
+        return result;
+      } catch (ClassCastException e) {
         return null;
       }
-      V result = Maps.safeRemove(backingRowMap, key);
-      maintainEmptyInvariant();
-      return result;
     }
 
     @Override
@@ -555,7 +559,7 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
       return changed;
     }
 
-    class EntrySet extends Sets.ImprovedAbstractSet<Entry<R, V>> {
+    class EntrySet extends AbstractSet<Entry<R, V>> {
       @Override public Iterator<Entry<R, V>> iterator() {
         return new EntrySetIterator();
       }
@@ -595,6 +599,14 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
         return false;
       }
 
+      @Override public boolean removeAll(Collection<?> c) {
+        boolean changed = false;
+        for (Object obj : c) {
+          changed |= remove(obj);
+        }
+        return changed;
+      }
+
       @Override public boolean retainAll(Collection<?> c) {
         return removePredicate(Predicates.not(Predicates.in(c)));
       }
@@ -631,9 +643,9 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
       return result == null ? keySet = new KeySet() : result;
     }
 
-    class KeySet extends Sets.ImprovedAbstractSet<R> {
+    class KeySet extends AbstractSet<R> {
       @Override public Iterator<R> iterator() {
-        return Maps.keyIterator(Column.this.entrySet().iterator());
+        return keyIteratorImpl(Column.this);
       }
 
       @Override public int size() {
@@ -656,6 +668,14 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
         entrySet().clear();
       }
 
+      @Override public boolean removeAll(final Collection<?> c) {
+        boolean changed = false;
+        for (Object obj : c) {
+          changed |= remove(obj);
+        }
+        return changed;
+      }
+
       @Override public boolean retainAll(final Collection<?> c) {
         checkNotNull(c);
         Predicate<Entry<R, V>> predicate = new Predicate<Entry<R, V>>() {
@@ -670,7 +690,7 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
 
     class Values extends AbstractCollection<V> {
       @Override public Iterator<V> iterator() {
-        return Maps.valueIterator(Column.this.entrySet().iterator());
+        return valueIteratorImpl(Column.this);
       }
 
       @Override public int size() {
@@ -736,7 +756,7 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
 
   class RowKeySet extends TableSet<R> {
     @Override public Iterator<R> iterator() {
-      return Maps.keyIterator(rowMap().entrySet().iterator());
+      return keyIteratorImpl(rowMap());
     }
 
     @Override public int size() {
@@ -890,10 +910,16 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
 
   private class Values extends TableCollection<V> {
     @Override public Iterator<V> iterator() {
-      return new TransformedIterator<Cell<R, C, V>, V>(cellSet().iterator()) {
-        @Override
-        V transform(Cell<R, C, V> cell) {
-          return cell.getValue();
+      final Iterator<Cell<R, C, V>> cellIterator = cellSet().iterator();
+      return new Iterator<V>() {
+        @Override public boolean hasNext() {
+          return cellIterator.hasNext();
+        }
+        @Override public V next() {
+          return cellIterator.next().getValue();
+        }
+        @Override public void remove() {
+          cellIterator.remove();
         }
       };
     }
@@ -935,13 +961,7 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
 
     class EntrySet extends TableSet<Entry<R, Map<C, V>>> {
       @Override public Iterator<Entry<R, Map<C, V>>> iterator() {
-        return new TransformedIterator<R, Entry<R, Map<C, V>>>(
-            backingMap.keySet().iterator()) {
-          @Override
-          Entry<R, Map<C, V>> transform(R rowKey) {
-            return new ImmutableEntry<R, Map<C, V>>(rowKey, row(rowKey));
-          }
-        };
+        return new EntryIterator();
       }
 
       @Override public int size() {
@@ -966,6 +986,23 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
               && backingMap.entrySet().remove(entry);
         }
         return false;
+      }
+    }
+
+    class EntryIterator implements Iterator<Entry<R, Map<C, V>>> {
+      final Iterator<R> delegate = backingMap.keySet().iterator();
+
+      @Override public boolean hasNext() {
+        return delegate.hasNext();
+      }
+
+      @Override public Entry<R, Map<C, V>> next() {
+        R rowKey = delegate.next();
+        return new ImmutableEntry<R, Map<C, V>>(rowKey, row(rowKey));
+      }
+
+      @Override public void remove() {
+        delegate.remove();
       }
     }
   }
@@ -1011,10 +1048,13 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
 
     class ColumnMapEntrySet extends TableSet<Entry<C, Map<R, V>>> {
       @Override public Iterator<Entry<C, Map<R, V>>> iterator() {
-        return new TransformedIterator<C, Entry<C, Map<R, V>>>(
-            columnKeySet().iterator()) {
-          @Override
-          Entry<C, Map<R, V>> transform(C columnKey) {
+        final Iterator<C> columnIterator = columnKeySet().iterator();
+        return new UnmodifiableIterator<Entry<C, Map<R, V>>>() {
+          @Override public boolean hasNext() {
+            return columnIterator.hasNext();
+          }
+          @Override public Entry<C, Map<R, V>> next() {
+            C columnKey = columnIterator.next();
             return new ImmutableEntry<C, Map<R, V>>(
                 columnKey, column(columnKey));
           }
@@ -1071,7 +1111,7 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
 
     private class ColumnMapValues extends TableCollection<Map<R, V>> {
       @Override public Iterator<Map<R, V>> iterator() {
-        return Maps.valueIterator(ColumnMap.this.entrySet().iterator());
+        return valueIteratorImpl(ColumnMap.this);
       }
 
       @Override public boolean remove(Object obj) {
@@ -1115,4 +1155,44 @@ class StandardTable<R, C, V> implements Table<R, C, V>, Serializable {
   }
 
   private static final long serialVersionUID = 0;
+
+  // TODO(kevinb): Move keyIteratorImpl and valueIteratorImpl to Maps, reuse
+
+  /**
+   * Generates the iterator of a map's key set from the map's entry set
+   * iterator.
+   */
+  static <K, V> Iterator<K> keyIteratorImpl(Map<K, V> map) {
+    final Iterator<Entry<K, V>> entryIterator = map.entrySet().iterator();
+    return new Iterator<K>() {
+      @Override public boolean hasNext() {
+        return entryIterator.hasNext();
+      }
+      @Override public K next() {
+        return entryIterator.next().getKey();
+      }
+      @Override public void remove() {
+        entryIterator.remove();
+      }
+    };
+  }
+
+  /**
+   * Generates the iterator of a map's value collection from the map's entry set
+   * iterator.
+   */
+  static <K, V> Iterator<V> valueIteratorImpl(Map<K, V> map) {
+    final Iterator<Entry<K, V>> entryIterator = map.entrySet().iterator();
+    return new Iterator<V>() {
+      @Override public boolean hasNext() {
+        return entryIterator.hasNext();
+      }
+      @Override public V next() {
+        return entryIterator.next().getValue();
+      }
+      @Override public void remove() {
+        entryIterator.remove();
+      }
+    };
+  }
 }

@@ -22,7 +22,6 @@ import static com.google.common.collect.testing.features.CollectionSize.ONE;
 import static com.google.common.collect.testing.features.CollectionSize.SEVERAL;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.AbstractCollectionTester;
 import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.features.CollectionFeature;
@@ -37,7 +36,6 @@ import com.google.common.collect.testing.features.CollectionSize;
  *
  * @author Kevin Bourrillion
  */
-@GwtCompatible
 public class CollectionToStringTester<E> extends AbstractCollectionTester<E> {
   public void testToString_minimal() {
     assertNotNull("toString() should not return null",

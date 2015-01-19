@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @GwtCompatible(emulated = true)
 public class CacheBuilderTest extends TestCase {
 
+  @GwtIncompatible("removalListener")
   public void testNewBuilder() {
     CacheLoader<Object, Integer> loader = constantLoader(1);
 
@@ -288,6 +289,7 @@ public class CacheBuilderTest extends TestCase {
     } catch (IllegalStateException expected) {}
   }
 
+  @GwtIncompatible("expireAfterAccess")
   public void testTimeToIdle_negative() {
     CacheBuilder<Object, Object> builder = new CacheBuilder<Object, Object>();
     try {
@@ -296,6 +298,7 @@ public class CacheBuilderTest extends TestCase {
     } catch (IllegalArgumentException expected) {}
   }
 
+  @GwtIncompatible("expireAfterAccess")
   public void testTimeToIdle_small() {
     CacheBuilder.newBuilder()
         .expireAfterAccess(1, NANOSECONDS)
@@ -303,6 +306,7 @@ public class CacheBuilderTest extends TestCase {
     // well, it didn't blow up.
   }
 
+  @GwtIncompatible("expireAfterAccess")
   public void testTimeToIdle_setTwice() {
     CacheBuilder<Object, Object> builder =
         new CacheBuilder<Object, Object>().expireAfterAccess(3600, SECONDS);
@@ -313,6 +317,7 @@ public class CacheBuilderTest extends TestCase {
     } catch (IllegalStateException expected) {}
   }
 
+  @GwtIncompatible("expireAfterAccess")
   public void testTimeToIdleAndToLive() {
     CacheBuilder.newBuilder()
         .expireAfterWrite(1, NANOSECONDS)
@@ -341,6 +346,7 @@ public class CacheBuilderTest extends TestCase {
     } catch (IllegalStateException expected) {}
   }
 
+  @GwtIncompatible("ticker")
   public void testTicker_setTwice() {
     Ticker testTicker = Ticker.systemTicker();
     CacheBuilder<Object, Object> builder =
@@ -352,6 +358,7 @@ public class CacheBuilderTest extends TestCase {
     } catch (IllegalStateException expected) {}
   }
 
+  @GwtIncompatible("removalListener")
   public void testRemovalListener_setTwice() {
     RemovalListener<Object, Object> testListener = nullRemovalListener();
     CacheBuilder<Object, Object> builder =
@@ -363,7 +370,7 @@ public class CacheBuilderTest extends TestCase {
     } catch (IllegalStateException expected) {}
   }
 
-  @GwtIncompatible("CacheTesting")
+  @GwtIncompatible("removalListener")
   public void testNullCache() {
     CountingRemovalListener<Object, Object> listener = countingRemovalListener();
     LoadingCache<Object, Object> nullCache = new CacheBuilder<Object, Object>()
@@ -378,7 +385,7 @@ public class CacheBuilderTest extends TestCase {
     CacheTesting.checkEmpty(nullCache.asMap());
   }
 
-  @GwtIncompatible("QueuingRemovalListener")
+  @GwtIncompatible("removalListener")
 
   public void testRemovalNotification_clear() throws InterruptedException {
     // If a clear() happens while a computation is pending, we should not get a removal
@@ -443,7 +450,7 @@ public class CacheBuilderTest extends TestCase {
    * removal listener), or else is not affected by the {@code clear()} (and therefore exists in the
    * cache afterward).
    */
-  @GwtIncompatible("QueuingRemovalListener")
+  @GwtIncompatible("removalListener")
 
   public void testRemovalNotification_clear_basher() throws InterruptedException {
     // If a clear() happens close to the end of computation, one of two things should happen:
@@ -521,10 +528,10 @@ public class CacheBuilderTest extends TestCase {
    * Calls get() repeatedly from many different threads, and tests that all of the removed entries
    * (removed because of size limits or expiration) trigger appropriate removal notifications.
    */
-  @GwtIncompatible("QueuingRemovalListener")
+  @GwtIncompatible("removalListener")
 
   public void testRemovalNotification_get_basher() throws InterruptedException {
-    int nTasks = 1000;
+    int nTasks = 3000;
     int nThreads = 100;
     final int getsPerTask = 1000;
     final int nUniqueKeys = 10000;
@@ -555,7 +562,6 @@ public class CacheBuilderTest extends TestCase {
           }
         };
     final LoadingCache<String, String> cache = CacheBuilder.newBuilder()
-        .recordStats()
         .concurrencyLevel(2)
         .expireAfterWrite(100, TimeUnit.MILLISECONDS)
         .removalListener(removalListener)

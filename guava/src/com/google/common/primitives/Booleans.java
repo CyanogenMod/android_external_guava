@@ -37,10 +37,6 @@ import java.util.RandomAccess;
  * Static utility methods pertaining to {@code boolean} primitives, that are not
  * already found in either {@link Boolean} or {@link Arrays}.
  *
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
- * primitive utilities</a>.
- *
  * @author Kevin Bourrillion
  * @since 1.0
  */
@@ -407,8 +403,7 @@ public final class Booleans {
     @Override public Boolean set(int index, Boolean element) {
       checkElementIndex(index, size());
       boolean oldValue = array[start + index];
-      // checkNotNull for GWT (do not optimize)
-      array[start + index] = checkNotNull(element);
+      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
       return oldValue;
     }
 
@@ -459,7 +454,7 @@ public final class Booleans {
     }
 
     boolean[] toBooleanArray() {
-      // Arrays.copyOfRange() is not available under GWT
+      // Arrays.copyOfRange() requires Java 6
       int size = size();
       boolean[] result = new boolean[size];
       System.arraycopy(array, start, result, 0, size);

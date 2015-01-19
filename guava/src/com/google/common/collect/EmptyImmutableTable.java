@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Guava Authors
+ * Copyright (C) 2009 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import javax.annotation.concurrent.Immutable;
 /**
  * An empty implementation of {@link ImmutableTable}.
  *
- * @author Gregory Kick
+ * @author gak@google.com (Gregory Kick)
  */
 @GwtCompatible
 @Immutable
@@ -53,7 +53,7 @@ final class EmptyImmutableTable extends ImmutableTable<Object, Object, Object> {
   @Override public boolean equals(@Nullable Object obj) {
     if (obj == this) {
       return true;
-    } else if (obj instanceof Table) {
+    } else if (obj instanceof Table<?, ?, ?>) {
       Table<?, ?, ?> that = (Table<?, ?, ?>) obj;
       return that.isEmpty();
     } else {

@@ -21,8 +21,8 @@ import static com.google.common.base.Preconditions.checkElementIndex;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkPositionIndexes;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.GwtIncompatible;
 
 import java.io.Serializable;
 import java.util.AbstractList;
@@ -37,14 +37,10 @@ import java.util.RandomAccess;
  * Static utility methods pertaining to {@code long} primitives, that are not
  * already found in either {@link Long} or {@link Arrays}.
  *
- * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
- * primitive utilities</a>.
- *
  * @author Kevin Bourrillion
  * @since 1.0
  */
-@GwtCompatible
+@GwtCompatible(emulated = true)
 public final class Longs {
   private Longs() {}
 
@@ -258,15 +254,17 @@ public final class Longs {
    * {@link com.google.common.io.ByteStreams#newDataOutput()} to get a growable
    * buffer.
    */
+  @GwtIncompatible("doesn't work")
   public static byte[] toByteArray(long value) {
-    // Note that this code needs to stay compatible with GWT, which has known
-    // bugs when narrowing byte casts of long values occur.
-    byte[] result = new byte[8];
-    for (int i = 7; i >= 0; i--) {
-      result[i] = (byte) (value & 0xffL);
-      value >>= 8;
-    }
-    return result;
+    return new byte[] {
+        (byte) (value >> 56),
+        (byte) (value >> 48),
+        (byte) (value >> 40),
+        (byte) (value >> 32),
+        (byte) (value >> 24),
+        (byte) (value >> 16),
+        (byte) (value >> 8),
+        (byte) value};
   }
 
   /**
@@ -282,6 +280,7 @@ public final class Longs {
    * @throws IllegalArgumentException if {@code bytes} has fewer than 8
    *     elements
    */
+  @GwtIncompatible("doesn't work")
   public static long fromByteArray(byte[] bytes) {
     checkArgument(bytes.length >= BYTES,
         "array too small: %s < %s", bytes.length, BYTES);
@@ -296,6 +295,7 @@ public final class Longs {
    *
    * @since 7.0
    */
+  @GwtIncompatible("doesn't work")
   public static long fromBytes(byte b1, byte b2, byte b3, byte b4,
       byte b5, byte b6, byte b7, byte b8) {
     return (b1 & 0xFFL) << 56
@@ -306,60 +306,6 @@ public final class Longs {
         | (b6 & 0xFFL) << 16
         | (b7 & 0xFFL) << 8
         | (b8 & 0xFFL);
-  }
-
-  /**
-   * Parses the specified string as a signed decimal long value. The ASCII
-   * character {@code '-'} (<code>'&#92;u002D'</code>) is recognized as the
-   * minus sign.
-   *
-   * <p>Unlike {@link Long#parseLong(String)}, this method returns
-   * {@code null} instead of throwing an exception if parsing fails.
-   *
-   * <p>Note that strings prefixed with ASCII {@code '+'} are rejected, even
-   * under JDK 7, despite the change to {@link Long#parseLong(String)} for
-   * that version.
-   *
-   * @param string the string representation of a long value
-   * @return the long value represented by {@code string}, or {@code null} if
-   *     {@code string} has a length of zero or cannot be parsed as a long
-   *     value
-   * @since 14.0
-   */
-  @Beta
-  public static Long tryParse(String string) {
-    if (checkNotNull(string).isEmpty()) {
-      return null;
-    }
-    boolean negative = string.charAt(0) == '-';
-    int index = negative ? 1 : 0;
-    if (index == string.length()) {
-      return null;
-    }
-    int digit = string.charAt(index++) - '0';
-    if (digit < 0 || digit > 9) {
-      return null;
-    }
-    long accum = -digit;
-    while (index < string.length()) {
-      digit = string.charAt(index++) - '0';
-      if (digit < 0 || digit > 9 || accum < Long.MIN_VALUE / 10) {
-        return null;
-      }
-      accum *= 10;
-      if (accum < Long.MIN_VALUE + digit) {
-        return null;
-      }
-      accum -= digit;
-    }
-
-    if (negative) {
-      return accum;
-    } else if (accum == Long.MIN_VALUE) {
-      return null;
-    } else {
-      return -accum;
-    }
   }
 
   /**
@@ -455,21 +401,20 @@ public final class Longs {
   }
 
   /**
-   * Returns an array containing each value of {@code collection}, converted to
-   * a {@code long} value in the manner of {@link Number#longValue}.
+   * Copies a collection of {@code Long} instances into a new array of
+   * primitive {@code long} values.
    *
    * <p>Elements are copied from the argument collection as if by {@code
    * collection.toArray()}.  Calling this method is as thread-safe as calling
    * that method.
    *
-   * @param collection a collection of {@code Number} instances
+   * @param collection a collection of {@code Long} objects
    * @return an array containing the same values as {@code collection}, in the
    *     same order, converted to primitives
    * @throws NullPointerException if {@code collection} or any of its elements
    *     is null
-   * @since 1.0 (parameter was {@code Collection<Long>} before 12.0)
    */
-  public static long[] toArray(Collection<? extends Number> collection) {
+  public static long[] toArray(Collection<Long> collection) {
     if (collection instanceof LongArrayAsList) {
       return ((LongArrayAsList) collection).toLongArray();
     }
@@ -479,7 +424,7 @@ public final class Longs {
     long[] array = new long[len];
     for (int i = 0; i < len; i++) {
       // checkNotNull for GWT (do not optimize)
-      array[i] = ((Number) checkNotNull(boxedArray[i])).longValue();
+      array[i] = (Long) checkNotNull(boxedArray[i]);
     }
     return array;
   }
@@ -566,8 +511,7 @@ public final class Longs {
     @Override public Long set(int index, Long element) {
       checkElementIndex(index, size());
       long oldValue = array[start + index];
-      // checkNotNull for GWT (do not optimize)
-      array[start + index] = checkNotNull(element);
+      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
       return oldValue;
     }
 
@@ -618,7 +562,7 @@ public final class Longs {
     }
 
     long[] toLongArray() {
-      // Arrays.copyOfRange() is not available under GWT
+      // Arrays.copyOfRange() requires Java 6
       int size = size();
       long[] result = new long[size];
       System.arraycopy(array, start, result, 0, size);

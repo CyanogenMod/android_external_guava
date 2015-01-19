@@ -23,7 +23,7 @@ import static com.google.common.collect.testing.IteratorFeature.MODIFIABLE;
 import static com.google.common.collect.testing.IteratorFeature.UNMODIFIABLE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static org.truth0.Truth.ASSERT;
+import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
@@ -32,7 +32,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.testing.IteratorTester;
-import com.google.common.testing.ClassSanityTester;
 import com.google.common.testing.NullPointerTester;
 
 import junit.framework.TestCase;
@@ -211,6 +210,18 @@ public class IterablesTest extends TestCase {
     assertTrue(Arrays.equals(sourceArray, newArray));
   }
 
+  public void testFilter() {
+    Iterable<String> unfiltered = newArrayList("foo", "bar");
+    Iterable<String> filtered = Iterables.filter(unfiltered,
+                                                 Predicates.equalTo("foo"));
+
+    List<String> expected = Collections.singletonList("foo");
+    List<String> actual = newArrayList(filtered);
+    assertEquals(expected, actual);
+    assertCanIterateAgain(filtered);
+    assertEquals("[foo]", filtered.toString());
+  }
+
   public void testAny() {
     List<String> list = newArrayList();
     Predicate<String> predicate = Predicates.equalTo("pants");
@@ -283,7 +294,7 @@ public class IterablesTest extends TestCase {
     Iterable<TypeA> alist = Lists
         .newArrayList(new TypeA(), new TypeA(), hasBoth, new TypeA());
     Iterable<TypeB> blist = Iterables.filter(alist, TypeB.class);
-    ASSERT.that(blist).iteratesOverSequence(hasBoth);
+    ASSERT.that(blist).hasContentsInOrder(hasBoth);
   }
 
   public void testTransform() {
@@ -411,7 +422,7 @@ public class IterablesTest extends TestCase {
     int n = 4;
     Iterable<Integer> repeated
         = Iterables.concat(Collections.nCopies(n, iterable));
-    ASSERT.that(repeated).iteratesOverSequence(
+    ASSERT.that(repeated).hasContentsInOrder(
         1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3);
   }
 
@@ -510,8 +521,8 @@ public class IterablesTest extends TestCase {
     List<String> freshlyAdded = newArrayList("freshly", "added");
 
     boolean changed = Iterables.addAll(alreadyThere, freshlyAdded);
-    ASSERT.that(alreadyThere).has().allOf(
-        "already", "there", "freshly", "added").inOrder();
+    ASSERT.that(alreadyThere).hasContentsInOrder(
+        "already", "there", "freshly", "added");
     assertTrue(changed);
   }
 
@@ -521,7 +532,7 @@ public class IterablesTest extends TestCase {
   }
 
   @GwtIncompatible("NullPointerTester")
-  public void testNullPointerExceptions() {
+  public void testNullPointerExceptions() throws Exception {
     NullPointerTester tester = new NullPointerTester();
     tester.testAllPublicStaticMethods(Iterables.class);
   }
@@ -552,6 +563,42 @@ public class IterablesTest extends TestCase {
     b = asList(4, 8, 15, 16, 23, 42);
     assertFalse(Iterables.elementsEqual(a, b));
     assertFalse(Iterables.elementsEqual(b, a));
+  }
+
+  @GwtIncompatible("slow (~30s)")
+  @SuppressWarnings("deprecation") // test of a deprecated method
+  public void testReversePassesIteratorsTester() {
+    new IteratorTester<Integer>(5, MODIFIABLE, newArrayList(2, 4, 6, 8),
+        IteratorTester.KnownOrder.KNOWN_ORDER) {
+      @Override protected Iterator<Integer> newTargetIterator() {
+        return Iterables.reverse(newArrayList(8, 6, 4, 2)).iterator();
+      }
+    }.test();
+  }
+
+  @SuppressWarnings("deprecation") // test of a deprecated method
+  public void testReverseWorksAsExpected() {
+    String[] testStrs = new String[] {"foo", "bar", "baz"};
+    String[] expected = new String[] {"baz", "bar", "foo"};
+
+    List<String> stuff = ImmutableList.copyOf(testStrs);
+
+    Iterable<String> reversed = Iterables.reverse(stuff);
+    ASSERT.that(reversed).hasContentsInOrder(expected);
+    assertEquals("[baz, bar, foo]", reversed.toString());
+
+    List<String> removable = newArrayList("foo", "bar", "bad", "baz");
+
+    reversed = Iterables.reverse(removable);
+    ASSERT.that(reversed).hasContentsInOrder("baz", "bad", "bar", "foo");
+
+    Iterator<String> reverseIter = reversed.iterator();
+    assertEquals("baz", reverseIter.next());
+    assertEquals("bad", reverseIter.next());
+    reverseIter.remove();
+
+    ASSERT.that(reversed).hasContentsInOrder(expected);
+    ASSERT.that(reversed).hasContentsInOrder(expected);
   }
 
   public void testToString() {
@@ -656,7 +703,7 @@ public class IterablesTest extends TestCase {
     Iterable<String> tail = skip(set, 1);
     set.remove("b");
     set.addAll(newArrayList("A", "B", "C"));
-    ASSERT.that(tail).iteratesOverSequence("c", "A", "B", "C");
+    ASSERT.that(tail).hasContentsInOrder("c", "A", "B", "C");
   }
 
   public void testSkip_structurallyModifiedSkipSomeList() throws Exception {
@@ -664,7 +711,7 @@ public class IterablesTest extends TestCase {
     Iterable<String> tail = skip(list, 1);
     list.subList(1, 3).clear();
     list.addAll(0, newArrayList("A", "B", "C"));
-    ASSERT.that(tail).iteratesOverSequence("B", "C", "a");
+    ASSERT.that(tail).hasContentsInOrder("B", "C", "a");
   }
 
   public void testSkip_structurallyModifiedSkipAll() throws Exception {
@@ -1086,7 +1133,7 @@ public class IterablesTest extends TestCase {
   /** Returns a new iterable over the specified strings. */
   private static Iterable<String> create(String... strings) {
     final List<String> list = asList(strings);
-    return new FluentIterable<String>() {
+    return new Iterables.IterableWithToString<String>() {
       @Override
       public Iterator<String> iterator() {
         return list.iterator();
@@ -1102,12 +1149,12 @@ public class IterablesTest extends TestCase {
     Iterable<String> consumingIterable = Iterables.consumingIterable(list);
     Iterator<String> consumingIterator = consumingIterable.iterator();
 
-    ASSERT.that(list).has().allOf("a", "b").inOrder();
+    ASSERT.that(list).hasContentsInOrder("a", "b");
 
     assertTrue(consumingIterator.hasNext());
-    ASSERT.that(list).has().allOf("a", "b").inOrder();
+    ASSERT.that(list).hasContentsInOrder("a", "b");
     assertEquals("a", consumingIterator.next());
-    ASSERT.that(list).has().item("b");
+    ASSERT.that(list).hasContentsInOrder("b");
 
     assertTrue(consumingIterator.hasNext());
     assertEquals("b", consumingIterator.next());
@@ -1314,15 +1361,7 @@ public class IterablesTest extends TestCase {
     verifyMergeSorted(iterables, allIntegers);
   }
 
-  @GwtIncompatible("reflection")
-  public void testIterables_nullCheck() throws Exception {
-    new ClassSanityTester()
-        .forAllPublicStaticMethods(Iterables.class)
-        .thatReturn(Iterable.class)
-        .testNulls();
-  }
-
-  private static void verifyMergeSorted(Iterable<Iterable<Integer>> iterables,
+  private void verifyMergeSorted(Iterable<Iterable<Integer>> iterables,
       Iterable<Integer> unsortedExpected) {
     Iterable<Integer> expected =
         Ordering.natural().sortedCopy(unsortedExpected);
