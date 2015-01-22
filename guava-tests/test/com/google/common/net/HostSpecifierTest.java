@@ -20,10 +20,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.testing.EqualsTester;
 import com.google.common.testing.NullPointerTester;
 
-import junit.framework.TestCase;
-
 import java.text.ParseException;
 import java.util.List;
+
+import junit.framework.TestCase;
 
 /**
  * {@link TestCase} for {@link HostSpecifier}.  This is a relatively
@@ -87,7 +87,7 @@ public final class HostSpecifierTest extends TestCase {
     return HostSpecifier.fromValid(specifier);
   }
 
-  public void testNulls() throws Exception {
+  public void testNulls() {
     final NullPointerTester tester = new NullPointerTester();
 
     tester.testAllPublicStaticMethods(HostSpecifier.class);

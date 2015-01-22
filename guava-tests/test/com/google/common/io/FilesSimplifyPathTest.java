@@ -22,11 +22,11 @@ import static com.google.common.io.Files.simplifyPath;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 
-import junit.framework.TestCase;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.Iterator;
+
+import junit.framework.TestCase;
 
 /**
  * Unit tests for {@link Files#simplifyPath}.

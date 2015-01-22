@@ -28,75 +28,96 @@ import javax.annotation.Nullable;
  * @author Gregory Kick
  */
 @GwtCompatible(emulated = true)
-@SuppressWarnings("unchecked") // allow ungenerified Comparable types
+@SuppressWarnings("unchecked")
+// allow ungenerified Comparable types
 final class EmptyContiguousSet<C extends Comparable> extends ContiguousSet<C> {
   EmptyContiguousSet(DiscreteDomain<C> domain) {
     super(domain);
   }
 
-  @Override public C first() {
+  @Override
+  public C first() {
     throw new NoSuchElementException();
   }
 
-  @Override public C last() {
+  @Override
+  public C last() {
     throw new NoSuchElementException();
   }
 
-  @Override public int size() {
+  public int size() {
     return 0;
   }
 
-  @Override public ContiguousSet<C> intersection(ContiguousSet<C> other) {
+  @Override
+  public ContiguousSet<C> intersection(ContiguousSet<C> other) {
     return this;
   }
 
-  @Override public Range<C> range() {
+  @Override
+  public Range<C> range() {
     throw new NoSuchElementException();
   }
 
-  @Override public Range<C> range(BoundType lowerBoundType, BoundType upperBoundType) {
+  @Override
+  public Range<C> range(BoundType lowerBoundType, BoundType upperBoundType) {
     throw new NoSuchElementException();
   }
 
-  @Override ContiguousSet<C> headSetImpl(C toElement, boolean inclusive) {
+  @Override
+  ContiguousSet<C> headSetImpl(C toElement, boolean inclusive) {
     return this;
   }
 
-  @Override ContiguousSet<C> subSetImpl(
-      C fromElement, boolean fromInclusive, C toElement, boolean toInclusive) {
+  @Override
+  ContiguousSet<C> subSetImpl(C fromElement, boolean fromInclusive, C toElement, boolean toInclusive) {
     return this;
   }
 
-  @Override ContiguousSet<C> tailSetImpl(C fromElement, boolean fromInclusive) {
+  @Override
+  ContiguousSet<C> tailSetImpl(C fromElement, boolean fromInclusive) {
     return this;
   }
 
-  //Abstract method doesn't exist in GWT emulation
-  /* @Override */ int indexOf(Object target) {
+  @Override
+  @GwtIncompatible("not used by GWT emulation")
+  int indexOf(Object target) {
     return -1;
   }
 
-  @Override public UnmodifiableIterator<C> iterator() {
+  @Override
+  public UnmodifiableIterator<C> iterator() {
     return Iterators.emptyIterator();
   }
 
-  @Override boolean isPartialView() {
+  @Override
+  @GwtIncompatible("NavigableSet")
+  public UnmodifiableIterator<C> descendingIterator() {
+    return Iterators.emptyIterator();
+  }
+
+  @Override
+  boolean isPartialView() {
     return false;
   }
 
-  @Override public boolean isEmpty() {
+  @Override
+  public boolean isEmpty() {
     return true;
   }
 
-  @Override public ImmutableList<C> asList() {
+  @Override
+  public ImmutableList<C> asList() {
     return ImmutableList.of();
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "[]";
   }
 
-  @Override public boolean equals(@Nullable Object object) {
+  @Override
+  public boolean equals(@Nullable Object object) {
     if (object instanceof Set) {
       Set<?> that = (Set<?>) object;
       return that.isEmpty();
@@ -104,7 +125,8 @@ final class EmptyContiguousSet<C extends Comparable> extends ContiguousSet<C> {
     return false;
   }
 
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return 0;
   }
 
@@ -123,9 +145,15 @@ final class EmptyContiguousSet<C extends Comparable> extends ContiguousSet<C> {
     private static final long serialVersionUID = 0;
   }
 
-  @GwtIncompatible("serialization")
   @Override
+  @GwtIncompatible("serialization")
   Object writeReplace() {
     return new SerializedForm<C>(domain);
+  }
+
+  @Override
+  @GwtIncompatible("NavigableSet")
+  ImmutableSortedSet<C> createDescendingSet() {
+    return new EmptyImmutableSortedSet<C>(Ordering.natural().reverse());
   }
 }

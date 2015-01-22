@@ -22,6 +22,10 @@ import com.google.common.testing.EqualsTester;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.Field;
+
 import junit.framework.TestCase;
 
 /**
@@ -54,7 +58,7 @@ public class EnumsTest extends TestCase {
     assertNull(function.apply("poodlE"));
   }
 
-  public void testValueOfFunction_nullWhenNotMatchingConstant() {
+  public void testValueOfFunction_nullWhenNoMatchingConstant() {
     Function<String, TestEnum> function = Enums.valueOfFunction(TestEnum.class);
     assertNull(function.apply("WOMBAT"));
   }
@@ -73,9 +77,52 @@ public class EnumsTest extends TestCase {
     SerializableTester.reserializeAndAssert(function);
   }
 
+  public void testGetIfPresent() {
+    assertEquals(Optional.of(TestEnum.CHEETO), Enums.getIfPresent(TestEnum.class, "CHEETO"));
+    assertEquals(Optional.of(TestEnum.HONDA), Enums.getIfPresent(TestEnum.class, "HONDA"));
+    assertEquals(Optional.of(TestEnum.POODLE), Enums.getIfPresent(TestEnum.class, "POODLE"));
+
+    assertTrue(Enums.getIfPresent(TestEnum.class, "CHEETO").isPresent());
+    assertTrue(Enums.getIfPresent(TestEnum.class, "HONDA").isPresent());
+    assertTrue(Enums.getIfPresent(TestEnum.class, "POODLE").isPresent());
+
+    assertEquals(TestEnum.CHEETO, Enums.getIfPresent(TestEnum.class, "CHEETO").get());
+    assertEquals(TestEnum.HONDA, Enums.getIfPresent(TestEnum.class, "HONDA").get());
+    assertEquals(TestEnum.POODLE, Enums.getIfPresent(TestEnum.class, "POODLE").get());
+  }
+
+  public void testGetIfPresent_caseSensitive() {
+    assertFalse(Enums.getIfPresent(TestEnum.class, "cHEETO").isPresent());
+    assertFalse(Enums.getIfPresent(TestEnum.class, "Honda").isPresent());
+    assertFalse(Enums.getIfPresent(TestEnum.class, "poodlE").isPresent());
+  }
+
+  public void testGetIfPresent_whenNoMatchingConstant() {
+    assertEquals(Optional.absent(), Enums.getIfPresent(TestEnum.class, "WOMBAT"));
+  }
+
   @GwtIncompatible("NullPointerTester")
-  public void testNullPointerExceptions() throws Exception {
+  public void testNullPointerExceptions() {
     NullPointerTester tester = new NullPointerTester();
     tester.testAllPublicStaticMethods(Enums.class);
+  }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  private @interface ExampleAnnotation {}
+
+  private enum AnEnum {
+    @ExampleAnnotation FOO,
+    BAR
+  }
+
+  @GwtIncompatible("reflection")
+  public void testGetField() {
+    Field foo = Enums.getField(AnEnum.FOO);
+    assertEquals("FOO", foo.getName());
+    assertTrue(foo.isAnnotationPresent(ExampleAnnotation.class));
+
+    Field bar = Enums.getField(AnEnum.BAR);
+    assertEquals("BAR", bar.getName());
+    assertFalse(bar.isAnnotationPresent(ExampleAnnotation.class));
   }
 }

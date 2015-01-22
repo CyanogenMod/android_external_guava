@@ -20,22 +20,21 @@ import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class provides a skeletal implementation of the {@code Cache} interface to minimize the
  * effort required to implement this interface.
  *
  * <p>To implement a cache, the programmer needs only to extend this class and provide an
- * implementation for the {@link #getIfPresent} method. {@link #getAllPresent} is implemented in
- * terms of {@code getIfPresent}; {@link #invalidateAll(Iterable)} is implemented in terms of
- * {@link #invalidate}. The method {@link #cleanUp} is a no-op. All other methods throw an
+ * implementation for the {@link #put} and {@link #getIfPresent} methods. {@link #getAllPresent} is
+ * implemented in terms of {@link #getIfPresent}; {@link #putAll} is implemented in terms of
+ * {@link #put}, {@link #invalidateAll(Iterable)} is implemented in terms of {@link #invalidate}.
+ * The method {@link #cleanUp} is a no-op. All other methods throw an
  * {@link UnsupportedOperationException}.
  *
  * @author Charles Fry
@@ -51,20 +50,28 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
   /**
    * @since 11.0
    */
-  @Override
+
   public V get(K key, Callable<? extends V> valueLoader) throws ExecutionException {
     throw new UnsupportedOperationException();
   }
 
   /**
+   * This implementation of {@code getAllPresent} lacks any insight into the internal cache data
+   * structure, and is thus forced to return the query keys instead of the cached keys. This is only
+   * possible with an unsafe cast which requires {@code keys} to actually be of type {@code K}.
+   *
+   * {@inheritDoc}
+   *
    * @since 11.0
    */
-  @Override
-  public ImmutableMap<K, V> getAllPresent(Iterable<? extends K> keys) {
+
+  public ImmutableMap<K, V> getAllPresent(Iterable<?> keys) {
     Map<K, V> result = Maps.newLinkedHashMap();
-    for (K key : keys) {
+    for (Object key : keys) {
       if (!result.containsKey(key)) {
-        result.put(key, getIfPresent(key));
+        @SuppressWarnings("unchecked")
+        K castKey = (K) key;
+        result.put(castKey, getIfPresent(key));
       }
     }
     return ImmutableMap.copyOf(result);
@@ -73,20 +80,27 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
   /**
    * @since 11.0
    */
-  @Override
+
   public void put(K key, V value) {
     throw new UnsupportedOperationException();
   }
 
-  @Override
+  /**
+   * @since 12.0
+   */
+
+  public void putAll(Map<? extends K, ? extends V> m) {
+    for (Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
+      put(entry.getKey(), entry.getValue());
+    }
+  }
+
   public void cleanUp() {}
 
-  @Override
   public long size() {
     throw new UnsupportedOperationException();
   }
 
-  @Override
   public void invalidate(Object key) {
     throw new UnsupportedOperationException();
   }
@@ -94,42 +108,23 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
   /**
    * @since 11.0
    */
-  @Override
+
   public void invalidateAll(Iterable<?> keys) {
     for (Object key : keys) {
       invalidate(key);
     }
   }
 
-  @Override
   public void invalidateAll() {
     throw new UnsupportedOperationException();
   }
 
-  @Override
   public CacheStats stats() {
     throw new UnsupportedOperationException();
   }
 
-  @Override
   public ConcurrentMap<K, V> asMap() {
     throw new UnsupportedOperationException();
-  }
-
-  @Deprecated
-  @Override
-  public V getUnchecked(K key) {
-    try {
-      return get(key);
-    } catch (ExecutionException e) {
-      throw new UncheckedExecutionException(e.getCause());
-    }
-  }
-
-  @Deprecated
-  @Override
-  public V apply(K key) {
-    return getUnchecked(key);
   }
 
   /**
@@ -164,7 +159,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
     /**
      * Records the successful load of a new entry. This should be called when a cache request
      * causes an entry to be loaded, and the loading completes successfully. In contrast to
-     * {@link #recordConcurrentMiss}, this method should only be called by the loading thread.
+     * {@link #recordMisses}, this method should only be called by the loading thread.
      *
      * @param loadTime the number of nanoseconds the cache spent computing or retrieving the new
      *     value
@@ -174,7 +169,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
     /**
      * Records the failed load of a new entry. This should be called when a cache request causes
      * an entry to be loaded, but an exception is thrown while loading the entry. In contrast to
-     * {@link #recordConcurrentMiss}, this method should only be called by the loading thread.
+     * {@link #recordMisses}, this method should only be called by the loading thread.
      *
      * @param loadTime the number of nanoseconds the cache spent computing or retrieving the new
      *     value prior to an exception being thrown
@@ -201,56 +196,52 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
    * @since 10.0
    */
   @Beta
-  public static class SimpleStatsCounter implements StatsCounter {
-    private final AtomicLong hitCount = new AtomicLong();
-    private final AtomicLong missCount = new AtomicLong();
-    private final AtomicLong loadSuccessCount = new AtomicLong();
-    private final AtomicLong loadExceptionCount = new AtomicLong();
-    private final AtomicLong totalLoadTime = new AtomicLong();
-    private final AtomicLong evictionCount = new AtomicLong();
+  public static final class SimpleStatsCounter implements StatsCounter {
+    private final LongAddable hitCount = LongAddables.create();
+    private final LongAddable missCount = LongAddables.create();
+    private final LongAddable loadSuccessCount = LongAddables.create();
+    private final LongAddable loadExceptionCount = LongAddables.create();
+    private final LongAddable totalLoadTime = LongAddables.create();
+    private final LongAddable evictionCount = LongAddables.create();
+
+    /**
+     * Constructs an instance with all counts initialized to zero.
+     */
+    public SimpleStatsCounter() {}
 
     /**
      * @since 11.0
      */
-    @Override
+
     public void recordHits(int count) {
-      hitCount.addAndGet(count);
+      hitCount.add(count);
     }
 
     /**
      * @since 11.0
      */
-    @Override
+
     public void recordMisses(int count) {
-      missCount.addAndGet(count);
+      missCount.add(count);
     }
 
-    @Override
     public void recordLoadSuccess(long loadTime) {
-      loadSuccessCount.incrementAndGet();
-      totalLoadTime.addAndGet(loadTime);
+      loadSuccessCount.increment();
+      totalLoadTime.add(loadTime);
     }
 
-    @Override
     public void recordLoadException(long loadTime) {
-      loadExceptionCount.incrementAndGet();
-      totalLoadTime.addAndGet(loadTime);
+      loadExceptionCount.increment();
+      totalLoadTime.add(loadTime);
     }
 
-    @Override
     public void recordEviction() {
-      evictionCount.incrementAndGet();
+      evictionCount.increment();
     }
 
-    @Override
     public CacheStats snapshot() {
-      return new CacheStats(
-          hitCount.get(),
-          missCount.get(),
-          loadSuccessCount.get(),
-          loadExceptionCount.get(),
-          totalLoadTime.get(),
-          evictionCount.get());
+      return new CacheStats(hitCount.sum(), missCount.sum(), loadSuccessCount.sum(),
+          loadExceptionCount.sum(), totalLoadTime.sum(), evictionCount.sum());
     }
 
     /**
@@ -258,12 +249,12 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
      */
     public void incrementBy(StatsCounter other) {
       CacheStats otherStats = other.snapshot();
-      hitCount.addAndGet(otherStats.hitCount());
-      missCount.addAndGet(otherStats.missCount());
-      loadSuccessCount.addAndGet(otherStats.loadSuccessCount());
-      loadExceptionCount.addAndGet(otherStats.loadExceptionCount());
-      totalLoadTime.addAndGet(otherStats.totalLoadTime());
-      evictionCount.addAndGet(otherStats.evictionCount());
+      hitCount.add(otherStats.hitCount());
+      missCount.add(otherStats.missCount());
+      loadSuccessCount.add(otherStats.loadSuccessCount());
+      loadExceptionCount.add(otherStats.loadExceptionCount());
+      totalLoadTime.add(otherStats.totalLoadTime());
+      evictionCount.add(otherStats.evictionCount());
     }
   }
 }

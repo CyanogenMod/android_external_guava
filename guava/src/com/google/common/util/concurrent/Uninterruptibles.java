@@ -22,6 +22,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -70,8 +71,7 @@ public final class Uninterruptibles {
    * {@code latch.}{@link CountDownLatch#await(long, TimeUnit)
    * await(timeout, unit)} uninterruptibly.
    */
-  public static boolean awaitUninterruptibly(CountDownLatch latch,
-      long timeout, TimeUnit unit) {
+  public static boolean awaitUninterruptibly(CountDownLatch latch, long timeout, TimeUnit unit) {
     boolean interrupted = false;
     try {
       long remainingNanos = unit.toNanos(timeout);
@@ -122,9 +122,11 @@ public final class Uninterruptibles {
    * <p>If instead, you wish to treat {@link InterruptedException} uniformly
    * with other exceptions, see {@link Futures#get(Future, Class) Futures.get}
    * or {@link Futures#makeChecked}.
+   *
+   * @throws ExecutionException if the computation threw an exception
+   * @throws CancellationException if the computation was cancelled
    */
-  public static <V> V getUninterruptibly(Future<V> future)
-      throws ExecutionException {
+  public static <V> V getUninterruptibly(Future<V> future) throws ExecutionException {
     boolean interrupted = false;
     try {
       while (true) {
@@ -149,10 +151,13 @@ public final class Uninterruptibles {
    * <p>If instead, you wish to treat {@link InterruptedException} uniformly
    * with other exceptions, see {@link Futures#get(Future, Class) Futures.get}
    * or {@link Futures#makeChecked}.
+   *
+   * @throws ExecutionException if the computation threw an exception
+   * @throws CancellationException if the computation was cancelled
+   * @throws TimeoutException if the wait timed out
    */
-  public static <V> V getUninterruptibly(
-      Future<V> future, long timeout,  TimeUnit unit)
-          throws ExecutionException, TimeoutException {
+  public static <V> V getUninterruptibly(Future<V> future, long timeout, TimeUnit unit)
+      throws ExecutionException, TimeoutException {
     boolean interrupted = false;
     try {
       long remainingNanos = unit.toNanos(timeout);
@@ -179,8 +184,7 @@ public final class Uninterruptibles {
    * {@code unit.}{@link TimeUnit#timedJoin(Thread, long)
    * timedJoin(toJoin, timeout)} uninterruptibly.
    */
-  public static void joinUninterruptibly(Thread toJoin,
-      long timeout, TimeUnit unit) {
+  public static void joinUninterruptibly(Thread toJoin, long timeout, TimeUnit unit) {
     Preconditions.checkNotNull(toJoin);
     boolean interrupted = false;
     try {
@@ -226,6 +230,11 @@ public final class Uninterruptibles {
   /**
    * Invokes {@code queue.}{@link BlockingQueue#put(Object) put(element)}
    * uninterruptibly.
+   *
+   * @throws ClassCastException if the class of the specified element prevents
+   *     it from being added to the given queue
+   * @throws IllegalArgumentException if some property of the specified element
+   *     prevents it from being added to the given queue
    */
   public static <E> void putUninterruptibly(BlockingQueue<E> queue, E element) {
     boolean interrupted = false;

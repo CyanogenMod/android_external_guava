@@ -22,6 +22,8 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import javax.annotation.Nullable;
+
 /**
  * An OutputStream that counts the number of bytes written.
  *
@@ -38,7 +40,7 @@ public final class CountingOutputStream extends FilterOutputStream {
    *
    * @param out the output stream to be wrapped
    */
-  public CountingOutputStream(OutputStream out) {
+  public CountingOutputStream(@Nullable OutputStream out) {
     super(out);
   }
 
@@ -47,12 +49,14 @@ public final class CountingOutputStream extends FilterOutputStream {
     return count;
   }
 
-  @Override public void write(byte[] b, int off, int len) throws IOException {
+  @Override
+  public void write(byte[] b, int off, int len) throws IOException {
     out.write(b, off, len);
     count += len;
   }
 
-  @Override public void write(int b) throws IOException {
+  @Override
+  public void write(int b) throws IOException {
     out.write(b);
     count++;
   }

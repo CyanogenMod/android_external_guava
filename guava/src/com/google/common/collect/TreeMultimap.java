@@ -31,6 +31,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import javax.annotation.Nullable;
+
 /**
  * Implementation of {@code Multimap} whose keys and values are ordered by
  * their natural ordering or by supplied comparators. In all cases, this
@@ -64,11 +66,16 @@ import java.util.TreeSet;
  * update operations, wrap your multimap with a call to {@link
  * Multimaps#synchronizedSortedSetMultimap}.
  *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multimap">
+ * {@code Multimap}</a>.
+ *
  * @author Jared Levy
+ * @author Louis Wasserman
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible(serializable = true, emulated = true)
-public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
+public class TreeMultimap<K, V> extends AbstractSortedKeySortedSetMultimap<K, V> {
   private transient Comparator<? super K> keyComparator;
   private transient Comparator<? super V> valueComparator;
 
@@ -76,8 +83,7 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
    * Creates an empty {@code TreeMultimap} ordered by the natural ordering of
    * its keys and values.
    */
-  public static <K extends Comparable, V extends Comparable>
-      TreeMultimap<K, V> create() {
+  public static <K extends Comparable, V extends Comparable> TreeMultimap<K, V> create() {
     return new TreeMultimap<K, V>(Ordering.natural(), Ordering.natural());
   }
 
@@ -89,11 +95,9 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
    * @param keyComparator the comparator that determines the key ordering
    * @param valueComparator the comparator that determines the value ordering
    */
-  public static <K, V> TreeMultimap<K, V> create(
-      Comparator<? super K> keyComparator,
+  public static <K, V> TreeMultimap<K, V> create(Comparator<? super K> keyComparator,
       Comparator<? super V> valueComparator) {
-    return new TreeMultimap<K, V>(checkNotNull(keyComparator),
-        checkNotNull(valueComparator));
+    return new TreeMultimap<K, V>(checkNotNull(keyComparator), checkNotNull(valueComparator));
   }
 
   /**
@@ -102,21 +106,18 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
    *
    * @param multimap the multimap whose contents are copied to this multimap
    */
-  public static <K extends Comparable, V extends Comparable>
-      TreeMultimap<K, V> create(Multimap<? extends K, ? extends V> multimap) {
-    return new TreeMultimap<K, V>(Ordering.natural(), Ordering.natural(),
-        multimap);
+  public static <K extends Comparable, V extends Comparable> TreeMultimap<K, V> create(
+      Multimap<? extends K, ? extends V> multimap) {
+    return new TreeMultimap<K, V>(Ordering.natural(), Ordering.natural(), multimap);
   }
 
-  TreeMultimap(Comparator<? super K> keyComparator,
-      Comparator<? super V> valueComparator) {
+  TreeMultimap(Comparator<? super K> keyComparator, Comparator<? super V> valueComparator) {
     super(new TreeMap<K, Collection<V>>(keyComparator));
     this.keyComparator = keyComparator;
     this.valueComparator = valueComparator;
   }
 
-  private TreeMultimap(Comparator<? super K> keyComparator,
-      Comparator<? super V> valueComparator,
+  private TreeMultimap(Comparator<? super K> keyComparator, Comparator<? super V> valueComparator,
       Multimap<? extends K, ? extends V> multimap) {
     this(keyComparator, valueComparator);
     putAll(multimap);
@@ -130,8 +131,17 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
    * @return a new {@code TreeSet} containing a collection of values for one
    *     key
    */
-  @Override SortedSet<V> createCollection() {
+  @Override
+  SortedSet<V> createCollection() {
     return new TreeSet<V>(valueComparator);
+  }
+
+  @Override
+  Collection<V> createCollection(@Nullable K key) {
+    if (key == null) {
+      keyComparator().compare(key, key);
+    }
+    return super.createCollection(key);
   }
 
   /**
@@ -141,7 +151,6 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
     return keyComparator;
   }
 
-  @Override
   public Comparator<? super V> valueComparator() {
     return valueComparator;
   }
@@ -152,8 +161,11 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
    * <p>Because a {@code TreeMultimap} has unique sorted keys, this method
    * returns a {@link SortedSet}, instead of the {@link java.util.Set} specified
    * in the {@link Multimap} interface.
+   * 
+   * @since 2.0
    */
-  @Override public SortedSet<K> keySet() {
+  @Override
+  public SortedSet<K> keySet() {
     return (SortedSet<K>) super.keySet();
   }
 
@@ -163,8 +175,11 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
    * <p>Because a {@code TreeMultimap} has unique sorted keys, this method
    * returns a {@link SortedMap}, instead of the {@link java.util.Map} specified
    * in the {@link Multimap} interface.
+   * 
+   * @since 2.0
    */
-  @Override public SortedMap<K, Collection<V>> asMap() {
+  @Override
+  public SortedMap<K, Collection<V>> asMap() {
     return (SortedMap<K, Collection<V>>) super.asMap();
   }
 
@@ -182,9 +197,9 @@ public class TreeMultimap<K, V> extends AbstractSortedSetMultimap<K, V> {
   }
 
   @GwtIncompatible("java.io.ObjectInputStream")
-  @SuppressWarnings("unchecked") // reading data stored by writeObject
-  private void readObject(ObjectInputStream stream)
-      throws IOException, ClassNotFoundException {
+  @SuppressWarnings("unchecked")
+  // reading data stored by writeObject
+  private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
     stream.defaultReadObject();
     keyComparator = checkNotNull((Comparator<? super K>) stream.readObject());
     valueComparator = checkNotNull((Comparator<? super V>) stream.readObject());

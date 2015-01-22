@@ -22,16 +22,17 @@ import static com.google.common.collect.BoundType.OPEN;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.testing.EqualsTester;
 
-import junit.framework.TestCase;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+
+import junit.framework.TestCase;
 
 /**
  * @author Gregory Kick
  */
 @GwtCompatible
+@SuppressWarnings("deprecation") // since Ranges is deprecated
 public class RangesTest extends TestCase {
   public void testSingleton() {
     assertEquals(Ranges.closed(0, 0), Ranges.singleton(0));

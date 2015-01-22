@@ -21,9 +21,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -89,16 +91,15 @@ import javax.annotation.concurrent.GuardedBy;
 @Beta
 public abstract class AbstractScheduledService implements Service {
   private static final Logger logger = Logger.getLogger(AbstractScheduledService.class.getName());
-  
+
   /**
    * A scheduler defines the policy for how the {@link AbstractScheduledService} should run its 
    * task.
    * 
    * <p>Consider using the {@link #newFixedDelaySchedule} and {@link #newFixedRateSchedule} factory 
    * methods, these provide {@link Scheduler} instances for the common use case of running the 
-   * service with a fixed schedule.  If more flexibility is needed then consider subclassing the 
-   * {@link CustomScheduler} abstract class in preference to creating your own {@link Scheduler} 
-   * implementation. 
+   * service with a fixed schedule.  If more flexibility is needed then consider subclassing  
+   * {@link CustomScheduler}. 
    * 
    * @author Luke Sandberg
    * @since 11.0
@@ -113,14 +114,15 @@ public abstract class AbstractScheduledService implements Service {
      *        next
      * @param unit the time unit of the initialDelay and delay parameters
      */
-    public static Scheduler newFixedDelaySchedule(final long initialDelay, final long delay, 
+    public static Scheduler newFixedDelaySchedule(final long initialDelay, final long delay,
         final TimeUnit unit) {
       return new Scheduler() {
+
         @Override
         public Future<?> schedule(AbstractService service, ScheduledExecutorService executor,
             Runnable task) {
           return executor.scheduleWithFixedDelay(task, initialDelay, delay, unit);
-        } 
+        }
       };
     }
 
@@ -132,9 +134,10 @@ public abstract class AbstractScheduledService implements Service {
      * @param period the period between successive executions of the task
      * @param unit the time unit of the initialDelay and period parameters
      */
-    public static Scheduler newFixedRateSchedule(final long initialDelay, final long period, 
+    public static Scheduler newFixedRateSchedule(final long initialDelay, final long period,
         final TimeUnit unit) {
       return new Scheduler() {
+
         @Override
         public Future<?> schedule(AbstractService service, ScheduledExecutorService executor,
             Runnable task) {
@@ -142,28 +145,28 @@ public abstract class AbstractScheduledService implements Service {
         }
       };
     }
-    
+
     /** Schedules the task to run on the provided executor on behalf of the service.  */
-    abstract Future<?> schedule(AbstractService service, ScheduledExecutorService executor, 
+    abstract Future<?> schedule(AbstractService service, ScheduledExecutorService executor,
         Runnable runnable);
-    
+
     private Scheduler() {}
   }
-  
+
   /* use AbstractService for state management */
   private final AbstractService delegate = new AbstractService() {
-    
+
     // A handle to the running task so that we can stop it when a shutdown has been requested.
     // These two fields are volatile because their values will be accessed from multiple threads.
     private volatile Future<?> runningTask;
     private volatile ScheduledExecutorService executorService;
-    
+
     // This lock protects the task so we can ensure that none of the template methods (startUp, 
     // shutDown or runOneIteration) run concurrently with one another.
     private final ReentrantLock lock = new ReentrantLock();
-    
+
     private final Runnable task = new Runnable() {
-      @Override public void run() {
+      public void run() {
         lock.lock();
         try {
           AbstractScheduledService.this.runOneIteration();
@@ -171,7 +174,7 @@ public abstract class AbstractScheduledService implements Service {
           try {
             shutDown();
           } catch (Exception ignored) {
-            logger.log(Level.WARNING, 
+            logger.log(Level.WARNING,
                 "Error while attempting to shut down the service after failure.", ignored);
           }
           notifyFailed(t);
@@ -181,11 +184,12 @@ public abstract class AbstractScheduledService implements Service {
         }
       }
     };
-    
-    @Override protected final void doStart() {
+
+    @Override
+    protected final void doStart() {
       executorService = executor();
       executorService.execute(new Runnable() {
-        @Override public void run() {
+        public void run() {
           lock.lock();
           try {
             startUp();
@@ -201,10 +205,11 @@ public abstract class AbstractScheduledService implements Service {
       });
     }
 
-    @Override protected final void doStop() {
-      runningTask.cancel(false); 
+    @Override
+    protected final void doStop() {
+      runningTask.cancel(false);
       executorService.execute(new Runnable() {
-        @Override public void run() {
+        public void run() {
           try {
             lock.lock();
             try {
@@ -228,7 +233,10 @@ public abstract class AbstractScheduledService implements Service {
       });
     }
   };
-  
+
+  /** Constructor for use by subclasses. */
+  protected AbstractScheduledService() {}
+
   /** 
    * Run one iteration of the scheduled task. If any invocation of this method throws an exception, 
    * the service will transition to the {@link Service.State#FAILED} state and this method will no 
@@ -236,61 +244,126 @@ public abstract class AbstractScheduledService implements Service {
    */
   protected abstract void runOneIteration() throws Exception;
 
-  /** Start the service. */
-  protected abstract void startUp() throws Exception;
+  /** 
+   * Start the service.
+   * 
+   * <p>By default this method does nothing.
+   */
+  protected void startUp() throws Exception {}
 
-  /** Stop the service. This is guaranteed not to run concurrently with {@link #runOneIteration}. */
-  protected abstract void shutDown() throws Exception;
+  /**
+   * Stop the service. This is guaranteed not to run concurrently with {@link #runOneIteration}.
+   * 
+   * <p>By default this method does nothing. 
+   */
+  protected void shutDown() throws Exception {}
 
   /**
    * Returns the {@link Scheduler} object used to configure this service.  This method will only be
    * called once. 
    */
   protected abstract Scheduler scheduler();
-  
+
   /**
    * Returns the {@link ScheduledExecutorService} that will be used to execute the {@link #startUp},
-   * {@link #runOneIteration} and {@link #shutDown} methods.  The executor will not be 
-   * {@link ScheduledExecutorService#shutdown} when this service stops. Subclasses may override this
-   * method to use a custom {@link ScheduledExecutorService} instance.
+   * {@link #runOneIteration} and {@link #shutDown} methods.  If this method is overridden the 
+   * executor will not be {@linkplain ScheduledExecutorService#shutdown shutdown} when this 
+   * service {@linkplain Service.State#TERMINATED terminates} or 
+   * {@linkplain Service.State#TERMINATED fails}. Subclasses may override this method to supply a 
+   * custom {@link ScheduledExecutorService} instance. This method is guaranteed to only be called 
+   * once.
    * 
    * <p>By default this returns a new {@link ScheduledExecutorService} with a single thread thread
-   * pool.  This method will only be called once.
+   * pool that sets the name of the thread to the {@linkplain #serviceName() service name}.  
+   * Also, the pool will be {@linkplain ScheduledExecutorService#shutdown() shut down} when the 
+   * service {@linkplain Service.State#TERMINATED terminates} or 
+   * {@linkplain Service.State#TERMINATED fails}.
    */
   protected ScheduledExecutorService executor() {
-    return Executors.newSingleThreadScheduledExecutor();
+    final ScheduledExecutorService executor = Executors
+        .newSingleThreadScheduledExecutor(new ThreadFactory() {
+          public Thread newThread(Runnable runnable) {
+            return MoreExecutors.newThread(serviceName(), runnable);
+          }
+        });
+    // Add a listener to shutdown the executor after the service is stopped.  This ensures that the
+    // JVM shutdown will not be prevented from exiting after this service has stopped or failed.
+    // Technically this listener is added after start() was called so it is a little gross, but it
+    // is called within doStart() so we know that the service cannot terminate or fail concurrently
+    // with adding this listener so it is impossible to miss an event that we are interested in.
+    addListener(new Listener() {
+      public void starting() {}
+
+      public void running() {}
+
+      public void stopping(State from) {}
+
+      public void terminated(State from) {
+        executor.shutdown();
+      }
+
+      public void failed(State from, Throwable failure) {
+        executor.shutdown();
+      }
+    }, MoreExecutors.sameThreadExecutor());
+    return executor;
   }
 
-  @Override public String toString() {
-    return getClass().getSimpleName() + " [" + state() + "]";
+  /**
+   * Returns the name of this service. {@link AbstractScheduledService} may include the name in 
+   * debugging output.
+   *
+   * @since 14.0
+   */
+  protected String serviceName() {
+    return getClass().getSimpleName();
+  }
+
+  @Override
+  public String toString() {
+    return serviceName() + " [" + state() + "]";
   }
 
   // We override instead of using ForwardingService so that these can be final.
 
-  @Override public final ListenableFuture<State> start() {
+  public final ListenableFuture<State> start() {
     return delegate.start();
   }
 
-  @Override public final State startAndWait() {
+  public final State startAndWait() {
     return delegate.startAndWait();
   }
 
-  @Override public final boolean isRunning() {
+  public final boolean isRunning() {
     return delegate.isRunning();
   }
 
-  @Override public final State state() {
+  public final State state() {
     return delegate.state();
   }
 
-  @Override public final ListenableFuture<State> stop() {
+  public final ListenableFuture<State> stop() {
     return delegate.stop();
   }
 
-  @Override public final State stopAndWait() {
+  public final State stopAndWait() {
     return delegate.stopAndWait();
   }
-  
+
+  /**
+   * @since 13.0
+   */
+  public final void addListener(Listener listener, Executor executor) {
+    delegate.addListener(listener, executor);
+  }
+
+  /**
+   * @since 14.0
+   */
+  public final Throwable failureCause() {
+    return delegate.failureCause();
+  }
+
   /**
    * A {@link Scheduler} that provides a convenient way for the {@link AbstractScheduledService} to 
    * use a dynamically changing schedule.  After every execution of the task, assuming it hasn't 
@@ -298,7 +371,7 @@ public abstract class AbstractScheduledService implements Service {
    * 
    * @author Luke Sandberg
    * @since 11.0
-   */ 
+   */
   @Beta
   public abstract static class CustomScheduler extends Scheduler {
 
@@ -306,38 +379,37 @@ public abstract class AbstractScheduledService implements Service {
      * A callable class that can reschedule itself using a {@link CustomScheduler}.
      */
     private class ReschedulableCallable extends ForwardingFuture<Void> implements Callable<Void> {
-      
+
       /** The underlying task. */
       private final Runnable wrappedRunnable;
-      
+
       /** The executor on which this Callable will be scheduled. */
       private final ScheduledExecutorService executor;
-      
+
       /** 
        * The service that is managing this callable.  This is used so that failure can be 
        * reported properly.
        */
       private final AbstractService service;
-      
+
       /**
        * This lock is used to ensure safe and correct cancellation, it ensures that a new task is 
        * not scheduled while a cancel is ongoing.  Also it protects the currentFuture variable to 
        * ensure that it is assigned atomically with being scheduled.
-       */ 
+       */
       private final ReentrantLock lock = new ReentrantLock();
-      
+
       /** The future that represents the next execution of this task.*/
       @GuardedBy("lock")
       private Future<Void> currentFuture;
-      
-      ReschedulableCallable(AbstractService service, ScheduledExecutorService executor, 
+
+      ReschedulableCallable(AbstractService service, ScheduledExecutorService executor,
           Runnable runnable) {
         this.wrappedRunnable = runnable;
         this.executor = executor;
         this.service = service;
       }
-      
-      @Override
+
       public Void call() throws Exception {
         wrappedRunnable.run();
         reschedule();
@@ -369,9 +441,10 @@ public abstract class AbstractScheduledService implements Service {
           lock.unlock();
         }
       }
-      
+
       // N.B. Only protect cancel and isCancelled because those are the only methods that are 
       // invoked by the AbstractScheduledService.
+
       @Override
       public boolean cancel(boolean mayInterruptIfRunning) {
         // Ensure that a task cannot be rescheduled while a cancel is ongoing.
@@ -388,15 +461,15 @@ public abstract class AbstractScheduledService implements Service {
         throw new UnsupportedOperationException("Only cancel is supported by this future");
       }
     }
-    
+
     @Override
-    final Future<?> schedule(AbstractService service, ScheduledExecutorService executor, 
+    final Future<?> schedule(AbstractService service, ScheduledExecutorService executor,
         Runnable runnable) {
       ReschedulableCallable task = new ReschedulableCallable(service, executor, runnable);
       task.reschedule();
       return task;
     }
-    
+
     /**
      * A value object that represents an absolute delay until a task should be invoked.
      * 
@@ -405,10 +478,10 @@ public abstract class AbstractScheduledService implements Service {
      */
     @Beta
     protected static final class Schedule {
-      
+
       private final long delay;
       private final TimeUnit unit;
-      
+
       /**
        * @param delay the time from now to delay execution
        * @param unit the time unit of the delay parameter
@@ -418,7 +491,7 @@ public abstract class AbstractScheduledService implements Service {
         this.unit = Preconditions.checkNotNull(unit);
       }
     }
-    
+
     /**
      * Calculates the time at which to next invoke the task.
      * 

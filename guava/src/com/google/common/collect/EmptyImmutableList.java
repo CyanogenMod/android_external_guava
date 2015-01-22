@@ -24,120 +24,102 @@ import com.google.common.annotations.GwtCompatible;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
 /**
  * An empty immutable list.
- * 
+ *
  * @author Kevin Bourrillion
  */
 @GwtCompatible(serializable = true, emulated = true)
 final class EmptyImmutableList extends ImmutableList<Object> {
   static final EmptyImmutableList INSTANCE = new EmptyImmutableList();
-  static final UnmodifiableListIterator<Object> ITERATOR =
-      new UnmodifiableListIterator<Object>() {
-
-        @Override public boolean hasNext() {
-          return false;
-        }
-
-        @Override public boolean hasPrevious() {
-          return false;
-        }
-
-        @Override public Object next() {
-          throw new NoSuchElementException();
-        }
-
-        @Override public int nextIndex() {
-          return 0;
-        }
-
-        @Override public Object previous() {
-          throw new NoSuchElementException();
-        }
-
-        @Override public int previousIndex() {
-          return -1;
-        }
-      };
 
   private EmptyImmutableList() {}
 
-  @Override
   public int size() {
     return 0;
   }
 
-  @Override public boolean isEmpty() {
+  @Override
+  public boolean isEmpty() {
     return true;
   }
 
-  @Override boolean isPartialView() {
+  @Override
+  boolean isPartialView() {
     return false;
   }
 
-  @Override public boolean contains(Object target) {
+  @Override
+  public boolean contains(@Nullable Object target) {
     return false;
   }
 
-  @Override public UnmodifiableIterator<Object> iterator() {
-    return Iterators.emptyIterator();
+  @Override
+  public boolean containsAll(Collection<?> targets) {
+    return targets.isEmpty();
   }
 
-  private static final Object[] EMPTY_ARRAY = new Object[0];
-
-  @Override public Object[] toArray() {
-    return EMPTY_ARRAY;
+  @Override
+  public UnmodifiableIterator<Object> iterator() {
+    return listIterator();
   }
 
-  @Override public <T> T[] toArray(T[] a) {
+  @Override
+  public Object[] toArray() {
+    return ObjectArrays.EMPTY_ARRAY;
+  }
+
+  @Override
+  public <T> T[] toArray(T[] a) {
     if (a.length > 0) {
       a[0] = null;
     }
     return a;
   }
 
-  @Override
   public Object get(int index) {
     // guaranteed to fail, but at least we get a consistent message
     checkElementIndex(index, 0);
     throw new AssertionError("unreachable");
   }
 
-  @Override public int indexOf(@Nullable Object target) {
+  @Override
+  public int indexOf(@Nullable Object target) {
     return -1;
   }
 
-  @Override public int lastIndexOf(@Nullable Object target) {
+  @Override
+  public int lastIndexOf(@Nullable Object target) {
     return -1;
   }
 
-  @Override public ImmutableList<Object> subList(int fromIndex, int toIndex) {
+  @Override
+  public ImmutableList<Object> subList(int fromIndex, int toIndex) {
     checkPositionIndexes(fromIndex, toIndex, 0);
     return this;
   }
 
-  @Override public ImmutableList<Object> reverse() {
+  @Override
+  public ImmutableList<Object> reverse() {
     return this;
   }
 
-  @Override public UnmodifiableListIterator<Object> listIterator(){
-    return ITERATOR;
+  @Override
+  public UnmodifiableListIterator<Object> listIterator() {
+    return Iterators.EMPTY_LIST_ITERATOR;
   }
 
-  @Override public UnmodifiableListIterator<Object> listIterator(int start) {
+  @Override
+  public UnmodifiableListIterator<Object> listIterator(int start) {
     checkPositionIndex(start, 0);
-    return ITERATOR;
+    return Iterators.EMPTY_LIST_ITERATOR;
   }
 
-  @Override public boolean containsAll(Collection<?> targets) {
-    return targets.isEmpty();
-  }
-
-  @Override public boolean equals(@Nullable Object object) {
+  @Override
+  public boolean equals(@Nullable Object object) {
     if (object instanceof List) {
       List<?> that = (List<?>) object;
       return that.isEmpty();
@@ -145,11 +127,13 @@ final class EmptyImmutableList extends ImmutableList<Object> {
     return false;
   }
 
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return 1;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "[]";
   }
 

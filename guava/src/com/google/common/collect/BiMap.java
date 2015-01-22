@@ -28,6 +28,10 @@ import javax.annotation.Nullable;
  * its values as well as that of its keys. This constraint enables bimaps to
  * support an "inverse view", which is another bimap containing the same entries
  * as this bimap but with reversed keys and values.
+ * 
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#BiMap">
+ * {@code BiMap}</a>.
  *
  * @author Kevin Bourrillion
  * @since 2.0 (imported from Google Collections Library)
@@ -43,7 +47,7 @@ public interface BiMap<K, V> extends Map<K, V> {
    *     different key in this bimap. The bimap will remain unmodified in this
    *     event. To avoid this exception, call {@link #forcePut} instead.
    */
-  @Override
+
   V put(@Nullable K key, @Nullable V value);
 
   /**
@@ -77,7 +81,7 @@ public interface BiMap<K, V> extends Map<K, V> {
    *     entry fails. Note that some map entries may have been added to the
    *     bimap before the exception was thrown.
    */
-  @Override
+
   void putAll(Map<? extends K, ? extends V> map);
 
   // Views
@@ -89,7 +93,7 @@ public interface BiMap<K, V> extends Map<K, V> {
    * instead of the {@link java.util.Collection} specified in the {@link Map}
    * interface.
    */
-  @Override
+
   Set<V> values();
 
   /**

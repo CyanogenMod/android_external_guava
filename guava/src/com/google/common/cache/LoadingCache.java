@@ -33,10 +33,13 @@ import java.util.concurrent.ExecutionException;
  * <p>Implementations of this interface are expected to be thread-safe, and can be safely accessed
  * by multiple concurrent threads.
  *
- * <p>All methods other than {@link #get} and {@link #getUnchecked} are optional.
- *
  * <p>When evaluated as a {@link Function}, a cache yields the same result as invoking
  * {@link #getUnchecked}.
+ *
+ * <p>Note that while this class is still annotated as {@link Beta}, the API is frozen from a
+ * consumer's standpoint. In other words existing methods are all considered {@code non-Beta} and
+ * won't be changed without going through an 18 month deprecation cycle; however new methods may be
+ * added at any time.
  *
  * @author Charles Fry
  * @since 11.0
@@ -126,7 +129,7 @@ public interface LoadingCache<K, V> extends Cache<K, V>, Function<K, V> {
    *     regardless of whether the exception was checked or unchecked
    * @throws ExecutionError if an error was thrown while loading the value
    */
-  @Override
+
   V apply(K key);
 
   /**
@@ -138,6 +141,8 @@ public interface LoadingCache<K, V> extends Cache<K, V>, Function<K, V> {
    *
    * <p>Caches loaded by a {@link CacheLoader} will call {@link CacheLoader#reload} if the
    * cache currently contains a value for {@code key}, and {@link CacheLoader#load} otherwise.
+   * Loading is asynchronous only if {@link CacheLoader#reload} was overridden with an
+   * asynchronous implementation.
    *
    * <p>Returns without doing anything if another thread is currently loading the value for
    * {@code key}. If the cache loader associated with this cache performs refresh asynchronously
@@ -153,6 +158,6 @@ public interface LoadingCache<K, V> extends Cache<K, V>, Function<K, V> {
    * <p><b>Note that although the view <i>is</i> modifiable, no method on the returned map will ever
    * cause entries to be automatically loaded.</b>
    */
-  @Override
+
   ConcurrentMap<K, V> asMap();
 }

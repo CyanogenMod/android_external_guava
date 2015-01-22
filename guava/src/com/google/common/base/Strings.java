@@ -19,7 +19,6 @@ package com.google.common.base;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -55,7 +54,8 @@ public final class Strings {
    * @return {@code string} itself if it is nonempty; {@code null} if it is
    *     empty or null
    */
-  public static @Nullable String emptyToNull(@Nullable String string) {
+  public static @Nullable
+  String emptyToNull(@Nullable String string) {
     return isNullOrEmpty(string) ? null : string;
   }
 
@@ -96,7 +96,7 @@ public final class Strings {
    * @return the padded string
    */
   public static String padStart(String string, int minLength, char padChar) {
-    checkNotNull(string);  // eager for GWT.
+    checkNotNull(string); // eager for GWT.
     if (string.length() >= minLength) {
       return string;
     }
@@ -128,7 +128,7 @@ public final class Strings {
    * @return the padded string
    */
   public static String padEnd(String string, int minLength, char padChar) {
-    checkNotNull(string);  // eager for GWT.
+    checkNotNull(string); // eager for GWT.
     if (string.length() >= minLength) {
       return string;
     }
@@ -152,7 +152,7 @@ public final class Strings {
    * @throws IllegalArgumentException if {@code count} is negative
    */
   public static String repeat(String string, int count) {
-    checkNotNull(string);  // eager for GWT.
+    checkNotNull(string); // eager for GWT.
 
     if (count <= 1) {
       checkArgument(count >= 0, "invalid count: %s", count);
@@ -186,7 +186,6 @@ public final class Strings {
    *
    * @since 11.0
    */
-  @Beta
   public static String commonPrefix(CharSequence a, CharSequence b) {
     checkNotNull(a);
     checkNotNull(b);
@@ -210,19 +209,16 @@ public final class Strings {
    *
    * @since 11.0
    */
-  @Beta
   public static String commonSuffix(CharSequence a, CharSequence b) {
     checkNotNull(a);
     checkNotNull(b);
 
     int maxSuffixLength = Math.min(a.length(), b.length());
     int s = 0;
-    while (s < maxSuffixLength
-        && a.charAt(a.length() - s - 1) == b.charAt(b.length() - s - 1)) {
+    while (s < maxSuffixLength && a.charAt(a.length() - s - 1) == b.charAt(b.length() - s - 1)) {
       s++;
     }
-    if (validSurrogatePairAt(a, a.length() - s - 1)
-        || validSurrogatePairAt(b, b.length() - s - 1)) {
+    if (validSurrogatePairAt(a, a.length() - s - 1) || validSurrogatePairAt(b, b.length() - s - 1)) {
       s--;
     }
     return a.subSequence(a.length() - s, a.length()).toString();

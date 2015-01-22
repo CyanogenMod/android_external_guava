@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ForwardingObject;
 import com.google.common.collect.ImmutableMap;
 
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -47,16 +48,16 @@ public abstract class ForwardingCache<K, V> extends ForwardingObject implements 
   /**
    * @since 11.0
    */
-  @Override
+
   @Nullable
-  public V getIfPresent(K key) {
+  public V getIfPresent(Object key) {
     return delegate().getIfPresent(key);
   }
 
   /**
    * @since 11.0
    */
-  @Override
+
   public V get(K key, Callable<? extends V> valueLoader) throws ExecutionException {
     return delegate().get(key, valueLoader);
   }
@@ -64,20 +65,27 @@ public abstract class ForwardingCache<K, V> extends ForwardingObject implements 
   /**
    * @since 11.0
    */
-  @Override
-  public ImmutableMap<K, V> getAllPresent(Iterable<? extends K> keys) {
+
+  public ImmutableMap<K, V> getAllPresent(Iterable<?> keys) {
     return delegate().getAllPresent(keys);
   }
 
   /**
    * @since 11.0
    */
-  @Override
+
   public void put(K key, V value) {
     delegate().put(key, value);
   }
 
-  @Override
+  /**
+   * @since 12.0
+   */
+
+  public void putAll(Map<? extends K, ? extends V> m) {
+    delegate().putAll(m);
+  }
+
   public void invalidate(Object key) {
     delegate().invalidate(key);
   }
@@ -85,52 +93,29 @@ public abstract class ForwardingCache<K, V> extends ForwardingObject implements 
   /**
    * @since 11.0
    */
-  @Override
+
   public void invalidateAll(Iterable<?> keys) {
     delegate().invalidateAll(keys);
   }
 
-  @Override
   public void invalidateAll() {
     delegate().invalidateAll();
   }
 
-  @Override
   public long size() {
     return delegate().size();
   }
 
-  @Override
   public CacheStats stats() {
     return delegate().stats();
   }
 
-  @Override
   public ConcurrentMap<K, V> asMap() {
     return delegate().asMap();
   }
 
-  @Override
   public void cleanUp() {
     delegate().cleanUp();
-  }
-
-  @Deprecated
-  @Override
-  public V get(K key) throws ExecutionException {
-    return delegate().get(key);
-  }
-
-  @Deprecated
-  @Override
-  public V getUnchecked(K key) {
-    return delegate().getUnchecked(key);
-  }
-
-  @Deprecated
-  @Override
-  public V apply(K key) {
-    return delegate().apply(key);
   }
 
   /**

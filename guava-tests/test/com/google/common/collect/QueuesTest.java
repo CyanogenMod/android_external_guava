@@ -193,6 +193,7 @@ public class QueuesTest extends TestCase {
   private void testDrainUninterruptibly_doesNotThrow(final BlockingQueue<Object> q) {
     final Thread mainThread = Thread.currentThread();
     threadPool.submit(new Runnable() {
+      @Override
       public void run() {
         new Producer(q, 50).run();
         new Interrupter(mainThread).run();

@@ -17,6 +17,7 @@
 package com.google.common.collect;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
@@ -31,13 +32,16 @@ import java.util.Map;
  * A {@code BiMap} backed by two {@code EnumMap} instances. Null keys and values
  * are not permitted. An {@code EnumBiMap} and its inverse are both
  * serializable.
+ * 
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#BiMap">
+ * {@code BiMap}</a>.
  *
  * @author Mike Bostock
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible(emulated = true)
-public final class EnumBiMap<K extends Enum<K>, V extends Enum<V>>
-    extends AbstractBiMap<K, V> {
+public final class EnumBiMap<K extends Enum<K>, V extends Enum<V>> extends AbstractBiMap<K, V> {
   private transient Class<K> keyType;
   private transient Class<V> valueType;
 
@@ -48,8 +52,8 @@ public final class EnumBiMap<K extends Enum<K>, V extends Enum<V>>
    * @param keyType the key type
    * @param valueType the value type
    */
-  public static <K extends Enum<K>, V extends Enum<V>> EnumBiMap<K, V>
-      create(Class<K> keyType, Class<V> valueType) {
+  public static <K extends Enum<K>, V extends Enum<V>> EnumBiMap<K, V> create(Class<K> keyType,
+      Class<V> valueType) {
     return new EnumBiMap<K, V>(keyType, valueType);
   }
 
@@ -63,16 +67,15 @@ public final class EnumBiMap<K extends Enum<K>, V extends Enum<V>>
    * @throws IllegalArgumentException if map is not an {@code EnumBiMap}
    *     instance and contains no mappings
    */
-  public static <K extends Enum<K>, V extends Enum<V>> EnumBiMap<K, V>
-      create(Map<K, V> map) {
+  public static <K extends Enum<K>, V extends Enum<V>> EnumBiMap<K, V> create(Map<K, V> map) {
     EnumBiMap<K, V> bimap = create(inferKeyType(map), inferValueType(map));
     bimap.putAll(map);
     return bimap;
   }
 
   private EnumBiMap(Class<K> keyType, Class<V> valueType) {
-    super(WellBehavedMap.wrap(new EnumMap<K, V>(keyType)),
-        WellBehavedMap.wrap(new EnumMap<V, K>(valueType)));
+    super(WellBehavedMap.wrap(new EnumMap<K, V>(keyType)), WellBehavedMap.wrap(new EnumMap<V, K>(
+        valueType)));
     this.keyType = keyType;
     this.valueType = valueType;
   }
@@ -106,6 +109,16 @@ public final class EnumBiMap<K extends Enum<K>, V extends Enum<V>>
     return valueType;
   }
 
+  @Override
+  K checkKey(K key) {
+    return checkNotNull(key);
+  }
+
+  @Override
+  V checkValue(V value) {
+    return checkNotNull(value);
+  }
+
   /**
    * @serialData the key class, value class, number of entries, first key, first
    *     value, second key, second value, and so on.
@@ -118,15 +131,14 @@ public final class EnumBiMap<K extends Enum<K>, V extends Enum<V>>
     Serialization.writeMap(this, stream);
   }
 
-  @SuppressWarnings("unchecked") // reading fields populated by writeObject
+  @SuppressWarnings("unchecked")
+  // reading fields populated by writeObject
   @GwtIncompatible("java.io.ObjectInputStream")
-  private void readObject(ObjectInputStream stream)
-      throws IOException, ClassNotFoundException {
+  private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
     stream.defaultReadObject();
     keyType = (Class<K>) stream.readObject();
     valueType = (Class<V>) stream.readObject();
-    setDelegates(
-        WellBehavedMap.wrap(new EnumMap<K, V>(keyType)),
+    setDelegates(WellBehavedMap.wrap(new EnumMap<K, V>(keyType)),
         WellBehavedMap.wrap(new EnumMap<V, K>(valueType)));
     Serialization.populateMap(this, stream);
   }

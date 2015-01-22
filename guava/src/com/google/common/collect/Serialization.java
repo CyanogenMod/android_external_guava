@@ -58,8 +58,7 @@ final class Serialization {
    * <p>The serialized output consists of the number of entries, first key,
    * first value, second key, second value, and so on.
    */
-  static <K, V> void writeMap(Map<K, V> map, ObjectOutputStream stream)
-      throws IOException {
+  static <K, V> void writeMap(Map<K, V> map, ObjectOutputStream stream) throws IOException {
     stream.writeInt(map.size());
     for (Map.Entry<K, V> entry : map.entrySet()) {
       stream.writeObject(entry.getKey());
@@ -71,8 +70,8 @@ final class Serialization {
    * Populates a map by reading an input stream, as part of deserialization.
    * See {@link #writeMap} for the data format.
    */
-  static <K, V> void populateMap(Map<K, V> map, ObjectInputStream stream)
-      throws IOException, ClassNotFoundException {
+  static <K, V> void populateMap(Map<K, V> map, ObjectInputStream stream) throws IOException,
+      ClassNotFoundException {
     int size = stream.readInt();
     populateMap(map, stream, size);
   }
@@ -82,12 +81,14 @@ final class Serialization {
    * See {@link #writeMap} for the data format. The size is determined by a
    * prior call to {@link #readCount}.
    */
-  static <K, V> void populateMap(Map<K, V> map, ObjectInputStream stream,
-      int size) throws IOException, ClassNotFoundException {
+  static <K, V> void populateMap(Map<K, V> map, ObjectInputStream stream, int size)
+      throws IOException, ClassNotFoundException {
     for (int i = 0; i < size; i++) {
-      @SuppressWarnings("unchecked") // reading data stored by writeMap
+      @SuppressWarnings("unchecked")
+      // reading data stored by writeMap
       K key = (K) stream.readObject();
-      @SuppressWarnings("unchecked") // reading data stored by writeMap
+      @SuppressWarnings("unchecked")
+      // reading data stored by writeMap
       V value = (V) stream.readObject();
       map.put(key, value);
     }
@@ -101,8 +102,7 @@ final class Serialization {
    * <p>The serialized output consists of the number of distinct elements, the
    * first element, its count, the second element, its count, and so on.
    */
-  static <E> void writeMultiset(
-      Multiset<E> multiset, ObjectOutputStream stream) throws IOException {
+  static <E> void writeMultiset(Multiset<E> multiset, ObjectOutputStream stream) throws IOException {
     int entryCount = multiset.entrySet().size();
     stream.writeInt(entryCount);
     for (Multiset.Entry<E> entry : multiset.entrySet()) {
@@ -115,8 +115,7 @@ final class Serialization {
    * Populates a multiset by reading an input stream, as part of
    * deserialization. See {@link #writeMultiset} for the data format.
    */
-  static <E> void populateMultiset(
-      Multiset<E> multiset, ObjectInputStream stream)
+  static <E> void populateMultiset(Multiset<E> multiset, ObjectInputStream stream)
       throws IOException, ClassNotFoundException {
     int distinctElements = stream.readInt();
     populateMultiset(multiset, stream, distinctElements);
@@ -127,11 +126,11 @@ final class Serialization {
    * deserialization. See {@link #writeMultiset} for the data format. The number
    * of distinct elements is determined by a prior call to {@link #readCount}.
    */
-  static <E> void populateMultiset(
-      Multiset<E> multiset, ObjectInputStream stream, int distinctElements)
-      throws IOException, ClassNotFoundException {
+  static <E> void populateMultiset(Multiset<E> multiset, ObjectInputStream stream,
+      int distinctElements) throws IOException, ClassNotFoundException {
     for (int i = 0; i < distinctElements; i++) {
-      @SuppressWarnings("unchecked") // reading data stored by writeMultiset
+      @SuppressWarnings("unchecked")
+      // reading data stored by writeMultiset
       E element = (E) stream.readObject();
       int count = stream.readInt();
       multiset.add(element, count);
@@ -148,8 +147,8 @@ final class Serialization {
    * for each distinct key: the key, the number of values for that key, and the
    * key's values.
    */
-  static <K, V> void writeMultimap(
-      Multimap<K, V> multimap, ObjectOutputStream stream) throws IOException {
+  static <K, V> void writeMultimap(Multimap<K, V> multimap, ObjectOutputStream stream)
+      throws IOException {
     stream.writeInt(multimap.asMap().size());
     for (Map.Entry<K, Collection<V>> entry : multimap.asMap().entrySet()) {
       stream.writeObject(entry.getKey());
@@ -164,8 +163,7 @@ final class Serialization {
    * Populates a multimap by reading an input stream, as part of
    * deserialization. See {@link #writeMultimap} for the data format.
    */
-  static <K, V> void populateMultimap(
-      Multimap<K, V> multimap, ObjectInputStream stream)
+  static <K, V> void populateMultimap(Multimap<K, V> multimap, ObjectInputStream stream)
       throws IOException, ClassNotFoundException {
     int distinctKeys = stream.readInt();
     populateMultimap(multimap, stream, distinctKeys);
@@ -176,16 +174,17 @@ final class Serialization {
    * deserialization. See {@link #writeMultimap} for the data format. The number
    * of distinct keys is determined by a prior call to {@link #readCount}.
    */
-  static <K, V> void populateMultimap(
-      Multimap<K, V> multimap, ObjectInputStream stream, int distinctKeys)
-      throws IOException, ClassNotFoundException {
+  static <K, V> void populateMultimap(Multimap<K, V> multimap, ObjectInputStream stream,
+      int distinctKeys) throws IOException, ClassNotFoundException {
     for (int i = 0; i < distinctKeys; i++) {
-      @SuppressWarnings("unchecked") // reading data stored by writeMultimap
+      @SuppressWarnings("unchecked")
+      // reading data stored by writeMultimap
       K key = (K) stream.readObject();
       Collection<V> values = multimap.get(key);
       int valueCount = stream.readInt();
       for (int j = 0; j < valueCount; j++) {
-        @SuppressWarnings("unchecked") // reading data stored by writeMultimap
+        @SuppressWarnings("unchecked")
+        // reading data stored by writeMultimap
         V value = (V) stream.readObject();
         values.add(value);
       }
@@ -193,8 +192,7 @@ final class Serialization {
   }
 
   // Secret sauce for setting final fields; don't make it public.
-  static <T> FieldSetter<T> getFieldSetter(
-      final Class<T> clazz, String fieldName) {
+  static <T> FieldSetter<T> getFieldSetter(final Class<T> clazz, String fieldName) {
     try {
       Field field = clazz.getDeclaredField(fieldName);
       return new FieldSetter<T>(field);

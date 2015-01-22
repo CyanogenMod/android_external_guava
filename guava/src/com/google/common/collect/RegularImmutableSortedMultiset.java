@@ -15,15 +15,10 @@
 package com.google.common.collect;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.SortedLists.KeyAbsentBehavior.INVERTED_INSERTION_INDEX;
-import static com.google.common.collect.SortedLists.KeyAbsentBehavior.NEXT_HIGHER;
-import static com.google.common.collect.SortedLists.KeyAbsentBehavior.NEXT_LOWER;
-import static com.google.common.collect.SortedLists.KeyPresentBehavior.ANY_PRESENT;
+import static com.google.common.base.Preconditions.checkPositionIndexes;
+import static com.google.common.collect.BoundType.CLOSED;
 
 import com.google.common.primitives.Ints;
-
-import java.util.Comparator;
-import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -32,167 +27,110 @@ import javax.annotation.Nullable;
  *
  * @author Louis Wasserman
  */
+@SuppressWarnings("serial")
+// uses writeReplace, not default serialization
 final class RegularImmutableSortedMultiset<E> extends ImmutableSortedMultiset<E> {
-  private static final class CumulativeCountEntry<E> extends Multisets.AbstractEntry<E> {
-    final E element;
-    final int count;
-    final long cumulativeCount;
+  private final transient RegularImmutableSortedSet<E> elementSet;
+  private final transient int[] counts;
+  private final transient long[] cumulativeCounts;
+  private final transient int offset;
+  private final transient int length;
 
-    CumulativeCountEntry(E element, int count, @Nullable CumulativeCountEntry<E> previous) {
-      this.element = element;
-      this.count = count;
-      this.cumulativeCount = count + ((previous == null) ? 0 : previous.cumulativeCount);
-    }
-
-    @Override
-    public E getElement() {
-      return element;
-    }
-
-    @Override
-    public int getCount() {
-      return count;
-    }
+  RegularImmutableSortedMultiset(RegularImmutableSortedSet<E> elementSet, int[] counts,
+      long[] cumulativeCounts, int offset, int length) {
+    this.elementSet = elementSet;
+    this.counts = counts;
+    this.cumulativeCounts = cumulativeCounts;
+    this.offset = offset;
+    this.length = length;
   }
 
-  static <E> RegularImmutableSortedMultiset<E> createFromSorted(Comparator<? super E> comparator,
-      List<? extends Multiset.Entry<E>> entries) {
-    List<CumulativeCountEntry<E>> newEntries = Lists.newArrayListWithCapacity(entries.size());
-    CumulativeCountEntry<E> previous = null;
-    for (Multiset.Entry<E> entry : entries) {
-      newEntries.add(
-          previous = new CumulativeCountEntry<E>(entry.getElement(), entry.getCount(), previous));
-    }
-    return new RegularImmutableSortedMultiset<E>(comparator, ImmutableList.copyOf(newEntries));
+  private Entry<E> getEntry(int index) {
+    return Multisets.immutableEntry(elementSet.asList().get(index), counts[offset + index]);
   }
 
-  final transient ImmutableList<CumulativeCountEntry<E>> entries;
-
-  RegularImmutableSortedMultiset(
-      Comparator<? super E> comparator, ImmutableList<CumulativeCountEntry<E>> entries) {
-    super(comparator);
-    this.entries = entries;
-    assert !entries.isEmpty();
+  public Entry<E> firstEntry() {
+    return getEntry(0);
   }
 
-  ImmutableList<E> elementList() {
-    return new TransformedImmutableList<CumulativeCountEntry<E>, E>(entries) {
-      @Override
-      E transform(CumulativeCountEntry<E> entry) {
-        return entry.getElement();
-      }
-    };
+  public Entry<E> lastEntry() {
+    return getEntry(length - 1);
   }
 
-  @Override
-  ImmutableSortedSet<E> createElementSet() {
-    return new RegularImmutableSortedSet<E>(elementList(), comparator());
-  }
-
-  @Override
-  ImmutableSortedSet<E> createDescendingElementSet() {
-    return new RegularImmutableSortedSet<E>(elementList().reverse(), reverseComparator());
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  UnmodifiableIterator<Multiset.Entry<E>> entryIterator() {
-    return (UnmodifiableIterator) entries.iterator();
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  UnmodifiableIterator<Multiset.Entry<E>> descendingEntryIterator() {
-    return (UnmodifiableIterator) entries.reverse().iterator();
-  }
-
-  @Override
-  public CumulativeCountEntry<E> firstEntry() {
-    return entries.get(0);
-  }
-
-  @Override
-  public CumulativeCountEntry<E> lastEntry() {
-    return entries.get(entries.size() - 1);
-  }
-
-  @Override
-  public int size() {
-    CumulativeCountEntry<E> firstEntry = firstEntry();
-    CumulativeCountEntry<E> lastEntry = lastEntry();
-    return Ints.saturatedCast(
-        lastEntry.cumulativeCount - firstEntry.cumulativeCount + firstEntry.count);
-  }
-
-  @Override
-  int distinctElements() {
-    return entries.size();
-  }
-
-  @Override
-  boolean isPartialView() {
-    return entries.isPartialView();
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
   public int count(@Nullable Object element) {
-    if (element == null) {
-      return 0;
-    }
-    try {
-      int index = SortedLists.binarySearch(
-          elementList(), (E) element, comparator(), ANY_PRESENT, INVERTED_INSERTION_INDEX);
-      return (index >= 0) ? entries.get(index).getCount() : 0;
-    } catch (ClassCastException e) {
-      return 0;
-    }
+    int index = elementSet.indexOf(element);
+    return (index == -1) ? 0 : counts[index + offset];
+  }
+
+  public int size() {
+    long size = cumulativeCounts[offset + length] - cumulativeCounts[offset];
+    return Ints.saturatedCast(size);
+  }
+
+  @Override
+  public ImmutableSortedSet<E> elementSet() {
+    return elementSet;
   }
 
   @Override
   public ImmutableSortedMultiset<E> headMultiset(E upperBound, BoundType boundType) {
-    int index;
-    switch (boundType) {
-      case OPEN:
-        index = SortedLists.binarySearch(
-            elementList(), checkNotNull(upperBound), comparator(), ANY_PRESENT, NEXT_HIGHER);
-        break;
-      case CLOSED:
-        index = SortedLists.binarySearch(
-            elementList(), checkNotNull(upperBound), comparator(), ANY_PRESENT, NEXT_LOWER) + 1;
-        break;
-      default:
-        throw new AssertionError();
-    }
-    return createSubMultiset(0, index);
+    return getSubMultiset(0, elementSet.headIndex(upperBound, checkNotNull(boundType) == CLOSED));
   }
 
   @Override
   public ImmutableSortedMultiset<E> tailMultiset(E lowerBound, BoundType boundType) {
-    int index;
-    switch (boundType) {
-      case OPEN:
-        index = SortedLists.binarySearch(
-            elementList(), checkNotNull(lowerBound), comparator(), ANY_PRESENT, NEXT_LOWER) + 1;
-        break;
-      case CLOSED:
-        index = SortedLists.binarySearch(
-            elementList(), checkNotNull(lowerBound), comparator(), ANY_PRESENT, NEXT_HIGHER);
-        break;
-      default:
-        throw new AssertionError();
-    }
-    return createSubMultiset(index, distinctElements());
+    return getSubMultiset(elementSet.tailIndex(lowerBound, checkNotNull(boundType) == CLOSED),
+        length);
   }
 
-  private ImmutableSortedMultiset<E> createSubMultiset(int newFromIndex, int newToIndex) {
-    if (newFromIndex == 0 && newToIndex == entries.size()) {
-      return this;
-    } else if (newFromIndex >= newToIndex) {
+  ImmutableSortedMultiset<E> getSubMultiset(int from, int to) {
+    checkPositionIndexes(from, to, length);
+    if (from == to) {
       return emptyMultiset(comparator());
+    } else if (from == 0 && to == length) {
+      return this;
     } else {
-      return new RegularImmutableSortedMultiset<E>(
-          comparator(), entries.subList(newFromIndex, newToIndex));
+      RegularImmutableSortedSet<E> subElementSet = (RegularImmutableSortedSet<E>) elementSet
+          .getSubSet(from, to);
+      return new RegularImmutableSortedMultiset<E>(subElementSet, counts, cumulativeCounts, offset
+          + from, to - from);
     }
+  }
+
+  @Override
+  ImmutableSet<Entry<E>> createEntrySet() {
+    return new EntrySet();
+  }
+
+  private final class EntrySet extends ImmutableMultiset<E>.EntrySet {
+
+    public int size() {
+      return length;
+    }
+
+    @Override
+    public UnmodifiableIterator<Entry<E>> iterator() {
+      return asList().iterator();
+    }
+
+    @Override
+    ImmutableList<Entry<E>> createAsList() {
+      return new ImmutableAsList<Entry<E>>() {
+
+        public Entry<E> get(int index) {
+          return getEntry(index);
+        }
+
+        @Override
+        ImmutableCollection<Entry<E>> delegateCollection() {
+          return EntrySet.this;
+        }
+      };
+    }
+  }
+
+  @Override
+  boolean isPartialView() {
+    return offset > 0 || length < counts.length;
   }
 }

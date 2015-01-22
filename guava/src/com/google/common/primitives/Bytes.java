@@ -38,6 +38,10 @@ import java.util.RandomAccess;
  * treat bytes as signed or unsigned are found in {@link SignedBytes} and {@link
  * UnsignedBytes}.
  *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
+ * primitive utilities</a>.
+ *
  * @author Kevin Bourrillion
  * @since 1.0
  */
@@ -90,8 +94,7 @@ public final class Bytes {
   }
 
   // TODO(kevinb): consider making this public
-  private static int indexOf(
-      byte[] array, byte target, int start, int end) {
+  private static int indexOf(byte[] array, byte target, int start, int end) {
     for (int i = start; i < end; i++) {
       if (array[i] == target) {
         return i;
@@ -118,8 +121,7 @@ public final class Bytes {
       return 0;
     }
 
-    outer:
-    for (int i = 0; i < array.length - target.length + 1; i++) {
+    outer: for (int i = 0; i < array.length - target.length + 1; i++) {
       for (int j = 0; j < target.length; j++) {
         if (array[i + j] != target[j]) {
           continue outer;
@@ -144,8 +146,7 @@ public final class Bytes {
   }
 
   // TODO(kevinb): consider making this public
-  private static int lastIndexOf(
-      byte[] array, byte target, int start, int end) {
+  private static int lastIndexOf(byte[] array, byte target, int start, int end) {
     for (int i = end - 1; i >= start; i--) {
       if (array[i] == target) {
         return i;
@@ -193,13 +194,10 @@ public final class Bytes {
    * @return an array containing the values of {@code array}, with guaranteed
    *     minimum length {@code minLength}
    */
-  public static byte[] ensureCapacity(
-      byte[] array, int minLength, int padding) {
+  public static byte[] ensureCapacity(byte[] array, int minLength, int padding) {
     checkArgument(minLength >= 0, "Invalid minLength: %s", minLength);
     checkArgument(padding >= 0, "Invalid padding: %s", padding);
-    return (array.length < minLength)
-        ? copyOf(array, minLength + padding)
-        : array;
+    return (array.length < minLength) ? copyOf(array, minLength + padding) : array;
   }
 
   // Arrays.copyOf() requires Java 6
@@ -210,20 +208,21 @@ public final class Bytes {
   }
 
   /**
-   * Copies a collection of {@code Byte} instances into a new array of
-   * primitive {@code byte} values.
+   * Returns an array containing each value of {@code collection}, converted to
+   * a {@code byte} value in the manner of {@link Number#byteValue}.
    *
    * <p>Elements are copied from the argument collection as if by {@code
    * collection.toArray()}.  Calling this method is as thread-safe as calling
    * that method.
    *
-   * @param collection a collection of {@code Byte} objects
+   * @param collection a collection of {@code Number} instances
    * @return an array containing the same values as {@code collection}, in the
    *     same order, converted to primitives
    * @throws NullPointerException if {@code collection} or any of its elements
    *     is null
+   * @since 1.0 (parameter was {@code Collection<Byte>} before 12.0)
    */
-  public static byte[] toArray(Collection<Byte> collection) {
+  public static byte[] toArray(Collection<? extends Number> collection) {
     if (collection instanceof ByteArrayAsList) {
       return ((ByteArrayAsList) collection).toByteArray();
     }
@@ -233,7 +232,7 @@ public final class Bytes {
     byte[] array = new byte[len];
     for (int i = 0; i < len; i++) {
       // checkNotNull for GWT (do not optimize)
-      array[i] = (Byte) checkNotNull(boxedArray[i]);
+      array[i] = ((Number) checkNotNull(boxedArray[i])).byteValue();
     }
     return array;
   }
@@ -260,8 +259,8 @@ public final class Bytes {
   }
 
   @GwtCompatible
-  private static class ByteArrayAsList extends AbstractList<Byte>
-      implements RandomAccess, Serializable {
+  private static class ByteArrayAsList extends AbstractList<Byte> implements RandomAccess,
+      Serializable {
     final byte[] array;
     final int start;
     final int end;
@@ -276,26 +275,30 @@ public final class Bytes {
       this.end = end;
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
       return end - start;
     }
 
-    @Override public boolean isEmpty() {
+    @Override
+    public boolean isEmpty() {
       return false;
     }
 
-    @Override public Byte get(int index) {
+    @Override
+    public Byte get(int index) {
       checkElementIndex(index, size());
       return array[start + index];
     }
 
-    @Override public boolean contains(Object target) {
+    @Override
+    public boolean contains(Object target) {
       // Overridden to prevent a ton of boxing
-      return (target instanceof Byte)
-          && Bytes.indexOf(array, (Byte) target, start, end) != -1;
+      return (target instanceof Byte) && Bytes.indexOf(array, (Byte) target, start, end) != -1;
     }
 
-    @Override public int indexOf(Object target) {
+    @Override
+    public int indexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Byte) {
         int i = Bytes.indexOf(array, (Byte) target, start, end);
@@ -306,7 +309,8 @@ public final class Bytes {
       return -1;
     }
 
-    @Override public int lastIndexOf(Object target) {
+    @Override
+    public int lastIndexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Byte) {
         int i = Bytes.lastIndexOf(array, (Byte) target, start, end);
@@ -317,14 +321,17 @@ public final class Bytes {
       return -1;
     }
 
-    @Override public Byte set(int index, Byte element) {
+    @Override
+    public Byte set(int index, Byte element) {
       checkElementIndex(index, size());
       byte oldValue = array[start + index];
-      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
+      // checkNotNull for GWT (do not optimize)
+      array[start + index] = checkNotNull(element);
       return oldValue;
     }
 
-    @Override public List<Byte> subList(int fromIndex, int toIndex) {
+    @Override
+    public List<Byte> subList(int fromIndex, int toIndex) {
       int size = size();
       checkPositionIndexes(fromIndex, toIndex, size);
       if (fromIndex == toIndex) {
@@ -333,7 +340,8 @@ public final class Bytes {
       return new ByteArrayAsList(array, start + fromIndex, start + toIndex);
     }
 
-    @Override public boolean equals(Object object) {
+    @Override
+    public boolean equals(Object object) {
       if (object == this) {
         return true;
       }
@@ -353,7 +361,8 @@ public final class Bytes {
       return super.equals(object);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       int result = 1;
       for (int i = start; i < end; i++) {
         result = 31 * result + Bytes.hashCode(array[i]);
@@ -361,7 +370,8 @@ public final class Bytes {
       return result;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       StringBuilder builder = new StringBuilder(size() * 5);
       builder.append('[').append(array[start]);
       for (int i = start + 1; i < end; i++) {
@@ -371,7 +381,7 @@ public final class Bytes {
     }
 
     byte[] toByteArray() {
-      // Arrays.copyOfRange() requires Java 6
+      // Arrays.copyOfRange() is not available under GWT
       int size = size();
       byte[] result = new byte[size];
       System.arraycopy(array, start, result, 0, size);

@@ -16,9 +16,13 @@
 
 package com.google.common.io;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
+
+import javax.annotation.Nullable;
 
 /**
  * An {@link InputStream} that concatenates multiple substreams. At most
@@ -37,14 +41,14 @@ final class MultiInputStream extends InputStream {
    *
    * @param it an iterator of I/O suppliers that will provide each substream
    */
-  public MultiInputStream(
-      Iterator<? extends InputSupplier<? extends InputStream>> it)
+  public MultiInputStream(Iterator<? extends InputSupplier<? extends InputStream>> it)
       throws IOException {
-    this.it = it;
+    this.it = checkNotNull(it);
     advance();
   }
 
-  @Override public void close() throws IOException {
+  @Override
+  public void close() throws IOException {
     if (in != null) {
       try {
         in.close();
@@ -64,18 +68,21 @@ final class MultiInputStream extends InputStream {
     }
   }
 
-  @Override public int available() throws IOException {
+  @Override
+  public int available() throws IOException {
     if (in == null) {
       return 0;
     }
     return in.available();
   }
 
-  @Override public boolean markSupported() {
+  @Override
+  public boolean markSupported() {
     return false;
   }
 
-  @Override public int read() throws IOException {
+  @Override
+  public int read() throws IOException {
     if (in == null) {
       return -1;
     }
@@ -87,7 +94,8 @@ final class MultiInputStream extends InputStream {
     return result;
   }
 
-  @Override public int read(byte[] b, int off, int len) throws IOException {
+  @Override
+  public int read(@Nullable byte[] b, int off, int len) throws IOException {
     if (in == null) {
       return -1;
     }
@@ -99,7 +107,8 @@ final class MultiInputStream extends InputStream {
     return result;
   }
 
-  @Override public long skip(long n) throws IOException {
+  @Override
+  public long skip(long n) throws IOException {
     if (in == null || n <= 0) {
       return 0;
     }

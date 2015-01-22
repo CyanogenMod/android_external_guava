@@ -20,10 +20,10 @@ import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.ImmutableMap;
 
-import junit.framework.TestCase;
-
 import java.util.Arrays;
 import java.util.Map;
+
+import junit.framework.TestCase;
 
 /**
  * Tests for {@link Objects#toStringHelper(Object)}.
@@ -322,6 +322,113 @@ public class ToStringHelperTest extends TestCase {
     final String expected = ".*\\{null, Hello, null\\}";
 
     assertTrue(result, result.matches(expected));
+  }
+
+  @GwtIncompatible("Class names are obfuscated in GWT")
+  public void testToStringOmitNullValues_oneField() {
+    String toTest = Objects.toStringHelper(new TestClass())
+        .omitNullValues()
+        .add("field1", null)
+        .toString();
+    assertEquals("TestClass{}", toTest);
+  }
+
+  @GwtIncompatible("Class names are obfuscated in GWT")
+  public void testToStringOmitNullValues_manyFieldsFirstNull() {
+    String toTest = Objects.toStringHelper(new TestClass())
+        .omitNullValues()
+        .add("field1", null)
+        .add("field2", "Googley")
+        .add("field3", "World")
+        .toString();
+    assertEquals("TestClass{field2=Googley, field3=World}", toTest);
+  }
+
+  @GwtIncompatible("Class names are obfuscated in GWT")
+  public void testToStringOmitNullValues_manyFieldsOmitAfterNull() {
+    String toTest = Objects.toStringHelper(new TestClass())
+        .add("field1", null)
+        .add("field2", "Googley")
+        .add("field3", "World")
+        .omitNullValues()
+        .toString();
+    assertEquals("TestClass{field2=Googley, field3=World}", toTest);
+  }
+
+  @GwtIncompatible("Class names are obfuscated in GWT")
+  public void testToStringOmitNullValues_manyFieldsLastNull() {
+    String toTest = Objects.toStringHelper(new TestClass())
+        .omitNullValues()
+        .add("field1", "Hello")
+        .add("field2", "Googley")
+        .add("field3", null)
+        .toString();
+    assertEquals("TestClass{field1=Hello, field2=Googley}", toTest);
+  }
+
+  @GwtIncompatible("Class names are obfuscated in GWT")
+  public void testToStringOmitNullValues_oneValue() {
+    String toTest = Objects.toStringHelper(new TestClass())
+        .omitNullValues()
+        .addValue(null)
+        .toString();
+    assertEquals("TestClass{}", toTest);
+  }
+
+  @GwtIncompatible("Class names are obfuscated in GWT")
+  public void testToStringOmitNullValues_manyValuesFirstNull() {
+    String toTest = Objects.toStringHelper(new TestClass())
+        .omitNullValues()
+        .addValue(null)
+        .addValue("Googley")
+        .addValue("World")
+        .toString();
+    assertEquals("TestClass{Googley, World}", toTest);
+  }
+
+  @GwtIncompatible("Class names are obfuscated in GWT")
+  public void testToStringOmitNullValues_manyValuesLastNull() {
+    String toTest = Objects.toStringHelper(new TestClass())
+        .omitNullValues()
+        .addValue("Hello")
+        .addValue("Googley")
+        .addValue(null)
+        .toString();
+    assertEquals("TestClass{Hello, Googley}", toTest);
+  }
+
+  @GwtIncompatible("Class names are obfuscated in GWT")
+  public void testToStringOmitNullValues_differentOrder() {
+    String expected = "TestClass{field1=Hello, field2=Googley, field3=World}";
+    String toTest1 = Objects.toStringHelper(new TestClass())
+        .omitNullValues()
+        .add("field1", "Hello")
+        .add("field2", "Googley")
+        .add("field3", "World")
+        .toString();
+    String toTest2 = Objects.toStringHelper(new TestClass())
+        .add("field1", "Hello")
+        .add("field2", "Googley")
+        .omitNullValues()
+        .add("field3", "World")
+        .toString();
+    assertEquals(expected, toTest1);
+    assertEquals(expected, toTest2);
+  }
+
+  @GwtIncompatible("Class names are obfuscated in GWT")
+  public void testToStringOmitNullValues_canBeCalledManyTimes() {
+    String toTest = Objects.toStringHelper(new TestClass())
+        .omitNullValues()
+        .omitNullValues()
+        .add("field1", "Hello")
+        .omitNullValues()
+        .add("field2", "Googley")
+        .omitNullValues()
+        .add("field3", "World")
+        .toString();
+    assertEquals("TestClass{field1=Hello, field2=Googley, field3=World}",
+        toTest);
   }
 
   /**

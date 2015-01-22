@@ -36,12 +36,16 @@ import java.util.SortedSet;
  * resulting multiset will violate the {@link Collection} contract, which it is
  * specified in terms of {@link Object#equals}.
  * 
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multiset">
+ * {@code Multiset}</a>.
+ * 
  * @author Louis Wasserman
  * @since 11.0
  */
 @Beta
-@GwtCompatible
-public interface SortedMultiset<E> extends Multiset<E>, SortedIterable<E> {
+@GwtCompatible(emulated = true)
+public interface SortedMultiset<E> extends SortedMultisetBridge<E>, SortedIterable<E> {
   /**
    * Returns the comparator that orders this multiset, or
    * {@link Ordering#natural()} if the natural ordering of the elements is used.
@@ -73,9 +77,11 @@ public interface SortedMultiset<E> extends Multiset<E>, SortedIterable<E> {
   Entry<E> pollLastEntry();
 
   /**
-   * Returns a {@link SortedSet} view of the distinct elements in this multiset.
+   * Returns a {@link NavigableSet} view of the distinct elements in this multiset.
+   * 
+   * @since 11.0
    */
-  @Override SortedSet<E> elementSet();
+  SortedSet<E> elementSet();
 
   /**
    * {@inheritDoc}
@@ -83,7 +89,7 @@ public interface SortedMultiset<E> extends Multiset<E>, SortedIterable<E> {
    * <p>The iterator returns the elements in ascending order according to this
    * multiset's comparator.
    */
-  @Override Iterator<E> iterator();
+  Iterator<E> iterator();
 
   /**
    * Returns a descending view of this multiset. Modifications made to either
@@ -116,8 +122,8 @@ public interface SortedMultiset<E> extends Multiset<E>, SortedIterable<E> {
    * {@code tailMultiset(lowerBound, lowerBoundType).headMultiset(upperBound,
    * upperBoundType)}.
    */
-  SortedMultiset<E> subMultiset(E lowerBound, BoundType lowerBoundType,
-      E upperBound, BoundType upperBoundType);
+  SortedMultiset<E> subMultiset(E lowerBound, BoundType lowerBoundType, E upperBound,
+      BoundType upperBoundType);
 
   /**
    * Returns a view of this multiset restricted to the elements greater than

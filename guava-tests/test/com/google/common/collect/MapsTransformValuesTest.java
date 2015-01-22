@@ -16,17 +16,17 @@
 
 package com.google.common.collect;
 
+import com.google.common.annotations.GwtCompatible;
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.collect.testing.MapInterfaceTest;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
-import com.google.common.annotations.GwtCompatible;
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.collect.testing.MapInterfaceTest;
 
 /**
  * Tests for {@link Maps#transformValues}.
@@ -54,6 +54,7 @@ public class MapsTransformValuesTest extends MapInterfaceTest<String, String> {
     super(false, true, false, true, true);
   }
 
+  @Override
   protected Map<String, String> makeEmptyMap() {
     return Maps.transformValues(Maps.<String, String>newHashMap(), 
         Functions.<String>identity());

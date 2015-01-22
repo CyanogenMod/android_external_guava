@@ -23,7 +23,9 @@ import static com.google.common.base.Preconditions.checkPositionIndexes;
 import static java.lang.Float.NEGATIVE_INFINITY;
 import static java.lang.Float.POSITIVE_INFINITY;
 
+import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.GwtIncompatible;
 
 import java.io.Serializable;
 import java.util.AbstractList;
@@ -34,14 +36,20 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.RandomAccess;
 
+import javax.annotation.Nullable;
+
 /**
  * Static utility methods pertaining to {@code float} primitives, that are not
  * already found in either {@link Float} or {@link Arrays}.
  *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
+ * primitive utilities</a>.
+ *
  * @author Kevin Bourrillion
  * @since 1.0
  */
-@GwtCompatible
+@GwtCompatible(emulated = true)
 public final class Floats {
   private Floats() {}
 
@@ -124,8 +132,7 @@ public final class Floats {
   }
 
   // TODO(kevinb): consider making this public
-  private static int indexOf(
-      float[] array, float target, int start, int end) {
+  private static int indexOf(float[] array, float target, int start, int end) {
     for (int i = start; i < end; i++) {
       if (array[i] == target) {
         return i;
@@ -155,8 +162,7 @@ public final class Floats {
       return 0;
     }
 
-    outer:
-    for (int i = 0; i < array.length - target.length + 1; i++) {
+    outer: for (int i = 0; i < array.length - target.length + 1; i++) {
       for (int j = 0; j < target.length; j++) {
         if (array[i + j] != target[j]) {
           continue outer;
@@ -182,8 +188,7 @@ public final class Floats {
   }
 
   // TODO(kevinb): consider making this public
-  private static int lastIndexOf(
-      float[] array, float target, int start, int end) {
+  private static int lastIndexOf(float[] array, float target, int start, int end) {
     for (int i = end - 1; i >= start; i--) {
       if (array[i] == target) {
         return i;
@@ -267,13 +272,10 @@ public final class Floats {
    * @return an array containing the values of {@code array}, with guaranteed
    *     minimum length {@code minLength}
    */
-  public static float[] ensureCapacity(
-      float[] array, int minLength, int padding) {
+  public static float[] ensureCapacity(float[] array, int minLength, int padding) {
     checkArgument(minLength >= 0, "Invalid minLength: %s", minLength);
     checkArgument(padding >= 0, "Invalid padding: %s", padding);
-    return (array.length < minLength)
-        ? copyOf(array, minLength + padding)
-        : array;
+    return (array.length < minLength) ? copyOf(array, minLength + padding) : array;
   }
 
   // Arrays.copyOf() requires Java 6
@@ -335,7 +337,6 @@ public final class Floats {
   private enum LexicographicalComparator implements Comparator<float[]> {
     INSTANCE;
 
-    @Override
     public int compare(float[] left, float[] right) {
       int minLength = Math.min(left.length, right.length);
       for (int i = 0; i < minLength; i++) {
@@ -349,20 +350,21 @@ public final class Floats {
   }
 
   /**
-   * Copies a collection of {@code Float} instances into a new array of
-   * primitive {@code float} values.
+   * Returns an array containing each value of {@code collection}, converted to
+   * a {@code float} value in the manner of {@link Number#floatValue}.
    *
    * <p>Elements are copied from the argument collection as if by {@code
    * collection.toArray()}.  Calling this method is as thread-safe as calling
    * that method.
    *
-   * @param collection a collection of {@code Float} objects
+   * @param collection a collection of {@code Number} instances
    * @return an array containing the same values as {@code collection}, in the
    *     same order, converted to primitives
    * @throws NullPointerException if {@code collection} or any of its elements
    *     is null
+   * @since 1.0 (parameter was {@code Collection<Float>} before 12.0)
    */
-  public static float[] toArray(Collection<Float> collection) {
+  public static float[] toArray(Collection<? extends Number> collection) {
     if (collection instanceof FloatArrayAsList) {
       return ((FloatArrayAsList) collection).toFloatArray();
     }
@@ -372,7 +374,7 @@ public final class Floats {
     float[] array = new float[len];
     for (int i = 0; i < len; i++) {
       // checkNotNull for GWT (do not optimize)
-      array[i] = (Float) checkNotNull(boxedArray[i]);
+      array[i] = ((Number) checkNotNull(boxedArray[i])).floatValue();
     }
     return array;
   }
@@ -402,8 +404,8 @@ public final class Floats {
   }
 
   @GwtCompatible
-  private static class FloatArrayAsList extends AbstractList<Float>
-      implements RandomAccess, Serializable {
+  private static class FloatArrayAsList extends AbstractList<Float> implements RandomAccess,
+      Serializable {
     final float[] array;
     final int start;
     final int end;
@@ -418,26 +420,30 @@ public final class Floats {
       this.end = end;
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
       return end - start;
     }
 
-    @Override public boolean isEmpty() {
+    @Override
+    public boolean isEmpty() {
       return false;
     }
 
-    @Override public Float get(int index) {
+    @Override
+    public Float get(int index) {
       checkElementIndex(index, size());
       return array[start + index];
     }
 
-    @Override public boolean contains(Object target) {
+    @Override
+    public boolean contains(Object target) {
       // Overridden to prevent a ton of boxing
-      return (target instanceof Float)
-          && Floats.indexOf(array, (Float) target, start, end) != -1;
+      return (target instanceof Float) && Floats.indexOf(array, (Float) target, start, end) != -1;
     }
 
-    @Override public int indexOf(Object target) {
+    @Override
+    public int indexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Float) {
         int i = Floats.indexOf(array, (Float) target, start, end);
@@ -448,7 +454,8 @@ public final class Floats {
       return -1;
     }
 
-    @Override public int lastIndexOf(Object target) {
+    @Override
+    public int lastIndexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Float) {
         int i = Floats.lastIndexOf(array, (Float) target, start, end);
@@ -459,14 +466,17 @@ public final class Floats {
       return -1;
     }
 
-    @Override public Float set(int index, Float element) {
+    @Override
+    public Float set(int index, Float element) {
       checkElementIndex(index, size());
       float oldValue = array[start + index];
-      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
+      // checkNotNull for GWT (do not optimize)
+      array[start + index] = checkNotNull(element);
       return oldValue;
     }
 
-    @Override public List<Float> subList(int fromIndex, int toIndex) {
+    @Override
+    public List<Float> subList(int fromIndex, int toIndex) {
       int size = size();
       checkPositionIndexes(fromIndex, toIndex, size);
       if (fromIndex == toIndex) {
@@ -475,7 +485,8 @@ public final class Floats {
       return new FloatArrayAsList(array, start + fromIndex, start + toIndex);
     }
 
-    @Override public boolean equals(Object object) {
+    @Override
+    public boolean equals(Object object) {
       if (object == this) {
         return true;
       }
@@ -495,7 +506,8 @@ public final class Floats {
       return super.equals(object);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       int result = 1;
       for (int i = start; i < end; i++) {
         result = 31 * result + Floats.hashCode(array[i]);
@@ -503,7 +515,8 @@ public final class Floats {
       return result;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       StringBuilder builder = new StringBuilder(size() * 12);
       builder.append('[').append(array[start]);
       for (int i = start + 1; i < end; i++) {
@@ -513,7 +526,7 @@ public final class Floats {
     }
 
     float[] toFloatArray() {
-      // Arrays.copyOfRange() requires Java 6
+      // Arrays.copyOfRange() is not available under GWT
       int size = size();
       float[] result = new float[size];
       System.arraycopy(array, start, result, 0, size);
@@ -521,5 +534,41 @@ public final class Floats {
     }
 
     private static final long serialVersionUID = 0;
+  }
+
+  /**
+   * Parses the specified string as a single-precision floating point value.
+   * The ASCII character {@code '-'} (<code>'&#92;u002D'</code>) is recognized
+   * as the minus sign.
+   *
+   * <p>Unlike {@link Float#parseFloat(String)}, this method returns
+   * {@code null} instead of throwing an exception if parsing fails.
+   * Valid inputs are exactly those accepted by {@link Float#valueOf(String)},
+   * except that leading and trailing whitespace is not permitted.
+   *
+   * <p>This implementation is likely to be faster than {@code
+   * Float.parseFloat} if many failures are expected.
+   *
+   * @param string the string representation of a {@code float} value
+   * @return the floating point value represented by {@code string}, or
+   *     {@code null} if {@code string} has a length of zero or cannot be
+   *     parsed as a {@code float} value
+   * @since 14.0
+   */
+  @GwtIncompatible("regular expressions")
+  @Nullable
+  @Beta
+  public static Float tryParse(String string) {
+    if (Doubles.FLOATING_POINT_PATTERN.matcher(string).matches()) {
+      // TODO(user): could be potentially optimized, but only with
+      // extensive testing
+      try {
+        return Float.parseFloat(string);
+      } catch (NumberFormatException e) {
+        // Float.parseFloat has changed specs several times, so fall through
+        // gracefully
+      }
+    }
+    return null;
   }
 }

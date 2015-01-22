@@ -41,8 +41,7 @@ import java.io.InputStream;
  * @since 8.0
  */
 @Beta
-public final class LittleEndianDataInputStream extends FilterInputStream
-    implements DataInput {
+public final class LittleEndianDataInputStream extends FilterInputStream implements DataInput {
 
   /**
    * Creates a {@code LittleEndianDataInputStream} that wraps the given stream.
@@ -56,33 +55,29 @@ public final class LittleEndianDataInputStream extends FilterInputStream
   /**
    * This method will throw an {@link UnsupportedOperationException}.
    */
-  @Override
+
   public String readLine() {
     throw new UnsupportedOperationException("readLine is not supported");
   }
 
-  @Override
   public void readFully(byte[] b) throws IOException {
     ByteStreams.readFully(this, b);
   }
 
-  @Override
   public void readFully(byte[] b, int off, int len) throws IOException {
     ByteStreams.readFully(this, b, off, len);
   }
 
-  @Override
   public int skipBytes(int n) throws IOException {
     return (int) in.skip(n);
   }
 
-  @Override
   public int readUnsignedByte() throws IOException {
     int b1 = in.read();
     if (0 > b1) {
       throw new EOFException();
     }
-    
+
     return b1;
   }
 
@@ -95,7 +90,7 @@ public final class LittleEndianDataInputStream extends FilterInputStream
    *         unsigned 16-bit integer in little-endian byte order
    * @throws IOException if an I/O error occurs
    */
-  @Override
+
   public int readUnsignedShort() throws IOException {
     byte b1 = readAndCheckByte();
     byte b2 = readAndCheckByte();
@@ -111,14 +106,14 @@ public final class LittleEndianDataInputStream extends FilterInputStream
    *         {@code int} in little-endian byte order
    * @throws IOException if an I/O error occurs
    */
-  @Override
+
   public int readInt() throws IOException {
     byte b1 = readAndCheckByte();
     byte b2 = readAndCheckByte();
     byte b3 = readAndCheckByte();
     byte b4 = readAndCheckByte();
 
-    return Ints.fromBytes( b4, b3, b2, b1);
+    return Ints.fromBytes(b4, b3, b2, b1);
   }
 
   /**
@@ -129,7 +124,7 @@ public final class LittleEndianDataInputStream extends FilterInputStream
    *         {@code long} in little-endian byte order
    * @throws IOException if an I/O error occurs
    */
-  @Override
+
   public long readLong() throws IOException {
     byte b1 = readAndCheckByte();
     byte b2 = readAndCheckByte();
@@ -151,7 +146,7 @@ public final class LittleEndianDataInputStream extends FilterInputStream
    *         {@code float} in little-endian byte order
    * @throws IOException if an I/O error occurs
    */
-  @Override
+
   public float readFloat() throws IOException {
     return Float.intBitsToFloat(readInt());
   }
@@ -165,12 +160,11 @@ public final class LittleEndianDataInputStream extends FilterInputStream
    *         {@code double} in little-endian byte order
    * @throws IOException if an I/O error occurs
    */
-  @Override
+
   public double readDouble() throws IOException {
     return Double.longBitsToDouble(readLong());
   }
 
-  @Override
   public String readUTF() throws IOException {
     return new DataInputStream(in).readUTF();
   }
@@ -183,7 +177,7 @@ public final class LittleEndianDataInputStream extends FilterInputStream
    *         {@code short} in little-endian byte order.
    * @throws IOException if an I/O error occurs.
    */
-  @Override
+
   public short readShort() throws IOException {
     return (short) readUnsignedShort();
   }
@@ -196,17 +190,15 @@ public final class LittleEndianDataInputStream extends FilterInputStream
    *         {@code char} in little-endian byte order
    * @throws IOException if an I/O error occurs
    */
-  @Override
+
   public char readChar() throws IOException {
     return (char) readUnsignedShort();
   }
 
-  @Override
   public byte readByte() throws IOException {
     return (byte) readUnsignedByte();
   }
 
-  @Override
   public boolean readBoolean() throws IOException {
     return readUnsignedByte() != 0;
   }

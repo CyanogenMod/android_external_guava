@@ -31,13 +31,13 @@ import javax.annotation.Nullable;
  * may have duplicate elements. A multiset is also sometimes called a
  * <i>bag</i>.
  *
- * <p>Elements of a multiset that are equal to one another (see "Note on
- * element equivalence", below) are referred to as <i>occurrences</i> of the
- * same single element. The total number of occurrences of an element in a
- * multiset is called the <i>count</i> of that element (the terms "frequency"
- * and "multiplicity" are equivalent, but not used in this API). Since the count
- * of an element is represented as an {@code int}, a multiset may never contain
- * more than {@link Integer#MAX_VALUE} occurrences of any one element.
+ * <p>Elements of a multiset that are equal to one another are referred to as
+ * <i>occurrences</i> of the same single element. The total number of
+ * occurrences of an element in a multiset is called the <i>count</i> of that
+ * element (the terms "frequency" and "multiplicity" are equivalent, but not
+ * used in this API). Since the count of an element is represented as an {@code
+ * int}, a multiset may never contain more than {@link Integer#MAX_VALUE}
+ * occurrences of any one element.
  *
  * <p>{@code Multiset} refines the specifications of several methods from
  * {@code Collection}. It also defines an additional query operation, {@link
@@ -77,6 +77,10 @@ import javax.annotation.Nullable;
  * may wish to use {@link com.google.common.util.concurrent.AtomicLongMap}
  * instead. Note, however, that unlike {@code Multiset}, {@code AtomicLongMap}
  * does not automatically remove zeros.
+ * 
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multiset">
+ * {@code Multiset}</a>.
  *
  * @author Kevin Bourrillion
  * @since 2.0 (imported from Google Collections Library)
@@ -260,7 +264,7 @@ public interface Multiset<E> extends Collection<E> {
      *   Objects.equal(a.getElement(), b.getElement())
      *       && a.getCount() == b.getCount()}</pre>
      */
-    @Override
+
     // TODO(kevinb): check this wrt TreeMultiset?
     boolean equals(Object o);
 
@@ -272,7 +276,7 @@ public interface Multiset<E> extends Collection<E> {
      *
      *   ((element == null) ? 0 : element.hashCode()) ^ count}</pre>
      */
-    @Override
+
     int hashCode();
 
     /**
@@ -282,7 +286,7 @@ public interface Multiset<E> extends Collection<E> {
      * representation of the element, followed by the three characters {@code
      * " x "} (space, letter x, space), followed by the count.
      */
-    @Override
+
     String toString();
   }
 
@@ -293,7 +297,7 @@ public interface Multiset<E> extends Collection<E> {
    * {@code true} if the given object is also a multiset and contains equal
    * elements with equal counts, regardless of order.
    */
-  @Override
+
   // TODO(kevinb): caveats about equivalence-relation?
   boolean equals(@Nullable Object object);
 
@@ -306,7 +310,7 @@ public interface Multiset<E> extends Collection<E> {
    * over all distinct elements in the multiset. It follows that a multiset and
    * its entry set always have the same hash code.
    */
-  @Override
+
   int hashCode();
 
   /**
@@ -316,7 +320,7 @@ public interface Multiset<E> extends Collection<E> {
    * result of invoking {@link #toString} on the {@link #entrySet}, yielding a
    * result such as {@code [a x 3, c, d x 2, e]}.
    */
-  @Override
+
   String toString();
 
   // Refined Collection Methods
@@ -327,7 +331,7 @@ public interface Multiset<E> extends Collection<E> {
    * <p>Elements that occur multiple times in the multiset will appear
    * multiple times in this iterator, though not necessarily sequentially.
    */
-  @Override
+
   Iterator<E> iterator();
 
   /**
@@ -341,7 +345,7 @@ public interface Multiset<E> extends Collection<E> {
    * @return {@code true} if this multiset contains at least one occurrence of
    *     the element
    */
-  @Override
+
   boolean contains(@Nullable Object element);
 
   /**
@@ -365,7 +369,7 @@ public interface Multiset<E> extends Collection<E> {
    *     each element contained in {@code elements}
    * @throws NullPointerException if {@code elements} is null
    */
-  @Override
+
   boolean containsAll(Collection<?> elements);
 
   /**
@@ -385,7 +389,7 @@ public interface Multiset<E> extends Collection<E> {
    * @throws IllegalArgumentException if {@link Integer#MAX_VALUE} occurrences
    *     of {@code element} are already contained in this multiset
    */
-  @Override
+
   boolean add(E element);
 
   /**
@@ -399,7 +403,7 @@ public interface Multiset<E> extends Collection<E> {
    * @param element the element to remove one occurrence of
    * @return {@code true} if an occurrence was found and removed
    */
-  @Override
+
   boolean remove(@Nullable Object element);
 
   /**
@@ -414,7 +418,7 @@ public interface Multiset<E> extends Collection<E> {
    * it <b>may not</b> throw an exception in response to any of {@code elements}
    * being null or of the wrong type. 
    */
-  @Override
+
   boolean removeAll(Collection<?> c);
 
   /**
@@ -431,6 +435,6 @@ public interface Multiset<E> extends Collection<E> {
    * 
    * @see Multisets#retainOccurrences(Multiset, Multiset)
    */
-  @Override
+
   boolean retainAll(Collection<?> c);
 }

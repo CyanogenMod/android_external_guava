@@ -25,13 +25,13 @@ import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.IteratorTester;
 
-import junit.framework.TestCase;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+
+import junit.framework.TestCase;
 
 /**
   * Unit test for {@link PeekingIterator}.

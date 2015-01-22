@@ -26,23 +26,25 @@ import com.google.common.collect.ImmutableSet.ArrayImmutableSet;
  * @author Kevin Bourrillion
  */
 @GwtCompatible(serializable = true, emulated = true)
-@SuppressWarnings("serial") // uses writeReplace(), not default serialization
+@SuppressWarnings("serial")
+// uses writeReplace(), not default serialization
 final class RegularImmutableSet<E> extends ArrayImmutableSet<E> {
   // the same elements in hashed positions (plus nulls)
-  @VisibleForTesting final transient Object[] table;
+  @VisibleForTesting
+  final transient Object[] table;
   // 'and' with an int to get a valid table index.
   private final transient int mask;
   private final transient int hashCode;
 
-  RegularImmutableSet(
-      Object[] elements, int hashCode, Object[] table, int mask) {
+  RegularImmutableSet(Object[] elements, int hashCode, Object[] table, int mask) {
     super(elements);
     this.table = table;
     this.mask = mask;
     this.hashCode = hashCode;
   }
 
-  @Override public boolean contains(Object target) {
+  @Override
+  public boolean contains(Object target) {
     if (target == null) {
       return false;
     }
@@ -57,11 +59,13 @@ final class RegularImmutableSet<E> extends ArrayImmutableSet<E> {
     }
   }
 
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return hashCode;
   }
 
-  @Override boolean isHashCodeFast() {
+  @Override
+  boolean isHashCodeFast() {
     return true;
   }
 }

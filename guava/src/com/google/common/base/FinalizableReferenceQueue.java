@@ -16,8 +16,12 @@
 
 package com.google.common.base;
 
+import com.google.common.annotations.VisibleForTesting;
+
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Method;
@@ -37,7 +41,7 @@ import java.util.logging.Logger;
  * @author Bob Lee
  * @since 2.0 (imported from Google Collections Library)
  */
-public class FinalizableReferenceQueue {
+public class FinalizableReferenceQueue implements Closeable {
   /*
    * The Finalizer thread keeps a phantom reference to this object. When the client (for example, a
    * map built by MapMaker) no longer has a strong reference to this object, the garbage collector
@@ -81,8 +85,8 @@ public class FinalizableReferenceQueue {
   /** Reference to Finalizer.startFinalizer(). */
   private static final Method startFinalizer;
   static {
-    Class<?> finalizer = loadFinalizer(
-        new SystemLoader(), new DecoupledLoader(), new DirectLoader());
+    Class<?> finalizer = loadFinalizer(new SystemLoader(), new DecoupledLoader(),
+        new DirectLoader());
     startFinalizer = getStartFinalizer(finalizer);
   }
 
@@ -90,6 +94,8 @@ public class FinalizableReferenceQueue {
    * The actual reference queue that our background thread will poll.
    */
   final ReferenceQueue<Object> queue;
+
+  final PhantomReference<Object> frqRef;
 
   /**
    * Whether or not the background thread started successfully.
@@ -102,22 +108,25 @@ public class FinalizableReferenceQueue {
   @SuppressWarnings("unchecked")
   public FinalizableReferenceQueue() {
     // We could start the finalizer lazily, but I'd rather it blow up early.
-    ReferenceQueue<Object> queue;
+    queue = new ReferenceQueue<Object>();
+    frqRef = new PhantomReference<Object>(this, queue);
     boolean threadStarted = false;
     try {
-      queue = (ReferenceQueue<Object>)
-          startFinalizer.invoke(null, FinalizableReference.class, this);
+      startFinalizer.invoke(null, FinalizableReference.class, queue, frqRef);
       threadStarted = true;
     } catch (IllegalAccessException impossible) {
       throw new AssertionError(impossible); // startFinalizer() is public
     } catch (Throwable t) {
       logger.log(Level.INFO, "Failed to start reference finalizer thread."
           + " Reference cleanup will only occur when new references are created.", t);
-      queue = new ReferenceQueue<Object>();
     }
 
-    this.queue = queue;
     this.threadStarted = threadStarted;
+  }
+
+  public void close() {
+    frqRef.enqueue();
+    cleanUp();
   }
 
   /**
@@ -179,8 +188,15 @@ public class FinalizableReferenceQueue {
    * we needn't create a separate loader.
    */
   static class SystemLoader implements FinalizerLoader {
-    @Override
+    // This is used by the ClassLoader-leak test in FinalizableReferenceQueueTest to disable
+    // finding Finalizer on the system class path even if it is there.
+    @VisibleForTesting
+    static boolean disabled;
+
     public Class<?> loadFinalizer() {
+      if (disabled) {
+        return null;
+      }
       ClassLoader systemLoader;
       try {
         systemLoader = ClassLoader.getSystemClassLoader();
@@ -212,7 +228,6 @@ public class FinalizableReferenceQueue {
         + "to garbage collect this class loader. To support reclaiming this class loader, either"
         + "resolve the underlying issue, or move Google Collections to your system class path.";
 
-    @Override
     public Class<?> loadFinalizer() {
       try {
         /*
@@ -254,7 +269,10 @@ public class FinalizableReferenceQueue {
 
     /** Creates a class loader with the given base URL as its classpath. */
     URLClassLoader newLoader(URL base) {
-      return new URLClassLoader(new URL[] {base});
+      // We use the bootstrap class loader as the parent because Finalizer by design uses
+      // only standard Java classes. That also means that FinalizableReferenceQueueTest
+      // doesn't pick up the wrong version of the Finalizer class.
+      return new URLClassLoader(new URL[] { base }, null);
     }
   }
 
@@ -263,7 +281,7 @@ public class FinalizableReferenceQueue {
    * this class loader, but at least the world doesn't end.
    */
   static class DirectLoader implements FinalizerLoader {
-    @Override
+
     public Class<?> loadFinalizer() {
       try {
         return Class.forName(FINALIZER_CLASS_NAME);
@@ -278,7 +296,8 @@ public class FinalizableReferenceQueue {
    */
   static Method getStartFinalizer(Class<?> finalizer) {
     try {
-      return finalizer.getMethod("startFinalizer", Class.class, Object.class);
+      return finalizer.getMethod("startFinalizer", Class.class, ReferenceQueue.class,
+          PhantomReference.class);
     } catch (NoSuchMethodException e) {
       throw new AssertionError(e);
     }

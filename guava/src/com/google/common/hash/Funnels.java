@@ -15,10 +15,14 @@
 package com.google.common.hash;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Preconditions;
+
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Funnels for common types. All implementations are serializable.
- * 
+ *
  * @author Dimitris Andreou
  * @since 11.0
  */
@@ -36,11 +40,12 @@ public final class Funnels {
   private enum ByteArrayFunnel implements Funnel<byte[]> {
     INSTANCE;
 
-    public void funnel(byte[] from, Sink into) {
+    public void funnel(byte[] from, PrimitiveSink into) {
       into.putBytes(from);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       return "Funnels.byteArrayFunnel()";
     }
   }
@@ -55,12 +60,119 @@ public final class Funnels {
   private enum StringFunnel implements Funnel<CharSequence> {
     INSTANCE;
 
-    public void funnel(CharSequence from, Sink into) {
+    public void funnel(CharSequence from, PrimitiveSink into) {
       into.putString(from);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       return "Funnels.stringFunnel()";
+    }
+  }
+
+  /**
+   * Returns a funnel for integers.
+   * 
+   * @since 13.0
+   */
+  public static Funnel<Integer> integerFunnel() {
+    return IntegerFunnel.INSTANCE;
+  }
+
+  private enum IntegerFunnel implements Funnel<Integer> {
+    INSTANCE;
+
+    public void funnel(Integer from, PrimitiveSink into) {
+      into.putInt(from);
+    }
+
+    @Override
+    public String toString() {
+      return "Funnels.integerFunnel()";
+    }
+  }
+
+  /**
+   * Returns a funnel for longs.
+   * 
+   * @since 13.0
+   */
+  public static Funnel<Long> longFunnel() {
+    return LongFunnel.INSTANCE;
+  }
+
+  private enum LongFunnel implements Funnel<Long> {
+    INSTANCE;
+
+    public void funnel(Long from, PrimitiveSink into) {
+      into.putLong(from);
+    }
+
+    @Override
+    public String toString() {
+      return "Funnels.longFunnel()";
+    }
+  }
+  
+  static Funnel<ByteBuffer> byteBufferFunnel() {
+    return ByteBufferFunnel.INSTANCE;
+  }
+  
+  private enum ByteBufferFunnel implements Funnel<ByteBuffer> {
+    INSTANCE;
+
+    public void funnel(ByteBuffer from, PrimitiveSink into) {
+      if (from.hasArray()) {
+        into.putBytes(from.array(), from.arrayOffset() + from.position(), from.remaining());
+      } else {
+        int position = from.position();
+        while (from.hasRemaining()) {
+          into.putByte(from.get());
+        }
+        from.position(position);
+      }
+    }
+  }
+
+  /**
+   * Wraps a {@code PrimitiveSink} as an {@link OutputStream}, so it is easy to
+   * {@link Funnel#funnel funnel} an object to a {@code PrimitiveSink}
+   * if there is already a way to write the contents of the object to an {@code OutputStream}.  
+   * 
+   * <p>The {@code close} and {@code flush} methods of the returned {@code OutputStream}
+   * do nothing, and no method throws {@code IOException}.
+   * 
+   * @since 13.0
+   */
+  public static OutputStream asOutputStream(PrimitiveSink sink) {
+    return new SinkAsStream(sink);
+  }
+
+  private static class SinkAsStream extends OutputStream {
+    final PrimitiveSink sink;
+
+    SinkAsStream(PrimitiveSink sink) {
+      this.sink = Preconditions.checkNotNull(sink);
+    }
+
+    @Override
+    public void write(int b) {
+      sink.putByte((byte) b);
+    }
+
+    @Override
+    public void write(byte[] bytes) {
+      sink.putBytes(bytes);
+    }
+
+    @Override
+    public void write(byte[] bytes, int off, int len) {
+      sink.putBytes(bytes, off, len);
+    }
+
+    @Override
+    public String toString() {
+      return "Funnels.asOutputStream(" + sink + ")";
     }
   }
 }

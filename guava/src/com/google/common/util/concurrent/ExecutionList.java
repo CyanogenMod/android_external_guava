@@ -16,6 +16,7 @@
 
 package com.google.common.util.concurrent;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
@@ -45,8 +46,8 @@ import java.util.logging.Logger;
 public final class ExecutionList {
 
   // Logger to log exceptions caught when running runnables.
-  private static final Logger log =
-      Logger.getLogger(ExecutionList.class.getName());
+  @VisibleForTesting
+  static final Logger log = Logger.getLogger(ExecutionList.class.getName());
 
   // The runnable,executor pairs to execute.
   private final Queue<RunnableExecutorPair> runnables = Lists.newLinkedList();
@@ -56,8 +57,7 @@ public final class ExecutionList {
   private boolean executed = false;
 
   /** Creates a new, empty {@link ExecutionList}. */
-  public ExecutionList() {
-  }
+  public ExecutionList() {}
 
   /**
    * Adds the {@code Runnable} and accompanying {@code Executor} to the list of
@@ -151,8 +151,8 @@ public final class ExecutionList {
         // Log it and keep going, bad runnable and/or executor.  Don't
         // punish the other runnables if we're given a bad one.  We only
         // catch RuntimeException because we want Errors to propagate up.
-        log.log(Level.SEVERE, "RuntimeException while executing runnable "
-            + runnable + " with executor " + executor, e);
+        log.log(Level.SEVERE, "RuntimeException while executing runnable " + runnable
+            + " with executor " + executor, e);
       }
     }
   }

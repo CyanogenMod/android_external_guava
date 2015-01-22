@@ -217,7 +217,7 @@ public final class Monitor {
    */
   @Beta
   public abstract static class Guard {
-    
+
     final Monitor monitor;
     final Condition condition;
 
@@ -241,7 +241,7 @@ public final class Monitor {
       // Overridden as final to ensure identity semantics in Monitor.activeGuards.
       return this == other;
     }
-    
+
     @Override
     public final int hashCode() {
       // Overridden as final to ensure identity semantics in Monitor.activeGuards.
@@ -254,7 +254,7 @@ public final class Monitor {
    * Whether this monitor is fair.
    */
   private final boolean fair;
-  
+
   /**
    * The lock underlying this monitor.
    */
@@ -799,7 +799,7 @@ public final class Monitor {
       throw Throwables.propagate(throwable);
     }
   }
-  
+
   @GuardedBy("lock")
   private void incrementWaiters(Guard guard) {
     int waiters = guard.waiterCount++;
@@ -897,8 +897,7 @@ public final class Monitor {
   }
 
   @GuardedBy("lock")
-  private boolean waitUninterruptibly(Guard guard, long timeoutNanos,
-      boolean signalBeforeWaiting) {
+  private boolean waitUninterruptibly(Guard guard, long timeoutNanos, boolean signalBeforeWaiting) {
     if (!guard.isSatisfied()) {
       long startNanos = System.nanoTime();
       if (signalBeforeWaiting) {

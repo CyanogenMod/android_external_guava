@@ -16,7 +16,6 @@
 
 package com.google.common.collect;
 
-import static com.google.common.collect.MapMakerInternalMap.Strength.SOFT;
 import static com.google.common.collect.MapMakerInternalMap.Strength.STRONG;
 import static com.google.common.collect.MapMakerInternalMap.Strength.WEAK;
 import static com.google.common.collect.testing.IteratorFeature.SUPPORTS_REMOVE;
@@ -26,21 +25,27 @@ import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.isA;
 
-import com.google.common.base.Equivalences;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.MapMaker.RemovalListener;
 import com.google.common.collect.MapMaker.RemovalNotification;
 import com.google.common.collect.Multiset.Entry;
 import com.google.common.collect.testing.IteratorTester;
-
-import junit.framework.TestCase;
-
-import org.easymock.EasyMock;
+import com.google.common.collect.testing.features.CollectionFeature;
+import com.google.common.collect.testing.features.CollectionSize;
+import com.google.common.collect.testing.google.MultisetTestSuiteBuilder;
+import com.google.common.collect.testing.google.TestStringMultisetGenerator;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+import org.easymock.EasyMock;
 
 /**
  * Test case for {@link ConcurrentHashMultiset}.
@@ -49,6 +54,28 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author mike nonemacher
  */
 public class ConcurrentHashMultisetTest extends TestCase {
+
+  public static Test suite() {
+    TestSuite suite = new TestSuite();
+    suite.addTest(MultisetTestSuiteBuilder.using(concurrentMultisetGenerator())
+        .withFeatures(CollectionSize.ANY,
+            CollectionFeature.GENERAL_PURPOSE,
+            CollectionFeature.SERIALIZABLE,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ConcurrentHashMultiset")
+        .createTestSuite());
+    suite.addTestSuite(ConcurrentHashMultisetTest.class);
+    return suite;
+  }
+
+  private static TestStringMultisetGenerator concurrentMultisetGenerator() {
+    return new TestStringMultisetGenerator() {
+      @Override protected Multiset<String> create(String[] elements) {
+        return ConcurrentHashMultiset.create(asList(elements));
+      }
+    };
+  }
+
   private static final String KEY = "puppies";
 
   ConcurrentMap<String, AtomicInteger> backingMap;
@@ -343,10 +370,6 @@ public class ConcurrentHashMultisetTest extends TestCase {
   public void testIdentityKeyEquality_strongKeys() {
     testIdentityKeyEquality(STRONG);
   }
-  
-  public void testIdentityKeyEquality_softKeys() {
-    testIdentityKeyEquality(SOFT);
-  }
 
   public void testIdentityKeyEquality_weakKeys() {
     testIdentityKeyEquality(WEAK);
@@ -357,7 +380,7 @@ public class ConcurrentHashMultisetTest extends TestCase {
 
     MapMaker mapMaker = new MapMaker()
         .setKeyStrength(keyStrength)
-        .keyEquivalence(Equivalences.identity());
+        .keyEquivalence(Equivalence.identity());
 
     ConcurrentHashMultiset<String> multiset =
         ConcurrentHashMultiset.create(mapMaker);
@@ -387,10 +410,6 @@ public class ConcurrentHashMultisetTest extends TestCase {
     testLogicalKeyEquality(STRONG);
   }
 
-  public void testLogicalKeyEquality_softKeys() {
-    testLogicalKeyEquality(SOFT);
-  }
-
   public void testLogicalKeyEquality_weakKeys() {
     testLogicalKeyEquality(WEAK);
   }
@@ -400,7 +419,7 @@ public class ConcurrentHashMultisetTest extends TestCase {
 
     MapMaker mapMaker = new MapMaker()
         .setKeyStrength(keyStrength)
-        .keyEquivalence(Equivalences.equals());
+        .keyEquivalence(Equivalence.equals());
 
     ConcurrentHashMultiset<String> multiset =
         ConcurrentHashMultiset.create(mapMaker);
@@ -446,7 +465,7 @@ public class ConcurrentHashMultisetTest extends TestCase {
 
   public void testSerializationWithMapMaker_preservesIdentityKeyEquivalence() {
     MapMaker mapMaker = new MapMaker()
-        .keyEquivalence(Equivalences.identity());
+        .keyEquivalence(Equivalence.identity());
 
     ConcurrentHashMultiset<String> multiset =
         ConcurrentHashMultiset.create(mapMaker);

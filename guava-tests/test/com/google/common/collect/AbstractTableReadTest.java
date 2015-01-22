@@ -16,7 +16,7 @@
 
 package com.google.common.collect;
 
-import static org.junit.contrib.truth.Truth.ASSERT;
+import static org.truth0.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
@@ -24,7 +24,11 @@ import com.google.common.base.Objects;
 import com.google.common.testing.EqualsTester;
 import com.google.common.testing.NullPointerTester;
 
+import java.util.Collection;
+
 import junit.framework.TestCase;
+
+import org.truth0.subjects.CollectionSubject;
 
 /**
  * Test cases for {@link Table} read operations.
@@ -183,11 +187,17 @@ public abstract class AbstractTableReadTest extends TestCase {
   public void testColumnSetPartialOverlap() {
     table = create(
         "foo", 1, 'a', "bar", 1, 'b', "foo", 2, 'c', "bar", 3, 'd');
-    ASSERT.that(table.columnKeySet()).hasContentsAnyOrder(1, 2, 3);
+    assertThat(table.columnKeySet()).has().allOf(1, 2, 3);
+  }
+
+  // Hack for JDK5 type inference.
+  private static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> assertThat(
+      Collection<T> collection) {
+    return ASSERT.<T, Collection<T>>that(collection);
   }
 
   @GwtIncompatible("NullPointerTester")
-  public void testNullPointerInstance() throws Exception {
+  public void testNullPointerInstance() {
     table = create(
         "foo", 1, 'a', "bar", 1, 'b', "foo", 2, 'c', "bar", 3, 'd');
     new NullPointerTester().testAllPublicInstanceMethods(table);

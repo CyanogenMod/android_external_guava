@@ -22,14 +22,14 @@ import com.google.common.collect.testing.TestStringSetGenerator;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 /**
  * Tests for {@code ForwardingSortedSet}.
@@ -102,7 +102,7 @@ public class ForwardingSortedSetTest extends ForwardingSetTest {
     }
   }
   
-  public static Test suite(){
+  public static Test suite() {
     TestSuite suite = new TestSuite();
     
     suite.addTestSuite(ForwardingSortedSetTest.class);

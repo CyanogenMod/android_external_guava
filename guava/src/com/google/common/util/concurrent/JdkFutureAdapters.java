@@ -19,7 +19,6 @@ package com.google.common.util.concurrent;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.Beta;
-import com.google.common.annotations.VisibleForTesting;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -42,7 +41,7 @@ public final class JdkFutureAdapters {
    * Assigns a thread to the given {@link Future} to provide {@link
    * ListenableFuture} functionality.
    *
-   * <p><b>Warning:</b> If the input future does not already implement {@link
+   * <p><b>Warning:</b> If the input future does not already implement {@code
    * ListenableFuture}, the returned future will emulate {@link
    * ListenableFuture#addListener} by taking a thread from an internal,
    * unbounded pool at the first call to {@code addListener} and holding it
@@ -55,19 +54,40 @@ public final class JdkFutureAdapters {
    * Future} instances to be upgraded to {@code ListenableFuture} after the
    * fact.
    */
-  public static <V> ListenableFuture<V> listenInPoolThread(
-      Future<V> future) {
-    if (future instanceof ListenableFuture<?>) {
+  public static <V> ListenableFuture<V> listenInPoolThread(Future<V> future) {
+    if (future instanceof ListenableFuture) {
       return (ListenableFuture<V>) future;
     }
     return new ListenableFutureAdapter<V>(future);
   }
 
-  @VisibleForTesting
-  static <V> ListenableFuture<V> listenInPoolThread(
-      Future<V> future, Executor executor) {
+  /**
+   * Submits a blocking task for the given {@link Future} to provide {@link
+   * ListenableFuture} functionality.
+   *
+   * <p><b>Warning:</b> If the input future does not already implement {@code
+   * ListenableFuture}, the returned future will emulate {@link
+   * ListenableFuture#addListener} by submitting a task to the given executor at
+   * at the first call to {@code addListener}. The task must be started by the
+   * executor promptly, or else the returned {@code ListenableFuture} may fail
+   * to work.  The task's execution consists of blocking until the input future
+   * is {@linkplain Future#isDone() done}, so each call to this method may
+   * claim and hold a thread for an arbitrary length of time. Use of bounded
+   * executors or other executors that may fail to execute a task promptly may
+   * result in deadlocks.
+   *
+   * <p>Prefer to create {@code ListenableFuture} instances with {@link
+   * SettableFuture}, {@link MoreExecutors#listeningDecorator(
+   * java.util.concurrent.ExecutorService)}, {@link ListenableFutureTask},
+   * {@link AbstractFuture}, and other utilities over creating plain {@code
+   * Future} instances to be upgraded to {@code ListenableFuture} after the
+   * fact.
+   *
+   * @since 12.0
+   */
+  public static <V> ListenableFuture<V> listenInPoolThread(Future<V> future, Executor executor) {
     checkNotNull(executor);
-    if (future instanceof ListenableFuture<?>) {
+    if (future instanceof ListenableFuture) {
       return (ListenableFuture<V>) future;
     }
     return new ListenableFutureAdapter<V>(future, executor);
@@ -83,16 +103,13 @@ public final class JdkFutureAdapters {
    * <p>If the delegate future is interrupted or throws an unexpected unchecked
    * exception, the listeners will not be invoked.
    */
-  private static class ListenableFutureAdapter<V> extends ForwardingFuture<V>
-      implements ListenableFuture<V> {
+  private static class ListenableFutureAdapter<V> extends ForwardingFuture<V> implements
+      ListenableFuture<V> {
 
-    private static final ThreadFactory threadFactory =
-        new ThreadFactoryBuilder()
-            .setDaemon(true)
-            .setNameFormat("ListenableFutureAdapter-thread-%d")
-            .build();
-    private static final Executor defaultAdapterExecutor =
-        Executors.newCachedThreadPool(threadFactory);
+    private static final ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+        .setNameFormat("ListenableFutureAdapter-thread-%d").build();
+    private static final Executor defaultAdapterExecutor = Executors
+        .newCachedThreadPool(threadFactory);
 
     private final Executor adapterExecutor;
 
@@ -120,7 +137,6 @@ public final class JdkFutureAdapters {
       return delegate;
     }
 
-    @Override
     public void addListener(Runnable listener, Executor exec) {
       executionList.add(listener, exec);
 
@@ -135,7 +151,7 @@ public final class JdkFutureAdapters {
         }
 
         adapterExecutor.execute(new Runnable() {
-          @Override
+
           public void run() {
             try {
               delegate.get();

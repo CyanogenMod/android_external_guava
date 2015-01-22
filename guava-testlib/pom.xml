@@ -4,10 +4,10 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.google.guava</groupId>
-    <artifactId>guava-parent</artifactId>
-    <version>11.0.2</version>
+    <artifactId>guava-parent-jdk5</artifactId>
+    <version>14.0.1</version>
   </parent>
-  <artifactId>guava-testlib</artifactId>
+  <artifactId>guava-testlib-jdk5</artifactId>
   <name>Guava Testing Library</name>
   <description>
     Guava testlib is a set of java classes used for more convenient
@@ -15,8 +15,14 @@
   </description>
   <dependencies>
     <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>1.3.9</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>guava</artifactId>
+      <artifactId>guava-jdk5</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -25,16 +31,21 @@
       <version>4.8.2</version>
     </dependency>
     <dependency>
-      <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-dev</artifactId>
-      <version>2.2.0</version>
-      <scope>provided</scope>
+      <groupId>org.truth0</groupId>
+      <artifactId>truth</artifactId>
+      <version>0.10</version>
+      <exclusions>
+        <exclusion>
+          <!-- Use current Guava being built in maven only -->
+          <groupId>${project.groupId}</groupId>
+          <artifactId>guava</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>2.3.2</version>
         <configuration>
@@ -43,18 +54,29 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <version>2.1.2</version>
         <executions>
           <execution>
             <id>attach-sources</id>
-            <phase>verify</phase>
-            <goals><goal>jar-no-fork</goal></goals>
+            <phase>post-integration-test</phase>
+            <goals><goal>jar</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.8</version>
+        <executions>
+          <execution>
+            <id>attach-docs</id>
+            <phase>post-integration-test</phase>
+            <goals><goal>jar</goal></goals>
           </execution>
         </executions>
       </plugin>
     </plugins>
     <sourceDirectory>src</sourceDirectory>
+    <testSourceDirectory>test</testSourceDirectory>
   </build>
 </project>

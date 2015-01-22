@@ -37,14 +37,20 @@ public class AbstractListeningExecutorServiceTest extends JSR166TestCase {
      */
     static class DirectExecutorService
             extends AbstractListeningExecutorService {
+        @Override
         public void execute(Runnable r) { r.run(); }
+        @Override
         public void shutdown() { shutdown = true; }
+        @Override
         public List<Runnable> shutdownNow() {
             shutdown = true;
             return Collections.emptyList();
         }
+        @Override
         public boolean isShutdown() { return shutdown; }
+        @Override
         public boolean isTerminated() { return isShutdown(); }
+        @Override
         public boolean awaitTermination(long timeout, TimeUnit unit) {
             return isShutdown();
         }
@@ -103,6 +109,7 @@ public class AbstractListeningExecutorServiceTest extends JSR166TestCase {
                 ExecutorService e = new DirectExecutorService();
                 Future future = e.submit(Executors.callable(
                     new PrivilegedAction() {
+                        @Override
                         public Object run() {
                             return TEST_STRING;
                         }}));
@@ -126,6 +133,7 @@ public class AbstractListeningExecutorServiceTest extends JSR166TestCase {
                 ExecutorService e = new DirectExecutorService();
                 Future future = e.submit(Executors.callable(
                     new PrivilegedExceptionAction() {
+                        @Override
                         public Object run() {
                             return TEST_STRING;
                         }}));
@@ -146,6 +154,7 @@ public class AbstractListeningExecutorServiceTest extends JSR166TestCase {
                 ExecutorService e = new DirectExecutorService();
                 Future future = e.submit(Executors.callable(
                     new PrivilegedExceptionAction() {
+                        @Override
                         public Object run() throws Exception {
                             throw new IndexOutOfBoundsException();
                         }}));
@@ -229,6 +238,7 @@ public class AbstractListeningExecutorServiceTest extends JSR166TestCase {
                                    new ArrayBlockingQueue<Runnable>(10));
 
         Callable<Object> c = new Callable<Object>() {
+            @Override
             public Object call() {
                 throw new ArithmeticException("/ by zero");
             }};
@@ -277,6 +287,7 @@ public class AbstractListeningExecutorServiceTest extends JSR166TestCase {
         ExecutorService e = new DirectExecutorService();
         List<Callable<Integer>> l = new ArrayList<Callable<Integer>>();
         l.add(new Callable<Integer>() {
+            @Override
             public Integer call() {
                 throw new ArithmeticException("/ by zero");
             }});
@@ -459,6 +470,7 @@ public class AbstractListeningExecutorServiceTest extends JSR166TestCase {
         ExecutorService e = new DirectExecutorService();
         List<Callable<Integer>> l = new ArrayList<Callable<Integer>>();
         l.add(new Callable<Integer>() {
+            @Override
             public Integer call() {
                 throw new ArithmeticException("/ by zero");
             }});

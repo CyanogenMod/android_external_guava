@@ -27,25 +27,38 @@ import java.io.IOException;
  * @since 1.0
  */
 public interface ByteArrayDataOutput extends DataOutput {
-  @Override void write(int b);
-  @Override void write(byte b[]);
-  @Override void write(byte b[], int off, int len);
-  @Override void writeBoolean(boolean v);
-  @Override void writeByte(int v);
-  @Override void writeShort(int v);
-  @Override void writeChar(int v);
-  @Override void writeInt(int v);
-  @Override void writeLong(long v);
-  @Override void writeFloat(float v);
-  @Override void writeDouble(double v);
-  @Override void writeChars(String s);
-  @Override void writeUTF(String s);
+  void write(int b);
+
+  void write(byte b[]);
+
+  void write(byte b[], int off, int len);
+
+  void writeBoolean(boolean v);
+
+  void writeByte(int v);
+
+  void writeShort(int v);
+
+  void writeChar(int v);
+
+  void writeInt(int v);
+
+  void writeLong(long v);
+
+  void writeFloat(float v);
+
+  void writeDouble(double v);
+
+  void writeChars(String s);
+
+  void writeUTF(String s);
 
   /**
    * @deprecated This method is dangerous as it discards the high byte of
    * every character. For UTF-8, use {@code write(s.getBytes(Charsets.UTF_8))}.
    */
-  @Deprecated @Override void writeBytes(String s);
+  @Deprecated
+  void writeBytes(String s);
 
   /**
    * Returns the contents that have been written to this instance,

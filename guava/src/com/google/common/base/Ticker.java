@@ -20,8 +20,11 @@ import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 
 /**
- * A time source; returns a time value representing the number of nanoseconds
- * elapsed since some fixed but arbitrary point in time.
+ * A time source; returns a time value representing the number of nanoseconds elapsed since some
+ * fixed but arbitrary point in time. Note that most users should use {@link Stopwatch} instead of
+ * interacting with this class directly.
+ *
+ * <p><b>Warning:</b> this interface can only be used to measure elapsed time, not wall time.
  *
  * @author Kevin Bourrillion
  * @since 10.0
@@ -52,6 +55,7 @@ public abstract class Ticker {
   }
 
   private static final Ticker SYSTEM_TICKER = new Ticker() {
+
     @Override
     public long read() {
       return Platform.systemNanoTime();
