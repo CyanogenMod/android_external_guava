@@ -16,7 +16,6 @@
 
 package com.google.common.collect;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.base.Objects;
 
@@ -46,76 +45,63 @@ import javax.annotation.Nullable;
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible
-public abstract class ForwardingCollection<E> extends ForwardingObject
-    implements Collection<E> {
+public abstract class ForwardingCollection<E> extends ForwardingObject implements Collection<E> {
   // TODO(user): identify places where thread safety is actually lost
 
   /** Constructor for use by subclasses. */
   protected ForwardingCollection() {}
 
-  @Override protected abstract Collection<E> delegate();
-
   @Override
+  protected abstract Collection<E> delegate();
+
   public Iterator<E> iterator() {
     return delegate().iterator();
   }
 
-  @Override
   public int size() {
     return delegate().size();
   }
 
-  @Override
   public boolean removeAll(Collection<?> collection) {
     return delegate().removeAll(collection);
   }
 
-  @Override
   public boolean isEmpty() {
     return delegate().isEmpty();
   }
 
-  @Override
   public boolean contains(Object object) {
     return delegate().contains(object);
   }
 
-  @Override
   public boolean add(E element) {
     return delegate().add(element);
   }
 
-  @Override
   public boolean remove(Object object) {
     return delegate().remove(object);
   }
 
-  @Override
   public boolean containsAll(Collection<?> collection) {
     return delegate().containsAll(collection);
   }
 
-  @Override
   public boolean addAll(Collection<? extends E> collection) {
     return delegate().addAll(collection);
   }
 
-  @Override
   public boolean retainAll(Collection<?> collection) {
     return delegate().retainAll(collection);
   }
 
-  @Override
   public void clear() {
     delegate().clear();
   }
 
-  @Override
   public Object[] toArray() {
     return delegate().toArray();
   }
 
-  @Override
   public <T> T[] toArray(T[] array) {
     return delegate().toArray(array);
   }
@@ -127,7 +113,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected boolean standardContains(@Nullable Object object) {
+  protected boolean standardContains(@Nullable Object object) {
     return Iterators.contains(iterator(), object);
   }
 
@@ -138,7 +124,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected boolean standardContainsAll(Collection<?> collection) {
+  protected boolean standardContainsAll(Collection<?> collection) {
     for (Object o : collection) {
       if (!contains(o)) {
         return false;
@@ -154,7 +140,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected boolean standardAddAll(Collection<? extends E> collection) {
+  protected boolean standardAddAll(Collection<? extends E> collection) {
     return Iterators.addAll(this, collection.iterator());
   }
 
@@ -166,7 +152,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected boolean standardRemove(@Nullable Object object) {
+  protected boolean standardRemove(@Nullable Object object) {
     Iterator<E> iterator = iterator();
     while (iterator.hasNext()) {
       if (Objects.equal(iterator.next(), object)) {
@@ -185,7 +171,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected boolean standardRemoveAll(Collection<?> collection) {
+  protected boolean standardRemoveAll(Collection<?> collection) {
     return Iterators.removeAll(iterator(), collection);
   }
 
@@ -197,7 +183,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected boolean standardRetainAll(Collection<?> collection) {
+  protected boolean standardRetainAll(Collection<?> collection) {
     return Iterators.retainAll(iterator(), collection);
   }
 
@@ -209,12 +195,8 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected void standardClear() {
-    Iterator<E> iterator = iterator();
-    while (iterator.hasNext()) {
-      iterator.next();
-      iterator.remove();
-    }
+  protected void standardClear() {
+    Iterators.clear(iterator());
   }
 
   /**
@@ -225,7 +207,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected boolean standardIsEmpty() {
+  protected boolean standardIsEmpty() {
     return !iterator().hasNext();
   }
 
@@ -236,7 +218,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected String standardToString() {
+  protected String standardToString() {
     return Collections2.toStringImpl(this);
   }
 
@@ -247,7 +229,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected Object[] standardToArray() {
+  protected Object[] standardToArray() {
     Object[] newArray = new Object[size()];
     return toArray(newArray);
   }
@@ -259,7 +241,7 @@ public abstract class ForwardingCollection<E> extends ForwardingObject
    *
    * @since 7.0
    */
-  @Beta protected <T> T[] standardToArray(T[] array) {
+  protected <T> T[] standardToArray(T[] array) {
     return ObjectArrays.toArrayImpl(this, array);
   }
 }

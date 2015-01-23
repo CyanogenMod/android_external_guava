@@ -16,8 +16,11 @@
 
 package com.google.common.eventbus;
 
+import com.google.common.testing.EqualsTester;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
 import junit.framework.TestCase;
 
 /**
@@ -56,31 +59,6 @@ public class EventHandlerTest extends TestCase {
         methodArgument == FIXTURE_ARGUMENT);
   }
 
-  /**
-   * Checks that EventHandler's constructor disallows null methods.
-   */
-  public void testRejectionOfNullMethods() {
-    try {
-      new EventHandler(this, null);
-      fail("EventHandler must immediately reject null methods.");
-    } catch (NullPointerException e) {
-      // Hooray!
-    }
-  }
-
-  /**
-   * Checks that EventHandler's constructor disallows null targets.
-   */
-  public void testRejectionOfNullTargets() {
-    Method method = getRecordingMethod();
-    try {
-      new EventHandler(null, method);
-      fail("EventHandler must immediately reject null targets.");
-    } catch (NullPointerException e) {
-      // Huzzah!
-    }
-  }
-
   public void testExceptionWrapping() {
     Method method = getExceptionThrowingMethod();
     EventHandler handler = new EventHandler(this, method);
@@ -104,6 +82,17 @@ public class EventHandlerTest extends TestCase {
     } catch (JudgmentError e) {
       // Expected.
     }
+  }
+
+  public void testEquals() throws Exception {
+    Method charAt = String.class.getMethod("charAt", int.class);
+    Method concat = String.class.getMethod("concat", String.class);
+    new EqualsTester()
+        .addEqualityGroup(
+            new EventHandler("foo", charAt), new EventHandler("foo", charAt))
+        .addEqualityGroup(new EventHandler("bar", charAt))
+        .addEqualityGroup(new EventHandler("foo", concat))
+        .testEquals();
   }
 
   /**

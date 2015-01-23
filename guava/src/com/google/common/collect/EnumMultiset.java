@@ -27,6 +27,10 @@ import java.util.Iterator;
 
 /**
  * Multiset implementation backed by an {@link EnumMap}.
+ * 
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multiset">
+ * {@code Multiset}</a>.
  *
  * @author Jared Levy
  * @since 2.0 (imported from Google Collections Library)
@@ -55,6 +59,19 @@ public final class EnumMultiset<E extends Enum<E>> extends AbstractMapBasedMulti
     return multiset;
   }
 
+  /**
+   * Returns a new {@code EnumMultiset} instance containing the given elements.  Unlike
+   * {@link EnumMultiset#create(Iterable)}, this method does not produce an exception on an empty
+   * iterable.
+   * 
+   * @since 14.0
+   */
+  public static <E extends Enum<E>> EnumMultiset<E> create(Iterable<E> elements, Class<E> type) {
+    EnumMultiset<E> result = create(type);
+    Iterables.addAll(result, elements);
+    return result;
+  }
+
   private transient Class<E> type;
 
   /** Creates an empty {@code EnumMultiset}. */
@@ -78,7 +95,8 @@ public final class EnumMultiset<E extends Enum<E>> extends AbstractMapBasedMulti
   @GwtIncompatible("java.io.ObjectInputStream")
   private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
     stream.defaultReadObject();
-    @SuppressWarnings("unchecked") // reading data stored by writeObject
+    @SuppressWarnings("unchecked")
+    // reading data stored by writeObject
     Class<E> localType = (Class<E>) stream.readObject();
     type = localType;
     setBackingMap(WellBehavedMap.wrap(new EnumMap<E, Count>(type)));

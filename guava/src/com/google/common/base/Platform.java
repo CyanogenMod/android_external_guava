@@ -31,7 +31,7 @@ final class Platform {
   static char[] charBufferFromThreadLocal() {
     return DEST_TL.get();
   }
-  
+
   /** Calls {@link System#nanoTime()}. */
   static long systemNanoTime() {
     return System.nanoTime();
@@ -43,6 +43,7 @@ final class Platform {
    * put it back in the threadlocal, we just keep going and grow as needed.
    */
   private static final ThreadLocal<char[]> DEST_TL = new ThreadLocal<char[]>() {
+
     @Override
     protected char[] initialValue() {
       return new char[1024];

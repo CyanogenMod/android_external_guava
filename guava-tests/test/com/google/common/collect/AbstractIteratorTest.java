@@ -18,10 +18,10 @@ package com.google.common.collect;
 
 import com.google.common.annotations.GwtCompatible;
 
-import junit.framework.TestCase;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+
+import junit.framework.TestCase;
 
 /**
  * Unit test for {@code AbstractIterator}.

@@ -23,8 +23,6 @@ import com.google.common.collect.MapMaker.RemovalNotification;
 import com.google.common.collect.MapMakerInternalMapTest.QueuingRemovalListener;
 import com.google.common.testing.NullPointerTester;
 
-import junit.framework.TestCase;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -32,6 +30,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import junit.framework.TestCase;
 
 /**
  * @author Charles Fry

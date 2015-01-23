@@ -26,14 +26,14 @@ import javax.annotation.Nullable;
 
 /**
  * Basic implementation of the {@link SetMultimap} interface. It's a wrapper
- * around {@link AbstractMultimap} that converts the returned collections into
+ * around {@link AbstractMapBasedMultimap} that converts the returned collections into
  * {@code Sets}. The {@link #createCollection} method must return a {@code Set}.
  *
  * @author Jared Levy
  */
 @GwtCompatible
-abstract class AbstractSetMultimap<K, V>
-    extends AbstractMultimap<K, V> implements SetMultimap<K, V> {
+abstract class AbstractSetMultimap<K, V> extends AbstractMapBasedMultimap<K, V> implements
+    SetMultimap<K, V> {
   /**
    * Creates a new multimap that uses the provided map.
    *
@@ -44,7 +44,13 @@ abstract class AbstractSetMultimap<K, V>
     super(map);
   }
 
-  @Override abstract Set<V> createCollection();
+  @Override
+  abstract Set<V> createCollection();
+
+  @Override
+  Set<V> createUnmodifiableEmptyCollection() {
+    return ImmutableSet.of();
+  }
 
   // Following Javadoc copied from SetMultimap.
 
@@ -55,7 +61,8 @@ abstract class AbstractSetMultimap<K, V>
    * method returns a {@link Set}, instead of the {@link Collection} specified
    * in the {@link Multimap} interface.
    */
-  @Override public Set<V> get(@Nullable K key) {
+  @Override
+  public Set<V> get(@Nullable K key) {
     return (Set<V>) super.get(key);
   }
 
@@ -66,7 +73,8 @@ abstract class AbstractSetMultimap<K, V>
    * method returns a {@link Set}, instead of the {@link Collection} specified
    * in the {@link Multimap} interface.
    */
-  @Override public Set<Map.Entry<K, V>> entries() {
+  @Override
+  public Set<Map.Entry<K, V>> entries() {
     return (Set<Map.Entry<K, V>>) super.entries();
   }
 
@@ -77,7 +85,8 @@ abstract class AbstractSetMultimap<K, V>
    * method returns a {@link Set}, instead of the {@link Collection} specified
    * in the {@link Multimap} interface.
    */
-  @Override public Set<V> removeAll(@Nullable Object key) {
+  @Override
+  public Set<V> removeAll(@Nullable Object key) {
     return (Set<V>) super.removeAll(key);
   }
 
@@ -90,8 +99,8 @@ abstract class AbstractSetMultimap<K, V>
    *
    * <p>Any duplicates in {@code values} will be stored in the multimap once.
    */
-  @Override public Set<V> replaceValues(
-      @Nullable K key, Iterable<? extends V> values) {
+  @Override
+  public Set<V> replaceValues(@Nullable K key, Iterable<? extends V> values) {
     return (Set<V>) super.replaceValues(key, values);
   }
 
@@ -101,7 +110,8 @@ abstract class AbstractSetMultimap<K, V>
    * <p>Though the method signature doesn't say so explicitly, the returned map
    * has {@link Set} values.
    */
-  @Override public Map<K, Collection<V>> asMap() {
+  @Override
+  public Map<K, Collection<V>> asMap() {
     return super.asMap();
   }
 
@@ -113,7 +123,8 @@ abstract class AbstractSetMultimap<K, V>
    * @return {@code true} if the method increased the size of the multimap, or
    *     {@code false} if the multimap already contained the key-value pair
    */
-  @Override public boolean put(K key, V value) {
+  @Override
+  public boolean put(@Nullable K key, @Nullable V value) {
     return super.put(key, value);
   }
 
@@ -124,7 +135,8 @@ abstract class AbstractSetMultimap<K, V>
    * contain the same values. Equality does not depend on the ordering of keys
    * or values.
    */
-  @Override public boolean equals(@Nullable Object object) {
+  @Override
+  public boolean equals(@Nullable Object object) {
     return super.equals(object);
   }
 

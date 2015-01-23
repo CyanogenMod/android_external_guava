@@ -45,12 +45,12 @@ public final class Constraints {
   private enum NotNullConstraint implements Constraint<Object> {
     INSTANCE;
 
-    @Override
     public Object checkElement(Object element) {
       return checkNotNull(element);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       return "Not null";
     }
   }
@@ -77,8 +77,8 @@ public final class Constraints {
    * @param constraint the constraint that validates added elements
    * @return a constrained view of the collection
    */
-  public static <E> Collection<E> constrainedCollection(
-      Collection<E> collection, Constraint<? super E> constraint) {
+  public static <E> Collection<E> constrainedCollection(Collection<E> collection,
+      Constraint<? super E> constraint) {
     return new ConstrainedCollection<E>(collection, constraint);
   }
 
@@ -87,19 +87,24 @@ public final class Constraints {
     private final Collection<E> delegate;
     private final Constraint<? super E> constraint;
 
-    public ConstrainedCollection(
-        Collection<E> delegate, Constraint<? super E> constraint) {
+    public ConstrainedCollection(Collection<E> delegate, Constraint<? super E> constraint) {
       this.delegate = checkNotNull(delegate);
       this.constraint = checkNotNull(constraint);
     }
-    @Override protected Collection<E> delegate() {
+
+    @Override
+    protected Collection<E> delegate() {
       return delegate;
     }
-    @Override public boolean add(E element) {
+
+    @Override
+    public boolean add(E element) {
       constraint.checkElement(element);
       return delegate.add(element);
     }
-    @Override public boolean addAll(Collection<? extends E> elements) {
+
+    @Override
+    public boolean addAll(Collection<? extends E> elements) {
       return delegate.addAll(checkElements(elements, constraint));
     }
   }
@@ -116,8 +121,7 @@ public final class Constraints {
    * @param constraint the constraint that validates added elements
    * @return a constrained view of the set
    */
-  public static <E> Set<E> constrainedSet(
-      Set<E> set, Constraint<? super E> constraint) {
+  public static <E> Set<E> constrainedSet(Set<E> set, Constraint<? super E> constraint) {
     return new ConstrainedSet<E>(set, constraint);
   }
 
@@ -130,14 +134,20 @@ public final class Constraints {
       this.delegate = checkNotNull(delegate);
       this.constraint = checkNotNull(constraint);
     }
-    @Override protected Set<E> delegate() {
+
+    @Override
+    protected Set<E> delegate() {
       return delegate;
     }
-    @Override public boolean add(E element) {
+
+    @Override
+    public boolean add(E element) {
       constraint.checkElement(element);
       return delegate.add(element);
     }
-    @Override public boolean addAll(Collection<? extends E> elements) {
+
+    @Override
+    public boolean addAll(Collection<? extends E> elements) {
       return delegate.addAll(checkElements(elements, constraint));
     }
   }
@@ -154,8 +164,8 @@ public final class Constraints {
    * @param constraint the constraint that validates added elements
    * @return a constrained view of the sorted set
    */
-  public static <E> SortedSet<E> constrainedSortedSet(
-      SortedSet<E> sortedSet, Constraint<? super E> constraint) {
+  public static <E> SortedSet<E> constrainedSortedSet(SortedSet<E> sortedSet,
+      Constraint<? super E> constraint) {
     return new ConstrainedSortedSet<E>(sortedSet, constraint);
   }
 
@@ -164,29 +174,39 @@ public final class Constraints {
     final SortedSet<E> delegate;
     final Constraint<? super E> constraint;
 
-    ConstrainedSortedSet(
-        SortedSet<E> delegate, Constraint<? super E> constraint) {
+    ConstrainedSortedSet(SortedSet<E> delegate, Constraint<? super E> constraint) {
       this.delegate = checkNotNull(delegate);
       this.constraint = checkNotNull(constraint);
     }
-    @Override protected SortedSet<E> delegate() {
+
+    @Override
+    protected SortedSet<E> delegate() {
       return delegate;
     }
-    @Override public SortedSet<E> headSet(E toElement) {
+
+    @Override
+    public SortedSet<E> headSet(E toElement) {
       return constrainedSortedSet(delegate.headSet(toElement), constraint);
     }
-    @Override public SortedSet<E> subSet(E fromElement, E toElement) {
-      return constrainedSortedSet(
-          delegate.subSet(fromElement, toElement), constraint);
+
+    @Override
+    public SortedSet<E> subSet(E fromElement, E toElement) {
+      return constrainedSortedSet(delegate.subSet(fromElement, toElement), constraint);
     }
-    @Override public SortedSet<E> tailSet(E fromElement) {
+
+    @Override
+    public SortedSet<E> tailSet(E fromElement) {
       return constrainedSortedSet(delegate.tailSet(fromElement), constraint);
     }
-    @Override public boolean add(E element) {
+
+    @Override
+    public boolean add(E element) {
       constraint.checkElement(element);
       return delegate.add(element);
     }
-    @Override public boolean addAll(Collection<? extends E> elements) {
+
+    @Override
+    public boolean addAll(Collection<? extends E> elements) {
       return delegate.addAll(checkElements(elements, constraint));
     }
   }
@@ -204,10 +224,8 @@ public final class Constraints {
    * @param constraint the constraint that validates added elements
    * @return a constrained view of the list
    */
-  public static <E> List<E> constrainedList(
-      List<E> list, Constraint<? super E> constraint) {
-    return (list instanceof RandomAccess)
-        ? new ConstrainedRandomAccessList<E>(list, constraint)
+  public static <E> List<E> constrainedList(List<E> list, Constraint<? super E> constraint) {
+    return (list instanceof RandomAccess) ? new ConstrainedRandomAccessList<E>(list, constraint)
         : new ConstrainedList<E>(list, constraint);
   }
 
@@ -221,46 +239,59 @@ public final class Constraints {
       this.delegate = checkNotNull(delegate);
       this.constraint = checkNotNull(constraint);
     }
-    @Override protected List<E> delegate() {
+
+    @Override
+    protected List<E> delegate() {
       return delegate;
     }
 
-    @Override public boolean add(E element) {
+    @Override
+    public boolean add(E element) {
       constraint.checkElement(element);
       return delegate.add(element);
     }
-    @Override public void add(int index, E element) {
+
+    @Override
+    public void add(int index, E element) {
       constraint.checkElement(element);
       delegate.add(index, element);
     }
-    @Override public boolean addAll(Collection<? extends E> elements) {
+
+    @Override
+    public boolean addAll(Collection<? extends E> elements) {
       return delegate.addAll(checkElements(elements, constraint));
     }
-    @Override public boolean addAll(int index, Collection<? extends E> elements)
-    {
+
+    @Override
+    public boolean addAll(int index, Collection<? extends E> elements) {
       return delegate.addAll(index, checkElements(elements, constraint));
     }
-    @Override public ListIterator<E> listIterator() {
+
+    @Override
+    public ListIterator<E> listIterator() {
       return constrainedListIterator(delegate.listIterator(), constraint);
     }
-    @Override public ListIterator<E> listIterator(int index) {
+
+    @Override
+    public ListIterator<E> listIterator(int index) {
       return constrainedListIterator(delegate.listIterator(index), constraint);
     }
-    @Override public E set(int index, E element) {
+
+    @Override
+    public E set(int index, E element) {
       constraint.checkElement(element);
       return delegate.set(index, element);
     }
-    @Override public List<E> subList(int fromIndex, int toIndex) {
-      return constrainedList(
-          delegate.subList(fromIndex, toIndex), constraint);
+
+    @Override
+    public List<E> subList(int fromIndex, int toIndex) {
+      return constrainedList(delegate.subList(fromIndex, toIndex), constraint);
     }
   }
 
   /** @see Constraints#constrainedList */
-  static class ConstrainedRandomAccessList<E> extends ConstrainedList<E>
-      implements RandomAccess {
-    ConstrainedRandomAccessList(
-        List<E> delegate, Constraint<? super E> constraint) {
+  static class ConstrainedRandomAccessList<E> extends ConstrainedList<E> implements RandomAccess {
+    ConstrainedRandomAccessList(List<E> delegate, Constraint<? super E> constraint) {
       super(delegate, constraint);
     }
   }
@@ -274,8 +305,8 @@ public final class Constraints {
    * @param constraint the constraint for elements in the list
    * @return a constrained view of the specified iterator
    */
-  private static <E> ListIterator<E> constrainedListIterator(
-      ListIterator<E> listIterator, Constraint<? super E> constraint) {
+  private static <E> ListIterator<E> constrainedListIterator(ListIterator<E> listIterator,
+      Constraint<? super E> constraint) {
     return new ConstrainedListIterator<E>(listIterator, constraint);
   }
 
@@ -284,27 +315,31 @@ public final class Constraints {
     private final ListIterator<E> delegate;
     private final Constraint<? super E> constraint;
 
-    public ConstrainedListIterator(
-        ListIterator<E> delegate, Constraint<? super E> constraint) {
+    public ConstrainedListIterator(ListIterator<E> delegate, Constraint<? super E> constraint) {
       this.delegate = delegate;
       this.constraint = constraint;
     }
-    @Override protected ListIterator<E> delegate() {
+
+    @Override
+    protected ListIterator<E> delegate() {
       return delegate;
     }
 
-    @Override public void add(E element) {
+    @Override
+    public void add(E element) {
       constraint.checkElement(element);
       delegate.add(element);
     }
-    @Override public void set(E element) {
+
+    @Override
+    public void set(E element) {
       constraint.checkElement(element);
       delegate.set(element);
     }
   }
 
-  static <E> Collection<E> constrainedTypePreservingCollection(
-      Collection<E> collection, Constraint<E> constraint) {
+  static <E> Collection<E> constrainedTypePreservingCollection(Collection<E> collection,
+      Constraint<E> constraint) {
     if (collection instanceof SortedSet) {
       return constrainedSortedSet((SortedSet<E>) collection, constraint);
     } else if (collection instanceof Set) {
@@ -328,8 +363,8 @@ public final class Constraints {
    * @param constraint the constraint that validates added elements
    * @return a constrained view of the multiset
    */
-  public static <E> Multiset<E> constrainedMultiset(
-      Multiset<E> multiset, Constraint<? super E> constraint) {
+  public static <E> Multiset<E> constrainedMultiset(Multiset<E> multiset,
+      Constraint<? super E> constraint) {
     return new ConstrainedMultiset<E>(multiset, constraint);
   }
 
@@ -338,29 +373,40 @@ public final class Constraints {
     private Multiset<E> delegate;
     private final Constraint<? super E> constraint;
 
-    public ConstrainedMultiset(
-        Multiset<E> delegate, Constraint<? super E> constraint) {
+    public ConstrainedMultiset(Multiset<E> delegate, Constraint<? super E> constraint) {
       this.delegate = checkNotNull(delegate);
       this.constraint = checkNotNull(constraint);
     }
-    @Override protected Multiset<E> delegate() {
+
+    @Override
+    protected Multiset<E> delegate() {
       return delegate;
     }
-    @Override public boolean add(E element) {
+
+    @Override
+    public boolean add(E element) {
       return standardAdd(element);
     }
-    @Override public boolean addAll(Collection<? extends E> elements) {
+
+    @Override
+    public boolean addAll(Collection<? extends E> elements) {
       return delegate.addAll(checkElements(elements, constraint));
     }
-    @Override public int add(E element, int occurrences) {
+
+    @Override
+    public int add(E element, int occurrences) {
       constraint.checkElement(element);
       return delegate.add(element, occurrences);
     }
-    @Override public int setCount(E element, int count) {
+
+    @Override
+    public int setCount(E element, int count) {
       constraint.checkElement(element);
       return delegate.setCount(element, count);
     }
-    @Override public boolean setCount(E element, int oldCount, int newCount) {
+
+    @Override
+    public boolean setCount(E element, int oldCount, int newCount) {
       constraint.checkElement(element);
       return delegate.setCount(element, oldCount, newCount);
     }
@@ -371,8 +417,8 @@ public final class Constraints {
    * by having addAll() call add() repeatedly instead.
    */
 
-  private static <E> Collection<E> checkElements(
-      Collection<E> elements, Constraint<? super E> constraint) {
+  private static <E> Collection<E> checkElements(Collection<E> elements,
+      Constraint<? super E> constraint) {
     Collection<E> copy = Lists.newArrayList(elements);
     for (E element : copy) {
       constraint.checkElement(element);

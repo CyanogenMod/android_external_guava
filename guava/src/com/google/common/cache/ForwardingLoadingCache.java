@@ -34,8 +34,8 @@ import java.util.concurrent.ExecutionException;
  * @since 11.0
  */
 @Beta
-public abstract class ForwardingLoadingCache<K, V>
-    extends ForwardingCache<K, V> implements LoadingCache<K, V> {
+public abstract class ForwardingLoadingCache<K, V> extends ForwardingCache<K, V> implements
+    LoadingCache<K, V> {
 
   /** Constructor for use by subclasses. */
   protected ForwardingLoadingCache() {}
@@ -43,27 +43,22 @@ public abstract class ForwardingLoadingCache<K, V>
   @Override
   protected abstract LoadingCache<K, V> delegate();
 
-  @Override
   public V get(K key) throws ExecutionException {
     return delegate().get(key);
   }
 
-  @Override
   public V getUnchecked(K key) {
     return delegate().getUnchecked(key);
   }
 
-  @Override
   public ImmutableMap<K, V> getAll(Iterable<? extends K> keys) throws ExecutionException {
     return delegate().getAll(keys);
   }
 
-  @Override
   public V apply(K key) {
     return delegate().apply(key);
   }
 
-  @Override
   public void refresh(K key) {
     delegate().refresh(key);
   }
@@ -75,8 +70,8 @@ public abstract class ForwardingLoadingCache<K, V>
    * @since 10.0
    */
   @Beta
-  public abstract static class SimpleForwardingLoadingCache<K, V>
-      extends ForwardingLoadingCache<K, V> {
+  public abstract static class SimpleForwardingLoadingCache<K, V> extends
+      ForwardingLoadingCache<K, V> {
     private final LoadingCache<K, V> delegate;
 
     protected SimpleForwardingLoadingCache(LoadingCache<K, V> delegate) {

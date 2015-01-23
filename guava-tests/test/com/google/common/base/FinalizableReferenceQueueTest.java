@@ -17,13 +17,14 @@
 package com.google.common.base;
 
 import com.google.common.base.internal.Finalizer;
-
-import junit.framework.TestCase;
+import com.google.common.testing.GcFinalization;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.net.URLClassLoader;
+
+import junit.framework.TestCase;
 
 /**
  * Unit test for {@link FinalizableReferenceQueue}.
@@ -40,19 +41,15 @@ public class FinalizableReferenceQueueTest extends TestCase {
   }
 
   public void testFinalizeReferentCalled() {
-    MockReference reference = new MockReference(
+    final MockReference reference = new MockReference(
         frq = new FinalizableReferenceQueue());
-    // wait up to 5s
-    for (int i = 0; i < 500; i++) {
-      if (reference.finalizeReferentCalled) {
-        return;
-      }
-      try {
-        System.gc();
-        Thread.sleep(10);
-      } catch (InterruptedException e) { /* ignore */ }
-    }
-    fail();
+
+    GcFinalization.awaitDone(new GcFinalization.FinalizationPredicate() {
+        @Override
+        public boolean isDone() {
+          return reference.finalizeReferentCalled;
+        }
+      });
   }
 
   static class MockReference extends FinalizableWeakReference<Object> {
@@ -78,18 +75,7 @@ public class FinalizableReferenceQueueTest extends TestCase {
 
   public void testThatFinalizerStops() {
     weaklyReferenceQueue();
-
-    // wait up to 5s
-    for (int i = 0; i < 500; i++) {
-      if (queueReference.get() == null) {
-        return;
-      }
-      try {
-        System.gc();
-        Thread.sleep(10);
-      } catch (InterruptedException e) { /* ignore */ }
-    }
-    fail();
+    GcFinalization.awaitClear(queueReference);
   }
 
   /**

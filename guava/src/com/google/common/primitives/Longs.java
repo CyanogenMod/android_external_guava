@@ -21,8 +21,8 @@ import static com.google.common.base.Preconditions.checkElementIndex;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkPositionIndexes;
 
+import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
 
 import java.io.Serializable;
 import java.util.AbstractList;
@@ -37,10 +37,14 @@ import java.util.RandomAccess;
  * Static utility methods pertaining to {@code long} primitives, that are not
  * already found in either {@link Long} or {@link Arrays}.
  *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
+ * primitive utilities</a>.
+ *
  * @author Kevin Bourrillion
  * @since 1.0
  */
-@GwtCompatible(emulated = true)
+@GwtCompatible
 public final class Longs {
   private Longs() {}
 
@@ -118,8 +122,7 @@ public final class Longs {
   }
 
   // TODO(kevinb): consider making this public
-  private static int indexOf(
-      long[] array, long target, int start, int end) {
+  private static int indexOf(long[] array, long target, int start, int end) {
     for (int i = start; i < end; i++) {
       if (array[i] == target) {
         return i;
@@ -146,8 +149,7 @@ public final class Longs {
       return 0;
     }
 
-    outer:
-    for (int i = 0; i < array.length - target.length + 1; i++) {
+    outer: for (int i = 0; i < array.length - target.length + 1; i++) {
       for (int j = 0; j < target.length; j++) {
         if (array[i + j] != target[j]) {
           continue outer;
@@ -172,8 +174,7 @@ public final class Longs {
   }
 
   // TODO(kevinb): consider making this public
-  private static int lastIndexOf(
-      long[] array, long target, int start, int end) {
+  private static int lastIndexOf(long[] array, long target, int start, int end) {
     for (int i = end - 1; i >= start; i--) {
       if (array[i] == target) {
         return i;
@@ -254,17 +255,15 @@ public final class Longs {
    * {@link com.google.common.io.ByteStreams#newDataOutput()} to get a growable
    * buffer.
    */
-  @GwtIncompatible("doesn't work")
   public static byte[] toByteArray(long value) {
-    return new byte[] {
-        (byte) (value >> 56),
-        (byte) (value >> 48),
-        (byte) (value >> 40),
-        (byte) (value >> 32),
-        (byte) (value >> 24),
-        (byte) (value >> 16),
-        (byte) (value >> 8),
-        (byte) value};
+    // Note that this code needs to stay compatible with GWT, which has known
+    // bugs when narrowing byte casts of long values occur.
+    byte[] result = new byte[8];
+    for (int i = 7; i >= 0; i--) {
+      result[i] = (byte) (value & 0xffL);
+      value >>= 8;
+    }
+    return result;
   }
 
   /**
@@ -280,12 +279,9 @@ public final class Longs {
    * @throws IllegalArgumentException if {@code bytes} has fewer than 8
    *     elements
    */
-  @GwtIncompatible("doesn't work")
   public static long fromByteArray(byte[] bytes) {
-    checkArgument(bytes.length >= BYTES,
-        "array too small: %s < %s", bytes.length, BYTES);
-    return fromBytes(bytes[0], bytes[1], bytes[2], bytes[3],
-        bytes[4], bytes[5], bytes[6], bytes[7]) ;
+    checkArgument(bytes.length >= BYTES, "array too small: %s < %s", bytes.length, BYTES);
+    return fromBytes(bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]);
   }
 
   /**
@@ -295,17 +291,64 @@ public final class Longs {
    *
    * @since 7.0
    */
-  @GwtIncompatible("doesn't work")
-  public static long fromBytes(byte b1, byte b2, byte b3, byte b4,
-      byte b5, byte b6, byte b7, byte b8) {
-    return (b1 & 0xFFL) << 56
-        | (b2 & 0xFFL) << 48
-        | (b3 & 0xFFL) << 40
-        | (b4 & 0xFFL) << 32
-        | (b5 & 0xFFL) << 24
-        | (b6 & 0xFFL) << 16
-        | (b7 & 0xFFL) << 8
-        | (b8 & 0xFFL);
+  public static long fromBytes(byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7,
+      byte b8) {
+    return (b1 & 0xFFL) << 56 | (b2 & 0xFFL) << 48 | (b3 & 0xFFL) << 40 | (b4 & 0xFFL) << 32
+        | (b5 & 0xFFL) << 24 | (b6 & 0xFFL) << 16 | (b7 & 0xFFL) << 8 | (b8 & 0xFFL);
+  }
+
+  /**
+   * Parses the specified string as a signed decimal long value. The ASCII
+   * character {@code '-'} (<code>'&#92;u002D'</code>) is recognized as the
+   * minus sign.
+   *
+   * <p>Unlike {@link Long#parseLong(String)}, this method returns
+   * {@code null} instead of throwing an exception if parsing fails.
+   *
+   * <p>Note that strings prefixed with ASCII {@code '+'} are rejected, even
+   * under JDK 7, despite the change to {@link Long#parseLong(String)} for
+   * that version.
+   *
+   * @param string the string representation of a long value
+   * @return the long value represented by {@code string}, or {@code null} if
+   *     {@code string} has a length of zero or cannot be parsed as a long
+   *     value
+   * @since 14.0
+   */
+  @Beta
+  public static Long tryParse(String string) {
+    if (checkNotNull(string).length() == 0) {
+      return null;
+    }
+    boolean negative = string.charAt(0) == '-';
+    int index = negative ? 1 : 0;
+    if (index == string.length()) {
+      return null;
+    }
+    int digit = string.charAt(index++) - '0';
+    if (digit < 0 || digit > 9) {
+      return null;
+    }
+    long accum = -digit;
+    while (index < string.length()) {
+      digit = string.charAt(index++) - '0';
+      if (digit < 0 || digit > 9 || accum < Long.MIN_VALUE / 10) {
+        return null;
+      }
+      accum *= 10;
+      if (accum < Long.MIN_VALUE + digit) {
+        return null;
+      }
+      accum -= digit;
+    }
+
+    if (negative) {
+      return accum;
+    } else if (accum == Long.MIN_VALUE) {
+      return null;
+    } else {
+      return -accum;
+    }
   }
 
   /**
@@ -324,13 +367,10 @@ public final class Longs {
    * @return an array containing the values of {@code array}, with guaranteed
    *     minimum length {@code minLength}
    */
-  public static long[] ensureCapacity(
-      long[] array, int minLength, int padding) {
+  public static long[] ensureCapacity(long[] array, int minLength, int padding) {
     checkArgument(minLength >= 0, "Invalid minLength: %s", minLength);
     checkArgument(padding >= 0, "Invalid padding: %s", padding);
-    return (array.length < minLength)
-        ? copyOf(array, minLength + padding)
-        : array;
+    return (array.length < minLength) ? copyOf(array, minLength + padding) : array;
   }
 
   // Arrays.copyOf() requires Java 6
@@ -387,7 +427,6 @@ public final class Longs {
   private enum LexicographicalComparator implements Comparator<long[]> {
     INSTANCE;
 
-    @Override
     public int compare(long[] left, long[] right) {
       int minLength = Math.min(left.length, right.length);
       for (int i = 0; i < minLength; i++) {
@@ -401,20 +440,21 @@ public final class Longs {
   }
 
   /**
-   * Copies a collection of {@code Long} instances into a new array of
-   * primitive {@code long} values.
+   * Returns an array containing each value of {@code collection}, converted to
+   * a {@code long} value in the manner of {@link Number#longValue}.
    *
    * <p>Elements are copied from the argument collection as if by {@code
    * collection.toArray()}.  Calling this method is as thread-safe as calling
    * that method.
    *
-   * @param collection a collection of {@code Long} objects
+   * @param collection a collection of {@code Number} instances
    * @return an array containing the same values as {@code collection}, in the
    *     same order, converted to primitives
    * @throws NullPointerException if {@code collection} or any of its elements
    *     is null
+   * @since 1.0 (parameter was {@code Collection<Long>} before 12.0)
    */
-  public static long[] toArray(Collection<Long> collection) {
+  public static long[] toArray(Collection<? extends Number> collection) {
     if (collection instanceof LongArrayAsList) {
       return ((LongArrayAsList) collection).toLongArray();
     }
@@ -424,7 +464,7 @@ public final class Longs {
     long[] array = new long[len];
     for (int i = 0; i < len; i++) {
       // checkNotNull for GWT (do not optimize)
-      array[i] = (Long) checkNotNull(boxedArray[i]);
+      array[i] = ((Number) checkNotNull(boxedArray[i])).longValue();
     }
     return array;
   }
@@ -451,8 +491,8 @@ public final class Longs {
   }
 
   @GwtCompatible
-  private static class LongArrayAsList extends AbstractList<Long>
-      implements RandomAccess, Serializable {
+  private static class LongArrayAsList extends AbstractList<Long> implements RandomAccess,
+      Serializable {
     final long[] array;
     final int start;
     final int end;
@@ -467,26 +507,30 @@ public final class Longs {
       this.end = end;
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
       return end - start;
     }
 
-    @Override public boolean isEmpty() {
+    @Override
+    public boolean isEmpty() {
       return false;
     }
 
-    @Override public Long get(int index) {
+    @Override
+    public Long get(int index) {
       checkElementIndex(index, size());
       return array[start + index];
     }
 
-    @Override public boolean contains(Object target) {
+    @Override
+    public boolean contains(Object target) {
       // Overridden to prevent a ton of boxing
-      return (target instanceof Long)
-          && Longs.indexOf(array, (Long) target, start, end) != -1;
+      return (target instanceof Long) && Longs.indexOf(array, (Long) target, start, end) != -1;
     }
 
-    @Override public int indexOf(Object target) {
+    @Override
+    public int indexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Long) {
         int i = Longs.indexOf(array, (Long) target, start, end);
@@ -497,7 +541,8 @@ public final class Longs {
       return -1;
     }
 
-    @Override public int lastIndexOf(Object target) {
+    @Override
+    public int lastIndexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Long) {
         int i = Longs.lastIndexOf(array, (Long) target, start, end);
@@ -508,14 +553,17 @@ public final class Longs {
       return -1;
     }
 
-    @Override public Long set(int index, Long element) {
+    @Override
+    public Long set(int index, Long element) {
       checkElementIndex(index, size());
       long oldValue = array[start + index];
-      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
+      // checkNotNull for GWT (do not optimize)
+      array[start + index] = checkNotNull(element);
       return oldValue;
     }
 
-    @Override public List<Long> subList(int fromIndex, int toIndex) {
+    @Override
+    public List<Long> subList(int fromIndex, int toIndex) {
       int size = size();
       checkPositionIndexes(fromIndex, toIndex, size);
       if (fromIndex == toIndex) {
@@ -524,7 +572,8 @@ public final class Longs {
       return new LongArrayAsList(array, start + fromIndex, start + toIndex);
     }
 
-    @Override public boolean equals(Object object) {
+    @Override
+    public boolean equals(Object object) {
       if (object == this) {
         return true;
       }
@@ -544,7 +593,8 @@ public final class Longs {
       return super.equals(object);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       int result = 1;
       for (int i = start; i < end; i++) {
         result = 31 * result + Longs.hashCode(array[i]);
@@ -552,7 +602,8 @@ public final class Longs {
       return result;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       StringBuilder builder = new StringBuilder(size() * 10);
       builder.append('[').append(array[start]);
       for (int i = start + 1; i < end; i++) {
@@ -562,7 +613,7 @@ public final class Longs {
     }
 
     long[] toLongArray() {
-      // Arrays.copyOfRange() requires Java 6
+      // Arrays.copyOfRange() is not available under GWT
       int size = size();
       long[] result = new long[size];
       System.arraycopy(array, start, result, 0, size);

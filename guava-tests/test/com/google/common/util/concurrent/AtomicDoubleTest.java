@@ -13,7 +13,6 @@
 
 package com.google.common.util.concurrent;
 
-import junit.framework.*;
 
 /**
  * Unit test for {@link AtomicDouble}.
@@ -23,8 +22,8 @@ public class AtomicDoubleTest extends JSR166TestCase {
   private static final double[] VALUES = {
     Double.NEGATIVE_INFINITY,
     -Double.MAX_VALUE,
-    (double) Long.MIN_VALUE,
-    (double) Integer.MIN_VALUE,
+    Long.MIN_VALUE,
+    Integer.MIN_VALUE,
     -Math.PI,
     -1.0,
     -Double.MIN_VALUE,
@@ -33,8 +32,8 @@ public class AtomicDoubleTest extends JSR166TestCase {
     Double.MIN_VALUE,
     1.0,
     Math.PI,
-    (double) Integer.MAX_VALUE,
-    (double) Long.MAX_VALUE,
+    Integer.MAX_VALUE,
+    Long.MAX_VALUE,
     Double.MAX_VALUE,
     Double.POSITIVE_INFINITY,
     Double.NaN,
@@ -118,6 +117,7 @@ public class AtomicDoubleTest extends JSR166TestCase {
       public void testCompareAndSetInMultipleThreads() throws Exception {
     final AtomicDouble at = new AtomicDouble(1.0);
     Thread t = newStartedThread(new CheckedRunnable() {
+        @Override
         public void realRun() {
           while (!at.compareAndSet(2.0, 3.0)) {
             Thread.yield();

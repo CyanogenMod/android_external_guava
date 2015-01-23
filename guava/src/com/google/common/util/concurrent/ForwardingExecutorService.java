@@ -36,81 +36,78 @@ import java.util.concurrent.TimeoutException;
  * @author Kurt Alfred Kluever
  * @since 10.0
  */
-public abstract class ForwardingExecutorService extends ForwardingObject
-    implements ExecutorService {
+public abstract class ForwardingExecutorService extends ForwardingObject implements ExecutorService {
   /** Constructor for use by subclasses. */
   protected ForwardingExecutorService() {}
-  
+
   @Override
   protected abstract ExecutorService delegate();
 
-  @Override
-  public boolean awaitTermination(long timeout, TimeUnit unit)
-      throws InterruptedException {
+  /* @Override JDK5 */
+  public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
     return delegate().awaitTermination(timeout, unit);
   }
 
-  @Override
-  public <T> List<Future<T>> invokeAll(
-      Collection<? extends Callable<T>> tasks) throws InterruptedException {
+  /* @Override JDK5 */
+  public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
+      throws InterruptedException {
     return delegate().invokeAll(tasks);
   }
 
-  @Override
-  public <T> List<Future<T>> invokeAll(
-      Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
-      throws InterruptedException {
+  /* @Override JDK5 */
+  public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout,
+      TimeUnit unit) throws InterruptedException {
     return delegate().invokeAll(tasks, timeout, unit);
   }
 
-  @Override
-  public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
-      throws InterruptedException, ExecutionException {
+  /* @Override JDK5 */
+  public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException,
+      ExecutionException {
     return delegate().invokeAny(tasks);
   }
 
-  @Override
-  public <T> T invokeAny(
-      Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+  /* @Override JDK5 */
+  public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
     return delegate().invokeAny(tasks, timeout, unit);
   }
 
-  @Override
+  /* @Override JDK5 */
   public boolean isShutdown() {
     return delegate().isShutdown();
   }
 
-  @Override
+  /* @Override JDK5 */
   public boolean isTerminated() {
     return delegate().isTerminated();
   }
 
-  @Override
+  /* @Override JDK5 */
   public void shutdown() {
     delegate().shutdown();
   }
 
-  @Override
+  /* @Override JDK5 */
   public List<Runnable> shutdownNow() {
     return delegate().shutdownNow();
   }
 
-  @Override
+  /* @Override JDK5 */
   public void execute(Runnable command) {
     delegate().execute(command);
   }
 
+  /* @Override JDK5 */
   public <T> Future<T> submit(Callable<T> task) {
     return delegate().submit(task);
   }
 
-  @Override
+  /* @Override JDK5 */
   public Future<?> submit(Runnable task) {
     return delegate().submit(task);
   }
 
-  @Override
+  /* @Override JDK5 */
   public <T> Future<T> submit(Runnable task, T result) {
     return delegate().submit(task, result);
   }

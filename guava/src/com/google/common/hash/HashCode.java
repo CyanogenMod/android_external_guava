@@ -20,6 +20,8 @@ import com.google.common.primitives.Ints;
 
 import java.security.MessageDigest;
 
+import javax.annotation.Nullable;
+
 /**
  * An immutable hash code of arbitrary bit length.
  *
@@ -33,6 +35,8 @@ public abstract class HashCode {
   /**
    * Returns the first four bytes of {@linkplain #asBytes() this hashcode's bytes}, converted to
    * an {@code int} value in little-endian order.
+   *
+   * @throws IllegalStateException if {@code bits() < 32}
    */
   public abstract int asInt();
 
@@ -43,6 +47,15 @@ public abstract class HashCode {
    * @throws IllegalStateException if {@code bits() < 64}
    */
   public abstract long asLong();
+
+  /**
+   * If this hashcode has enough bits, returns {@code asLong()}, otherwise returns a {@code long}
+   * value with {@code asInt()} as the least-significant four bytes and {@code 0x00} as
+   * each of the most-significant four bytes.
+   *
+   * @since 14.0 (since 11.0 as {@code Hashing.padToLong(HashCode)})
+   */
+  public abstract long padToLong();
 
   /**
    * Returns the value of this hash code as a byte array. The caller may modify the byte array;
@@ -70,11 +83,12 @@ public abstract class HashCode {
   }
 
   /**
-   * Returns the number of bits in this hash code; a positive multiple of 32.
+   * Returns the number of bits in this hash code; a positive multiple of 8.
    */
   public abstract int bits();
 
-  @Override public boolean equals(Object object) {
+  @Override
+  public boolean equals(@Nullable Object object) {
     if (object instanceof HashCode) {
       HashCode that = (HashCode) object;
       // Undocumented: this is a non-short-circuiting equals(), in case this is a cryptographic
@@ -89,7 +103,8 @@ public abstract class HashCode {
    * (so, for example, you can safely put {@code HashCode} instances into a {@code
    * HashSet}) but is otherwise probably not what you want to use.
    */
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     /*
      * As long as the hash function that produced this isn't of horrible quality, this
      * won't be of horrible quality either.
@@ -106,9 +121,9 @@ public abstract class HashCode {
    * everything else in the hashing API uniformly treats multibyte values as little-endian. But
    * this format conveniently matches that of utilities such as the UNIX {@code md5sum} command.
    */
-  @Override public String toString() {
+  @Override
+  public String toString() {
     byte[] bytes = asBytes();
-    // TODO(user): Use c.g.common.base.ByteArrays once it is open sourced.
     StringBuilder sb = new StringBuilder(2 * bytes.length);
     for (byte b : bytes) {
       sb.append(hexDigits[(b >> 4) & 0xf]).append(hexDigits[b & 0xf]);

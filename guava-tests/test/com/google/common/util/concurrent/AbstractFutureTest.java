@@ -16,15 +16,16 @@
 
 package com.google.common.util.concurrent;
 
-import static org.junit.contrib.truth.Truth.ASSERT;
+import com.google.common.testing.FluentAsserts;
 
-import junit.framework.AssertionFailedError;
-import junit.framework.TestCase;
-
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
+
+import junit.framework.AssertionFailedError;
+import junit.framework.TestCase;
 
 /**
  * Tests for {@link AbstractFuture}.
@@ -63,23 +64,37 @@ public class AbstractFutureTest extends TestCase {
     checkStackTrace(ee2);
   }
 
-  public void testCancel_notDoneNoInterrupt() {
+  public void testCancel_notDoneNoInterrupt() throws Exception {
     InterruptibleFuture future = new InterruptibleFuture();
     assertTrue(future.cancel(false));
     assertTrue(future.isCancelled());
     assertTrue(future.isDone());
-    assertFalse(future.wasInterrupted);
+    assertFalse(future.wasInterrupted());
+    assertFalse(future.interruptTaskWasCalled);
+    try {
+      future.get();
+      fail("Expected CancellationException");
+    } catch (CancellationException e) {
+      assertNotNull(e.getCause());
+    }
   }
 
-  public void testCancel_notDoneInterrupt() {
+  public void testCancel_notDoneInterrupt() throws Exception {
     InterruptibleFuture future = new InterruptibleFuture();
     assertTrue(future.cancel(true));
     assertTrue(future.isCancelled());
     assertTrue(future.isDone());
-    assertTrue(future.wasInterrupted);
+    assertTrue(future.wasInterrupted());
+    assertTrue(future.interruptTaskWasCalled);
+    try {
+      future.get();
+      fail("Expected CancellationException");
+    } catch (CancellationException e) {
+      assertNotNull(e.getCause());
+    }
   }
 
-  public void testCancel_done() {
+  public void testCancel_done() throws Exception {
     AbstractFuture<String> future = new AbstractFuture<String>() {
       {
         set("foo");
@@ -138,11 +153,11 @@ public class AbstractFutureTest extends TestCase {
     int index = findStackFrame(
         e, getClass().getName(), "getExpectingExecutionException");
 
-    ASSERT.that(index).isNotEqualTo(0);
+    FluentAsserts.assertThat(index).isNotEqualTo(0);
 
     // Above our method should be the call to get(). Don't assert on the class
     // because it could be some superclass.
-    ASSERT.that(e.getStackTrace()[index - 1].getMethodName()).isEqualTo("get");
+    FluentAsserts.assertThat(e.getStackTrace()[index - 1].getMethodName()).isEqualTo("get");
   }
 
   private static int findStackFrame(
@@ -177,10 +192,11 @@ public class AbstractFutureTest extends TestCase {
 
   private static final class InterruptibleFuture
       extends AbstractFuture<String> {
-    boolean wasInterrupted;
+    boolean interruptTaskWasCalled;
 
     @Override protected void interruptTask() {
-      wasInterrupted = true;
+      assertFalse(interruptTaskWasCalled);
+      interruptTaskWasCalled = true;
     }
   }
 }

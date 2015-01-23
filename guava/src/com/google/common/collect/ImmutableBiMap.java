@@ -16,11 +16,12 @@
 
 package com.google.common.collect;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.annotations.GwtCompatible;
 
+import java.util.Collection;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 /**
  * An immutable {@link BiMap} with reliable user-specified iteration order. Does
@@ -40,11 +41,7 @@ import javax.annotation.Nullable;
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible(serializable = true, emulated = true)
-public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
-    implements BiMap<K, V> {
-
-  private static final ImmutableBiMap<Object, Object> EMPTY_IMMUTABLE_BIMAP
-      = new EmptyBiMap();
+public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V> implements BiMap<K, V> {
 
   /**
    * Returns the empty bimap.
@@ -52,14 +49,16 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
   // Casting to any type is safe because the set will never hold any elements.
   @SuppressWarnings("unchecked")
   public static <K, V> ImmutableBiMap<K, V> of() {
-    return (ImmutableBiMap<K, V>) EMPTY_IMMUTABLE_BIMAP;
+    return (ImmutableBiMap<K, V>) EmptyImmutableBiMap.INSTANCE;
   }
 
   /**
    * Returns an immutable bimap containing a single entry.
    */
   public static <K, V> ImmutableBiMap<K, V> of(K k1, V v1) {
-    return new RegularImmutableBiMap<K, V>(ImmutableMap.of(k1, v1));
+    checkNotNull(k1, "null key in entry: null=%s", v1);
+    checkNotNull(v1, "null value in entry: %s=null", k1);
+    return new SingletonImmutableBiMap<K, V>(k1, v1);
   }
 
   /**
@@ -68,7 +67,7 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
    * @throws IllegalArgumentException if duplicate keys or values are added
    */
   public static <K, V> ImmutableBiMap<K, V> of(K k1, V v1, K k2, V v2) {
-    return new RegularImmutableBiMap<K, V>(ImmutableMap.of(k1, v1, k2, v2));
+    return new Builder<K, V>().put(k1, v1).put(k2, v2).build();
   }
 
   /**
@@ -76,10 +75,8 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
    *
    * @throws IllegalArgumentException if duplicate keys or values are added
    */
-  public static <K, V> ImmutableBiMap<K, V> of(
-      K k1, V v1, K k2, V v2, K k3, V v3) {
-    return new RegularImmutableBiMap<K, V>(ImmutableMap.of(
-        k1, v1, k2, v2, k3, v3));
+  public static <K, V> ImmutableBiMap<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3) {
+    return new Builder<K, V>().put(k1, v1).put(k2, v2).put(k3, v3).build();
   }
 
   /**
@@ -87,10 +84,8 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
    *
    * @throws IllegalArgumentException if duplicate keys or values are added
    */
-  public static <K, V> ImmutableBiMap<K, V> of(
-      K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
-    return new RegularImmutableBiMap<K, V>(ImmutableMap.of(
-        k1, v1, k2, v2, k3, v3, k4, v4));
+  public static <K, V> ImmutableBiMap<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
+    return new Builder<K, V>().put(k1, v1).put(k2, v2).put(k3, v3).put(k4, v4).build();
   }
 
   /**
@@ -98,10 +93,9 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
    *
    * @throws IllegalArgumentException if duplicate keys or values are added
    */
-  public static <K, V> ImmutableBiMap<K, V> of(
-      K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5) {
-    return new RegularImmutableBiMap<K, V>(ImmutableMap.of(
-        k1, v1, k2, v2, k3, v3, k4, v4, k5, v5));
+  public static <K, V> ImmutableBiMap<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4,
+      K k5, V v5) {
+    return new Builder<K, V>().put(k1, v1).put(k2, v2).put(k3, v3).put(k4, v4).put(k5, v5).build();
   }
 
   // looking for of() with > 5 entries? Use the builder instead.
@@ -146,7 +140,8 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
      * Associates {@code key} with {@code value} in the built bimap. Duplicate
      * keys or values are not allowed, and will cause {@link #build} to fail.
      */
-    @Override public Builder<K, V> put(K key, V value) {
+    @Override
+    public Builder<K, V> put(K key, V value) {
       super.put(key, value);
       return this;
     }
@@ -158,7 +153,8 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
      *
      * @throws NullPointerException if any key or value in {@code map} is null
      */
-    @Override public Builder<K, V> putAll(Map<? extends K, ? extends V> map) {
+    @Override
+    public Builder<K, V> putAll(Map<? extends K, ? extends V> map) {
       super.putAll(map);
       return this;
     }
@@ -168,12 +164,9 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
      *
      * @throws IllegalArgumentException if duplicate keys or values were added
      */
-    @Override public ImmutableBiMap<K, V> build() {
-      ImmutableMap<K, V> map = super.build();
-      if (map.isEmpty()) {
-        return of();
-      }
-      return new RegularImmutableBiMap<K, V>(map);
+    @Override
+    public ImmutableBiMap<K, V> build() {
+      return fromEntries(entries);
     }
   }
 
@@ -190,10 +183,10 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
    * @throws IllegalArgumentException if two keys have the same value
    * @throws NullPointerException if any key or value in {@code map} is null
    */
-  public static <K, V> ImmutableBiMap<K, V> copyOf(
-      Map<? extends K, ? extends V> map) {
+  public static <K, V> ImmutableBiMap<K, V> copyOf(Map<? extends K, ? extends V> map) {
     if (map instanceof ImmutableBiMap) {
-      @SuppressWarnings("unchecked") // safe since map is not writable
+      @SuppressWarnings("unchecked")
+      // safe since map is not writable
       ImmutableBiMap<K, V> bimap = (ImmutableBiMap<K, V>) map;
       // TODO(user): if we need to make a copy of a BiMap because the
       // forward map is a view, don't make a copy of the non-view delegate map
@@ -202,17 +195,24 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
       }
     }
 
-    if (map.isEmpty()) {
-      return of();
-    }
+    return fromEntries(ImmutableList.copyOf(map.entrySet()));
+  }
 
-    ImmutableMap<K, V> immutableMap = ImmutableMap.copyOf(map);
-    return new RegularImmutableBiMap<K, V>(immutableMap);
+  static <K, V> ImmutableBiMap<K, V> fromEntries(
+      Collection<? extends Entry<? extends K, ? extends V>> entries) {
+    switch (entries.size()) {
+      case 0:
+        return of();
+      case 1: {
+        Entry<? extends K, ? extends V> entry = Iterables.getOnlyElement(entries);
+        return new SingletonImmutableBiMap<K, V>(entry.getKey(), entry.getValue());
+      }
+      default:
+        return new RegularImmutableBiMap<K, V>(entries);
+    }
   }
 
   ImmutableBiMap() {}
-
-  abstract ImmutableMap<K, V> delegate();
 
   /**
    * {@inheritDoc}
@@ -220,34 +220,15 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
    * <p>The inverse of an {@code ImmutableBiMap} is another
    * {@code ImmutableBiMap}.
    */
-  @Override
+
   public abstract ImmutableBiMap<V, K> inverse();
-
-  @Override public boolean containsKey(@Nullable Object key) {
-    return delegate().containsKey(key);
-  }
-
-  @Override public boolean containsValue(@Nullable Object value) {
-    return inverse().containsKey(value);
-  }
-
-  @Override public ImmutableSet<Entry<K, V>> entrySet() {
-    return delegate().entrySet();
-  }
-
-  @Override public V get(@Nullable Object key) {
-    return delegate().get(key);
-  }
-
-  @Override public ImmutableSet<K> keySet() {
-    return delegate().keySet();
-  }
 
   /**
    * Returns an immutable set of the values in this map. The values are in the
    * same order as the parameters used to build this map.
    */
-  @Override public ImmutableSet<V> values() {
+  @Override
+  public ImmutableSet<V> values() {
     return inverse().keySet();
   }
 
@@ -255,48 +236,11 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
    * Guaranteed to throw an exception and leave the bimap unmodified.
    *
    * @throws UnsupportedOperationException always
+   * @deprecated Unsupported operation.
    */
-  @Override
+  @Deprecated
   public V forcePut(K key, V value) {
     throw new UnsupportedOperationException();
-  }
-
-  @Override public boolean isEmpty() {
-    return delegate().isEmpty();
-  }
-
-  @Override
-  public int size() {
-    return delegate().size();
-  }
-
-  @Override public boolean equals(@Nullable Object object) {
-    return object == this || delegate().equals(object);
-  }
-
-  @Override public int hashCode() {
-    return delegate().hashCode();
-  }
-
-  @Override public String toString() {
-    return delegate().toString();
-  }
-
-  /** Bimap with no mappings. */
-  @SuppressWarnings("serial") // uses writeReplace(), not default serialization
-  static class EmptyBiMap extends ImmutableBiMap<Object, Object> {
-    @Override ImmutableMap<Object, Object> delegate() {
-      return ImmutableMap.of();
-    }
-    @Override public ImmutableBiMap<Object, Object> inverse() {
-      return this;
-    }
-    @Override boolean isPartialView() {
-      return false;
-    }
-    Object readResolve() {
-      return EMPTY_IMMUTABLE_BIMAP; // preserve singleton property
-    }
   }
 
   /**
@@ -312,14 +256,18 @@ public abstract class ImmutableBiMap<K, V> extends ImmutableMap<K, V>
     SerializedForm(ImmutableBiMap<?, ?> bimap) {
       super(bimap);
     }
-    @Override Object readResolve() {
+
+    @Override
+    Object readResolve() {
       Builder<Object, Object> builder = new Builder<Object, Object>();
       return createMap(builder);
     }
+
     private static final long serialVersionUID = 0;
   }
 
-  @Override Object writeReplace() {
+  @Override
+  Object writeReplace() {
     return new SerializedForm(this);
   }
 }

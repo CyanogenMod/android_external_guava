@@ -18,7 +18,7 @@ package com.google.common.collect;
 
 import static com.google.common.collect.testing.IteratorFeature.UNMODIFIABLE;
 import static java.util.Arrays.asList;
-import static org.junit.contrib.truth.Truth.ASSERT;
+import static org.truth0.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
@@ -27,13 +27,15 @@ import com.google.common.collect.testing.IteratorTester;
 import com.google.common.collect.testing.MinimalCollection;
 import com.google.common.collect.testing.MinimalIterable;
 
-import junit.framework.TestCase;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import junit.framework.TestCase;
+
+import org.truth0.subjects.CollectionSubject;
 
 /**
  * Base class for {@link ImmutableSet} and  {@link ImmutableSortedSet} tests.
@@ -295,8 +297,17 @@ public abstract class AbstractImmutableSetTest extends TestCase {
         .add("d", "e", "f")
         .add("g", "h", "i", "j")
         .build();
-    ASSERT.that(set).hasContentsInOrder(
-        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j");
+    assertThat(set).has().allOf(
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j").inOrder();
+  }
+
+  public void testReuseBuilderWithNonDuplicateElements() {
+    ImmutableSet.Builder<String> builder = this.<String>builder()
+        .add("a")
+        .add("b");
+    assertThat(builder.build()).has().allOf("a", "b").inOrder();
+    builder.add("c", "d");
+    assertThat(builder.build()).has().allOf("a", "b", "c", "d").inOrder();
   }
 
   public void testBuilderWithDuplicateElements() {
@@ -311,6 +322,16 @@ public abstract class AbstractImmutableSetTest extends TestCase {
     assertEquals(1, set.size());
   }
 
+  public void testReuseBuilderWithDuplicateElements() {
+    ImmutableSet.Builder<String> builder = this.<String>builder()
+        .add("a")
+        .add("a", "a")
+        .add("b");
+    assertThat(builder.build()).has().allOf("a", "b").inOrder();
+    builder.add("a", "b", "c", "c");
+    assertThat(builder.build()).has().allOf("a", "b", "c").inOrder();
+  }
+
   public void testBuilderAddAll() {
     List<String> a = asList("a", "b", "c");
     List<String> b = asList("c", "d", "e");
@@ -318,7 +339,7 @@ public abstract class AbstractImmutableSetTest extends TestCase {
         .addAll(a)
         .addAll(b)
         .build();
-    ASSERT.that(set).hasContentsInOrder("a", "b", "c", "d", "e");
+    assertThat(set).has().allOf("a", "b", "c", "d", "e").inOrder();
   }
 
   static final int LAST_COLOR_ADDED = 0x00BFFF;
@@ -453,5 +474,11 @@ public abstract class AbstractImmutableSetTest extends TestCase {
             Sets.newHashSet(expected), copyOf(misleading));
       }
     }
+  }
+
+  // Hack for JDK5 type inference.
+  private static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> assertThat(
+      Collection<T> collection) {
+    return ASSERT.<T, Collection<T>>that(collection);
   }
 }

@@ -28,7 +28,6 @@ import com.google.common.primitives.Ints;
 import java.io.InvalidObjectException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
@@ -38,7 +37,7 @@ import javax.annotation.Nullable;
 
 /**
  * Basic implementation of {@code Multiset<E>} backed by an instance of {@code
- * Map<E, AtomicInteger>}.
+ * Map<E, Count>}.
  *
  * <p>For serialization to work, the subclass must specify explicit {@code
  * readObject} and {@code writeObject} methods.
@@ -46,8 +45,7 @@ import javax.annotation.Nullable;
  * @author Kevin Bourrillion
  */
 @GwtCompatible(emulated = true)
-abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
-    implements Serializable {
+abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E> implements Serializable {
 
   private transient Map<E, Count> backingMap;
 
@@ -64,10 +62,6 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
     this.size = super.size();
   }
 
-  Map<E, Count> backingMap() {
-    return backingMap;
-  }
-
   /** Used during deserialization only. The backing map must be empty. */
   void setBackingMap(Map<E, Count> backingMap) {
     this.backingMap = backingMap;
@@ -82,6 +76,7 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
    * set always returns the current count of that element in the multiset, as
    * opposed to the count at the time the entry was retrieved.
    */
+
   @Override
   public Set<Multiset.Entry<E>> entrySet() {
     return super.entrySet();
@@ -89,26 +84,23 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
 
   @Override
   Iterator<Entry<E>> entryIterator() {
-    final Iterator<Map.Entry<E, Count>> backingEntries =
-        backingMap.entrySet().iterator();
+    final Iterator<Map.Entry<E, Count>> backingEntries = backingMap.entrySet().iterator();
     return new Iterator<Multiset.Entry<E>>() {
       Map.Entry<E, Count> toRemove;
 
-      @Override
       public boolean hasNext() {
         return backingEntries.hasNext();
       }
 
-      @Override
       public Multiset.Entry<E> next() {
         final Map.Entry<E, Count> mapEntry = backingEntries.next();
         toRemove = mapEntry;
         return new Multisets.AbstractEntry<E>() {
-          @Override
+
           public E getElement() {
             return mapEntry.getKey();
           }
-          @Override
+
           public int getCount() {
             int count = mapEntry.getValue().get();
             if (count == 0) {
@@ -122,10 +114,8 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
         };
       }
 
-      @Override
       public void remove() {
-        checkState(toRemove != null,
-            "no calls to next() since the last call to remove()");
+        Iterators.checkRemove(toRemove != null);
         size -= toRemove.getValue().getAndSet(0);
         backingEntries.remove();
         toRemove = null;
@@ -149,17 +139,19 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
 
   // Optimizations - Query Operations
 
-  @Override public int size() {
+  @Override
+  public int size() {
     return Ints.saturatedCast(size);
   }
 
-  @Override public Iterator<E> iterator() {
+  @Override
+  public Iterator<E> iterator() {
     return new MapBasedMultisetIterator();
   }
 
   /*
    * Not subclassing AbstractMultiset$MultisetIterator because next() needs to
-   * retrieve the Map.Entry<E, AtomicInteger> entry, which can then be used for
+   * retrieve the Map.Entry<E, Count> entry, which can then be used for
    * a more efficient remove() call.
    */
   private class MapBasedMultisetIterator implements Iterator<E> {
@@ -172,12 +164,10 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
       this.entryIterator = backingMap.entrySet().iterator();
     }
 
-    @Override
     public boolean hasNext() {
       return occurrencesLeft > 0 || entryIterator.hasNext();
     }
 
-    @Override
     public E next() {
       if (occurrencesLeft == 0) {
         currentEntry = entryIterator.next();
@@ -188,10 +178,8 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
       return currentEntry.getKey();
     }
 
-    @Override
     public void remove() {
-      checkState(canRemove,
-          "no calls to next() since the last call to remove()");
+      checkState(canRemove, "no calls to next() since the last call to remove()");
       int frequency = currentEntry.getValue().get();
       if (frequency <= 0) {
         throw new ConcurrentModificationException();
@@ -205,14 +193,8 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
   }
 
   @Override public int count(@Nullable Object element) {
-    try {
-      Count frequency = backingMap.get(element);
-      return (frequency == null) ? 0 : frequency.get();
-    } catch (NullPointerException e) {
-      return 0;
-    } catch (ClassCastException e) {
-      return 0;
-    }
+    Count frequency = Maps.safeGet(backingMap, element);
+    return (frequency == null) ? 0 : frequency.get();
   }
 
   // Optional Operations - Modification Operations
@@ -224,12 +206,12 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
    *     {@link Integer#MAX_VALUE} occurrences of {@code element} in this
    *     multiset.
    */
-  @Override public int add(@Nullable E element, int occurrences) {
+  @Override
+  public int add(@Nullable E element, int occurrences) {
     if (occurrences == 0) {
       return count(element);
     }
-    checkArgument(
-        occurrences > 0, "occurrences cannot be negative: %s", occurrences);
+    checkArgument(occurrences > 0, "occurrences cannot be negative: %s", occurrences);
     Count frequency = backingMap.get(element);
     int oldCount;
     if (frequency == null) {
@@ -238,20 +220,19 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
     } else {
       oldCount = frequency.get();
       long newCount = (long) oldCount + (long) occurrences;
-      checkArgument(newCount <= Integer.MAX_VALUE,
-          "too many occurrences: %s", newCount);
+      checkArgument(newCount <= Integer.MAX_VALUE, "too many occurrences: %s", newCount);
       frequency.getAndAdd(occurrences);
     }
     size += occurrences;
     return oldCount;
   }
 
-  @Override public int remove(@Nullable Object element, int occurrences) {
+  @Override
+  public int remove(@Nullable Object element, int occurrences) {
     if (occurrences == 0) {
       return count(element);
     }
-    checkArgument(
-        occurrences > 0, "occurrences cannot be negative: %s", occurrences);
+    checkArgument(occurrences > 0, "occurrences cannot be negative: %s", occurrences);
     Count frequency = backingMap.get(element);
     if (frequency == null) {
       return 0;
@@ -273,7 +254,8 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
   }
 
   // Roughly a 33% performance improvement over AbstractMultiset.setCount().
-  @Override public int setCount(E element, int count) {
+  @Override
+  public int setCount(@Nullable E element, int count) {
     checkNonnegative(count, "count");
 
     Count existingCounter;
@@ -302,101 +284,10 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E>
     return i.getAndSet(count);
   }
 
-  private int removeAllOccurrences(@Nullable Object element,
-      Map<E, Count> map) {
-    Count frequency = map.remove(element);
-    if (frequency == null) {
-      return 0;
-    }
-    int numberRemoved = frequency.getAndSet(0);
-    size -= numberRemoved;
-    return numberRemoved;
-  }
-
-  // Views
-
-  @Override Set<E> createElementSet() {
-    return new MapBasedElementSet(backingMap);
-  }
-
-  // TODO(user): once TreeMultiset is replaced with a SortedMultiset
-  // implementation, replace this with a subclass of Multisets.ElementSet.
-  class MapBasedElementSet extends ForwardingSet<E> {
-
-    // This mapping is the usually the same as 'backingMap', but can be a
-    // submap in some implementations.
-    private final Map<E, Count> map;
-    private final Set<E> delegate;
-
-    MapBasedElementSet(Map<E, Count> map) {
-      this.map = map;
-      delegate = map.keySet();
-    }
-
-    @Override protected Set<E> delegate() {
-      return delegate;
-    }
-
-    @Override public Iterator<E> iterator() {
-      final Iterator<Map.Entry<E, Count>> entries
-          = map.entrySet().iterator();
-      return new Iterator<E>() {
-        Map.Entry<E, Count> toRemove;
-
-        @Override
-        public boolean hasNext() {
-          return entries.hasNext();
-        }
-
-        @Override
-        public E next() {
-          toRemove = entries.next();
-          return toRemove.getKey();
-        }
-
-        @Override
-        public void remove() {
-          checkState(toRemove != null,
-              "no calls to next() since the last call to remove()");
-          size -= toRemove.getValue().getAndSet(0);
-          entries.remove();
-          toRemove = null;
-        }
-      };
-    }
-
-    @Override public boolean remove(Object element) {
-      return removeAllOccurrences(element, map) != 0;
-    }
-
-    @Override public boolean removeAll(Collection<?> elementsToRemove) {
-      return Iterators.removeAll(iterator(), elementsToRemove);
-    }
-
-    @Override public boolean retainAll(Collection<?> elementsToRetain) {
-      return Iterators.retainAll(iterator(), elementsToRetain);
-    }
-
-    @Override public void clear() {
-      if (map == backingMap) {
-        AbstractMapBasedMultiset.this.clear();
-      } else {
-        Iterator<E> i = iterator();
-        while (i.hasNext()) {
-          i.next();
-          i.remove();
-        }
-      }
-    }
-
-    public Map<E, Count> getMap() {
-      return map;
-    }
-  }
-
   // Don't allow default serialization.
   @GwtIncompatible("java.io.ObjectStreamException")
-  @SuppressWarnings("unused") // actually used during deserialization
+  @SuppressWarnings("unused")
+  // actually used during deserialization
   private void readObjectNoData() throws ObjectStreamException {
     throw new InvalidObjectException("Stream data required");
   }

@@ -22,10 +22,13 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
+import com.google.common.base.Strings;
 
+import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -59,8 +62,9 @@ import javax.annotation.concurrent.Immutable;
  * @author Paul Marks
  * @since 10.0
  */
-@Beta @Immutable
-public final class HostAndPort {
+@Beta
+@Immutable
+public final class HostAndPort implements Serializable {
   /** Magic value indicating the absence of a port number. */
   private static final int NO_PORT = -1;
 
@@ -83,7 +87,7 @@ public final class HostAndPort {
    * Returns the portion of this {@code HostAndPort} instance that should
    * represent the hostname or IPv4/IPv6 literal.
    *
-   * A successful parse does not imply any degree of sanity in this field.
+   * <p>A successful parse does not imply any degree of sanity in this field.
    * For additional validation, see the {@link HostSpecifier} class.
    */
   public String getHostText() {
@@ -156,7 +160,7 @@ public final class HostAndPort {
       Matcher matcher = BRACKET_PATTERN.matcher(hostPortString);
       checkArgument(matcher.matches(), "Invalid bracketed host/port: %s", hostPortString);
       host = matcher.group(1);
-      portString = matcher.group(2);  // could be null
+      portString = matcher.group(2); // could be null
     } else {
       int colonPos = hostPortString.indexOf(':');
       if (colonPos >= 0 && hostPortString.indexOf(':', colonPos + 1) == -1) {
@@ -171,7 +175,7 @@ public final class HostAndPort {
     }
 
     int port = NO_PORT;
-    if (portString != null) {
+    if (!Strings.isNullOrEmpty(portString)) {
       // Try to parse the whole port string as a number.
       // JDK7 accepts leading plus signs. We don't want to.
       checkArgument(!portString.startsWith("+"), "Unparseable port number: %s", hostPortString);
@@ -225,14 +229,13 @@ public final class HostAndPort {
   }
 
   @Override
-  public boolean equals(Object other) {
+  public boolean equals(@Nullable Object other) {
     if (this == other) {
       return true;
     }
     if (other instanceof HostAndPort) {
       HostAndPort that = (HostAndPort) other;
-      return Objects.equal(this.host, that.host)
-          && this.port == that.port
+      return Objects.equal(this.host, that.host) && this.port == that.port
           && this.hasBracketlessColons == that.hasBracketlessColons;
     }
     return false;
@@ -244,6 +247,7 @@ public final class HostAndPort {
   }
 
   /** Rebuild the host:port string, including brackets if necessary. */
+
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder(host.length() + 7);
@@ -262,4 +266,6 @@ public final class HostAndPort {
   private static boolean isValidPort(int port) {
     return port >= 0 && port <= 65535;
   }
+
+  private static final long serialVersionUID = 0;
 }

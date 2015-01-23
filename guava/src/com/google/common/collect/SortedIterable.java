@@ -37,6 +37,6 @@ interface SortedIterable<T> extends Iterable<T> {
    * Returns an iterator over elements of type {@code T}. The elements are returned in
    * nondecreasing order according to the associated {@link #comparator}.
    */
-  @Override
+
   Iterator<T> iterator();
 }

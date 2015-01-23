@@ -54,40 +54,34 @@ import javax.annotation.Nullable;
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible
-public abstract class ForwardingSortedSet<E> extends ForwardingSet<E>
-    implements SortedSet<E> {
+public abstract class ForwardingSortedSet<E> extends ForwardingSet<E> implements SortedSet<E> {
 
   /** Constructor for use by subclasses. */
   protected ForwardingSortedSet() {}
 
-  @Override protected abstract SortedSet<E> delegate();
-
   @Override
+  protected abstract SortedSet<E> delegate();
+
   public Comparator<? super E> comparator() {
     return delegate().comparator();
   }
 
-  @Override
   public E first() {
     return delegate().first();
   }
 
-  @Override
   public SortedSet<E> headSet(E toElement) {
     return delegate().headSet(toElement);
   }
 
-  @Override
   public E last() {
     return delegate().last();
   }
 
-  @Override
   public SortedSet<E> subSet(E fromElement, E toElement) {
     return delegate().subSet(fromElement, toElement);
   }
 
-  @Override
   public SortedSet<E> tailSet(E fromElement) {
     return delegate().tailSet(fromElement);
   }
@@ -96,8 +90,7 @@ public abstract class ForwardingSortedSet<E> extends ForwardingSet<E>
   @SuppressWarnings("unchecked")
   private int unsafeCompare(Object o1, Object o2) {
     Comparator<? super E> comparator = comparator();
-    return (comparator == null)
-        ? ((Comparable<Object>) o1).compareTo(o2)
+    return (comparator == null) ? ((Comparable<Object>) o1).compareTo(o2)
         : ((Comparator<Object>) comparator).compare(o1, o2);
   }
 
@@ -108,7 +101,9 @@ public abstract class ForwardingSortedSet<E> extends ForwardingSet<E>
    *
    * @since 7.0
    */
-  @Override @Beta protected boolean standardContains(@Nullable Object object) {
+  @Override
+  @Beta
+  protected boolean standardContains(@Nullable Object object) {
     try {
       // any ClassCastExceptions are caught
       @SuppressWarnings("unchecked")
@@ -131,7 +126,9 @@ public abstract class ForwardingSortedSet<E> extends ForwardingSet<E>
    *
    * @since 7.0
    */
-  @Override @Beta protected boolean standardRemove(@Nullable Object object) {
+  @Override
+  @Beta
+  protected boolean standardRemove(@Nullable Object object) {
     try {
       // any ClassCastExceptions are caught
       @SuppressWarnings("unchecked")
@@ -160,7 +157,8 @@ public abstract class ForwardingSortedSet<E> extends ForwardingSet<E>
    *
    * @since 7.0
    */
-  @Beta protected SortedSet<E> standardSubSet(E fromElement, E toElement) {
+  @Beta
+  protected SortedSet<E> standardSubSet(E fromElement, E toElement) {
     return tailSet(fromElement).headSet(toElement);
   }
 }

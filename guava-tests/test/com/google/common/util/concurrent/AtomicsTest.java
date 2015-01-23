@@ -18,9 +18,9 @@ package com.google.common.util.concurrent;
 
 import com.google.common.testing.NullPointerTester;
 
-import junit.framework.TestCase;
-
 import java.util.concurrent.atomic.AtomicReferenceArray;
+
+import junit.framework.TestCase;
 
 /**
  * Unit test for {@link Atomics}.
@@ -82,7 +82,7 @@ public class AtomicsTest extends TestCase {
     }
   }
 
-  public void testNullPointers() throws Exception {
+  public void testNullPointers() {
     NullPointerTester tester = new NullPointerTester();
     tester.testAllPublicConstructors(Atomics.class); // there aren't any
     tester.testAllPublicStaticMethods(Atomics.class);

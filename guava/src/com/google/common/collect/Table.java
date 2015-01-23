@@ -16,7 +16,6 @@
 
 package com.google.common.collect;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.base.Objects;
 
@@ -44,6 +43,10 @@ import javax.annotation.Nullable;
  * <p>All methods that modify the table are optional, and the views returned by
  * the table may or may not be modifiable. When modification isn't supported,
  * those methods will throw an {@link UnsupportedOperationException}.
+ * 
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Table">
+ * {@code Table}</a>.
  *
  * @author Jared Levy
  * @param <R> the type of the table row keys
@@ -52,7 +55,6 @@ import javax.annotation.Nullable;
  * @since 7.0
  */
 @GwtCompatible
-@Beta
 public interface Table<R, C, V> {
   // TODO(jlevy): Consider adding methods similar to ConcurrentMap methods.
 
@@ -112,14 +114,14 @@ public interface Table<R, C, V> {
    * Compares the specified object with this table for equality. Two tables are
    * equal when their cell views, as returned by {@link #cellSet}, are equal.
    */
-  @Override
+
   boolean equals(@Nullable Object obj);
 
   /**
    * Returns the hash code for this table. The hash code of a table is defined
    * as the hash code of its cell view, as returned by {@link #cellSet}.
    */
-  @Override
+
   int hashCode();
 
   // Mutators
@@ -259,7 +261,6 @@ public interface Table<R, C, V> {
    *
    * @since 7.0
    */
-  @Beta
   interface Cell<R, C, V> {
     /**
      * Returns the row key of this cell.
@@ -280,7 +281,7 @@ public interface Table<R, C, V> {
      * Compares the specified object with this cell for equality. Two cells are
      * equal when they have equal row keys, column keys, and values.
      */
-    @Override
+
     boolean equals(@Nullable Object obj);
 
     /**
@@ -289,7 +290,7 @@ public interface Table<R, C, V> {
      * <p>The hash code of a table cell is equal to {@link
      * Objects#hashCode}{@code (e.getRowKey(), e.getColumnKey(), e.getValue())}.
      */
-    @Override
+
     int hashCode();
   }
 }

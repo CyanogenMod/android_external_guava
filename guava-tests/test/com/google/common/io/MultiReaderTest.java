@@ -18,12 +18,12 @@ package com.google.common.io;
 
 import com.google.common.collect.ImmutableList;
 
-import junit.framework.TestCase;
-
 import java.io.FilterReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+
+import junit.framework.TestCase;
 
 /**
  * @author ricebin

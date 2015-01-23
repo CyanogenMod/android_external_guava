@@ -67,7 +67,7 @@ public interface MapDifference<K, V> {
    * #entriesOnlyOnRight()}, {@link #entriesInCommon()} and {@link
    * #entriesDiffering()} of the two instances are equal.
    */
-  @Override
+
   boolean equals(@Nullable Object object);
 
   /**
@@ -77,7 +77,7 @@ public interface MapDifference<K, V> {
    *   Arrays.asList(entriesOnlyOnLeft(), entriesOnlyOnRight(),
    *       entriesInCommon(), entriesDiffering())}</pre>
    */
-  @Override
+
   int hashCode();
 
   /**
@@ -102,13 +102,13 @@ public interface MapDifference<K, V> {
      * Two instances are considered equal if their {@link #leftValue()}
      * values are equal and their {@link #rightValue()} values are also equal.
      */
-    @Override boolean equals(@Nullable Object other);
+    boolean equals(@Nullable Object other);
 
     /**
      * The hash code equals the value
      * {@code Arrays.asList(leftValue(), rightValue()).hashCode()}.
      */
-    @Override int hashCode();
+    int hashCode();
   }
 
 }

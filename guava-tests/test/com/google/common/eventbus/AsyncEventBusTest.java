@@ -17,8 +17,10 @@
 package com.google.common.eventbus;
 
 import com.google.common.collect.Lists;
+
 import java.util.List;
 import java.util.concurrent.Executor;
+
 import junit.framework.TestCase;
 
 /**

@@ -1,4 +1,0 @@
-<module>
-  <source path=""/>
-  <inherits name="com.google.common.annotations.Annotations"/>
-</module>

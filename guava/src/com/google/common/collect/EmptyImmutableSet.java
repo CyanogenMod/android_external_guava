@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 
 /**
  * An empty immutable set.
- * 
+ *
  * @author Kevin Bourrillion
  */
 @GwtCompatible(serializable = true, emulated = true)
@@ -34,45 +34,52 @@ final class EmptyImmutableSet extends ImmutableSet<Object> {
 
   private EmptyImmutableSet() {}
 
-  @Override
   public int size() {
     return 0;
   }
 
-  @Override public boolean isEmpty() {
+  @Override
+  public boolean isEmpty() {
     return true;
   }
 
-  @Override public boolean contains(Object target) {
+  @Override
+  public boolean contains(@Nullable Object target) {
     return false;
   }
 
-  @Override public UnmodifiableIterator<Object> iterator() {
-    return Iterators.emptyIterator();
-  }
-
-  @Override boolean isPartialView() {
-    return false;
-  }
-
-  private static final Object[] EMPTY_ARRAY = new Object[0];
-
-  @Override public Object[] toArray() {
-    return EMPTY_ARRAY;
-  }
-
-  @Override public <T> T[] toArray(T[] a) {
-    if (a.length > 0) {
-      a[0] = null;
-    }
-    return a;
-  }
-
-  @Override public boolean containsAll(Collection<?> targets) {
+  @Override
+  public boolean containsAll(Collection<?> targets) {
     return targets.isEmpty();
   }
 
-  @Override public boolean equals(@Nullable Object object) {
+  @Override
+  public UnmodifiableIterator<Object> iterator() {
+    return Iterators.emptyIterator();
+  }
+
+  @Override
+  boolean isPartialView() {
+    return false;
+  }
+
+  @Override
+  public Object[] toArray() {
+    return ObjectArrays.EMPTY_ARRAY;
+  }
+
+  @Override
+  public <T> T[] toArray(T[] a) {
+    return asList().toArray(a);
+  }
+
+  @Override
+  public ImmutableList<Object> asList() {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public boolean equals(@Nullable Object object) {
     if (object instanceof Set) {
       Set<?> that = (Set<?>) object;
       return that.isEmpty();
@@ -80,15 +87,18 @@ final class EmptyImmutableSet extends ImmutableSet<Object> {
     return false;
   }
 
-  @Override public final int hashCode() {
+  @Override
+  public final int hashCode() {
     return 0;
   }
 
-  @Override boolean isHashCodeFast() {
+  @Override
+  boolean isHashCodeFast() {
     return true;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "[]";
   }
 

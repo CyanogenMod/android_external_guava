@@ -40,10 +40,10 @@ final class AndroidInteger {
   @CheckForNull
   static Integer tryParse(String string, int radix) {
     checkNotNull(string);
-    checkArgument(radix >= Character.MIN_RADIX,
-        "Invalid radix %s, min radix is %s", radix, Character.MIN_RADIX);
-    checkArgument(radix <= Character.MAX_RADIX,
-        "Invalid radix %s, max radix is %s", radix, Character.MAX_RADIX);
+    checkArgument(radix >= Character.MIN_RADIX, "Invalid radix %s, min radix is %s", radix,
+        Character.MIN_RADIX);
+    checkArgument(radix <= Character.MAX_RADIX, "Invalid radix %s, max radix is %s", radix,
+        Character.MAX_RADIX);
     int length = string.length(), i = 0;
     if (length == 0) {
       return null;
@@ -56,8 +56,7 @@ final class AndroidInteger {
   }
 
   @CheckForNull
-  private static Integer tryParse(String string, int offset, int radix,
-      boolean negative) {
+  private static Integer tryParse(String string, int offset, int radix, boolean negative) {
     int max = Integer.MIN_VALUE / radix;
     int result = 0, length = string.length();
     while (offset < length) {

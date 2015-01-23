@@ -23,6 +23,12 @@ import javax.annotation.Nullable;
 /**
  * Determines a true or false value for a given input.
  *
+ * <p>The {@link Predicates} class provides common predicates and related utilities.
+ *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/FunctionalExplained">the use of {@code
+ * Predicate}</a>.
+ *
  * @author Kevin Bourrillion
  * @since 2.0 (imported from Google Collections Library)
  */
@@ -54,6 +60,6 @@ public interface Predicate<T> {
    * {@code T}). Note that a {@code false} result from this method does not imply that the
    * predicates are known <i>not</i> to be interchangeable.
    */
-  @Override
+
   boolean equals(@Nullable Object object);
 }

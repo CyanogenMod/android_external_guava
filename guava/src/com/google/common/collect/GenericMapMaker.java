@@ -44,7 +44,6 @@ public abstract class GenericMapMaker<K0, V0> {
   enum NullListener implements RemovalListener<Object, Object> {
     INSTANCE;
 
-    @Override
     public void onRemoval(RemovalNotification<Object, Object> notification) {}
   }
 
@@ -62,12 +61,6 @@ public abstract class GenericMapMaker<K0, V0> {
   abstract GenericMapMaker<K0, V0> keyEquivalence(Equivalence<Object> equivalence);
 
   /**
-   * See {@link MapMaker#valueEquivalence}.
-   */
-  @GwtIncompatible("To be supported")
-  abstract GenericMapMaker<K0, V0> valueEquivalence(Equivalence<Object> equivalence);
-
-  /**
    * See {@link MapMaker#initialCapacity}.
    */
   public abstract GenericMapMaker<K0, V0> initialCapacity(int initialCapacity);
@@ -76,11 +69,6 @@ public abstract class GenericMapMaker<K0, V0> {
    * See {@link MapMaker#maximumSize}.
    */
   abstract GenericMapMaker<K0, V0> maximumSize(int maximumSize);
-
-  /**
-   * See {@link MapMaker#strongKeys}.
-   */
-  abstract GenericMapMaker<K0, V0> strongKeys();
 
   /**
    * See {@link MapMaker#concurrencyLevel}.
@@ -94,18 +82,6 @@ public abstract class GenericMapMaker<K0, V0> {
   public abstract GenericMapMaker<K0, V0> weakKeys();
 
   /**
-   * See {@link MapMaker#strongValues}.
-   */
-  abstract GenericMapMaker<K0, V0> strongValues();
-
-  /**
-   * See {@link MapMaker#softKeys}.
-   */
-  @Deprecated
-  @GwtIncompatible("java.lang.ref.SoftReference")
-  public abstract GenericMapMaker<K0, V0> softKeys();
-
-  /**
    * See {@link MapMaker#weakValues}.
    */
   @GwtIncompatible("java.lang.ref.WeakReference")
@@ -116,13 +92,6 @@ public abstract class GenericMapMaker<K0, V0> {
    */
   @GwtIncompatible("java.lang.ref.SoftReference")
   public abstract GenericMapMaker<K0, V0> softValues();
-
-  /**
-   * See {@link MapMaker#expiration}.
-   */
-  @Deprecated
-  public
-  abstract GenericMapMaker<K0, V0> expiration(long duration, TimeUnit unit);
 
   /**
    * See {@link MapMaker#expireAfterWrite}.
@@ -140,7 +109,8 @@ public abstract class GenericMapMaker<K0, V0> {
    * GenericMapMaker you've already called that, and shouldn't be calling it again.
    */
 
-  @SuppressWarnings("unchecked") // safe covariant cast
+  @SuppressWarnings("unchecked")
+  // safe covariant cast
   @GwtIncompatible("To be supported")
   <K extends K0, V extends V0> RemovalListener<K, V> getRemovalListener() {
     return (RemovalListener<K, V>) Objects.firstNonNull(removalListener, NullListener.INSTANCE);

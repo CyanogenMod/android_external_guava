@@ -47,12 +47,13 @@ import java.util.List;
  * <ul>
  * <li>comparing each object against itself returns true
  * <li>comparing each object against null returns false
- * <li>comparing each object an instance of an incompatible class returns false
+ * <li>comparing each object against an instance of an incompatible class
+ *     returns false
  * <li>comparing each pair of objects within the same equality group returns
  *     true
  * <li>comparing each pair of objects from different equality groups returns
  *     false
- * <li>the hash code of any two equal objects are equal
+ * <li>the hash codes of any two equal objects are equal
  * </ul>
  *
  * <p>When a test fails, the error message labels the objects involved in
@@ -75,6 +76,7 @@ public final class EqualsTester {
   private static final int REPETITIONS = 3;
 
   private final List<List<Object>> equalityGroups = Lists.newArrayList();
+  private RelationshipTester.ItemReporter itemReporter = new RelationshipTester.ItemReporter();
 
   /**
    * Constructs an empty EqualsTester instance
@@ -110,7 +112,7 @@ public final class EqualsTester {
             // RelationshipAssertions in general) accept null inputs?
             assertTrue("$ITEM must be unequal to $UNRELATED", !Objects.equal(item, unrelated));
           }
-        });
+        }, itemReporter);
     for (List<Object> group : equalityGroups) {
       delegate.addRelatedGroup(group);
     }
@@ -118,6 +120,11 @@ public final class EqualsTester {
       testItems();
       delegate.test();
     }
+    return this;
+  }
+
+  EqualsTester setItemReporter(RelationshipTester.ItemReporter reporter) {
+    this.itemReporter = checkNotNull(reporter);
     return this;
   }
 

@@ -22,15 +22,15 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-import junit.framework.TestCase;
-
 import java.lang.reflect.Field;
 import java.util.List;
+
+import junit.framework.TestCase;
 
 /**
  * Tests for the HttpHeaders class.
  *
- * @author Kurt Aflred Kluever
+ * @author Kurt Alfred Kluever
  */
 public class HttpHeadersTest extends TestCase {
   public void testConstantNameMatchesString() throws Exception {
@@ -47,7 +47,8 @@ public class HttpHeadersTest extends TestCase {
   }
 
   private static final ImmutableSet<String> UPPERCASE_ACRONYMS = ImmutableSet.of(
-      "ID", "DNT", "GFE", "IP", "MD5", "P3P", "TE", "UID", "URL", "WWW", "XSS");
+      "ID", "DNT", "GFE", "GSE", "IP", "MD5", "P3P", "TE", "UID", "URL",
+      "WWW", "XSS");
 
   private static final Splitter SPLITTER = Splitter.on('_');
   private static final Joiner JOINER = Joiner.on('-');

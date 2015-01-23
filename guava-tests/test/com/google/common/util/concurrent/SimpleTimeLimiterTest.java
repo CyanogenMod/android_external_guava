@@ -16,12 +16,12 @@
 
 package com.google.common.util.concurrent;
 
-import junit.framework.TestCase;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import junit.framework.TestCase;
 
 /**
  * Unit test for {@link SimpleTimeLimiter}.
@@ -183,7 +183,7 @@ public class SimpleTimeLimiterTest extends TestCase {
   }
 
   @SuppressWarnings("serial")
-  public static class SampleException extends Exception { }
+  public static class SampleException extends Exception {}
 
   public static class SampleImpl implements Sample {
     boolean finished;

@@ -24,10 +24,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.testing.EqualsTester;
 import com.google.common.testing.NullPointerTester;
 
-import junit.framework.TestCase;
-
 import java.util.List;
 import java.util.Locale;
+
+import junit.framework.TestCase;
 
 /**
  * {@link TestCase} for {@link InternetDomainName}.
@@ -370,12 +370,22 @@ public final class InternetDomainNameTest extends TestCase {
   }
 
   public void testExclusion() {
-    InternetDomainName domain = InternetDomainName.from("foo.nhs.uk");
+    InternetDomainName domain = InternetDomainName.from("foo.nic.uk");
     assertTrue(domain.hasPublicSuffix());
     assertEquals("uk", domain.publicSuffix().name());
 
     // Behold the weirdness!
     assertFalse(domain.publicSuffix().isPublicSuffix());
+  }
+
+  public void testMultipleUnders() {
+    // PSL has both *.uk and *.police.uk; the latter should win.
+    // See http://code.google.com/p/guava-libraries/issues/detail?id=1176
+
+    InternetDomainName domain = InternetDomainName.from("www.essex.police.uk");
+    assertTrue(domain.hasPublicSuffix());
+    assertEquals("essex.police.uk", domain.publicSuffix().name());
+    assertEquals("www.essex.police.uk", domain.topPrivateDomain().name());
   }
 
   public void testEquality() {
@@ -393,11 +403,10 @@ public final class InternetDomainNameTest extends TestCase {
   }
 
   @GwtIncompatible("NullPointerTester")
-  public void testNulls() throws Exception {
+  public void testNulls() {
     final NullPointerTester tester = new NullPointerTester();
 
     tester.testAllPublicStaticMethods(InternetDomainName.class);
     tester.testAllPublicInstanceMethods(InternetDomainName.from("google.com"));
   }
-
 }

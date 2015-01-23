@@ -29,7 +29,8 @@ import javax.annotation.Nullable;
  * @author Kevin Bourrillion
  */
 @GwtCompatible(serializable = true, emulated = true)
-@SuppressWarnings("serial") // uses writeReplace(), not default serialization
+@SuppressWarnings("serial")
+// uses writeReplace(), not default serialization
 class RegularImmutableList<E> extends ImmutableList<E> {
   private final transient int offset;
   private final transient int size;
@@ -45,36 +46,29 @@ class RegularImmutableList<E> extends ImmutableList<E> {
     this(array, 0, array.length);
   }
 
-  @Override
   public int size() {
     return size;
   }
 
-  @Override public boolean isEmpty() {
+  @Override
+  public boolean isEmpty() {
     return false;
   }
 
-  @Override boolean isPartialView() {
+  @Override
+  boolean isPartialView() {
     return offset != 0 || size != array.length;
   }
 
-  @Override public boolean contains(@Nullable Object target) {
-    return indexOf(target) != -1;
-  }
-
-  // The fake cast to E is safe because the creation methods only allow E's
-  @SuppressWarnings("unchecked")
-  @Override public UnmodifiableIterator<E> iterator() {
-    return (UnmodifiableIterator<E>) Iterators.forArray(array, offset, size);
-  }
-
-  @Override public Object[] toArray() {
+  @Override
+  public Object[] toArray() {
     Object[] newArray = new Object[size()];
     System.arraycopy(array, offset, newArray, 0, size);
     return newArray;
   }
 
-  @Override public <T> T[] toArray(T[] other) {
+  @Override
+  public <T> T[] toArray(T[] other) {
     if (other.length < size) {
       other = ObjectArrays.newArray(other, size);
     } else if (other.length > size) {
@@ -85,55 +79,28 @@ class RegularImmutableList<E> extends ImmutableList<E> {
   }
 
   // The fake cast to E is safe because the creation methods only allow E's
-  @Override
+
   @SuppressWarnings("unchecked")
   public E get(int index) {
     Preconditions.checkElementIndex(index, size);
     return (E) array[index + offset];
   }
 
-  @Override public int indexOf(@Nullable Object target) {
-    if (target != null) {
-      for (int i = offset; i < offset + size; i++) {
-        if (array[i].equals(target)) {
-          return i - offset;
-        }
-      }
-    }
-    return -1;
+  @Override
+  ImmutableList<E> subListUnchecked(int fromIndex, int toIndex) {
+    return new RegularImmutableList<E>(array, offset + fromIndex, toIndex - fromIndex);
   }
 
-  @Override public int lastIndexOf(@Nullable Object target) {
-    if (target != null) {
-      for (int i = offset + size - 1; i >= offset; i--) {
-        if (array[i].equals(target)) {
-          return i - offset;
-        }
-      }
-    }
-    return -1;
+  @Override
+  @SuppressWarnings("unchecked")
+  public UnmodifiableListIterator<E> listIterator(int index) {
+    // for performance
+    // The fake cast to E is safe because the creation methods only allow E's
+    return (UnmodifiableListIterator<E>) Iterators.forArray(array, offset, size, index);
   }
 
-  @Override public ImmutableList<E> subList(int fromIndex, int toIndex) {
-    Preconditions.checkPositionIndexes(fromIndex, toIndex, size);
-    return (fromIndex == toIndex)
-        ? ImmutableList.<E>of()
-        : new RegularImmutableList<E>(
-            array, offset + fromIndex, toIndex - fromIndex);
-  }
-
-  @Override public UnmodifiableListIterator<E> listIterator(final int start) {
-    return new AbstractIndexedListIterator<E>(size, start) {
-      // The fake cast to E is safe because the creation methods only allow E's
-      @SuppressWarnings("unchecked")
-      @Override protected E get(int index) {
-        return (E) array[index + offset];
-      }
-
-    };
-  }
-
-  @Override public boolean equals(@Nullable Object object) {
+  @Override
+  public boolean equals(@Nullable Object object) {
     if (object == this) {
       return true;
     }
@@ -164,19 +131,10 @@ class RegularImmutableList<E> extends ImmutableList<E> {
     return true;
   }
 
-  @Override public int hashCode() {
-    // not caching hash code since it could change if the elements are mutable
-    // in a way that modifies their hash codes
-    int hashCode = 1;
-    for (int i = offset; i < offset + size; i++) {
-      hashCode = 31 * hashCode + array[i].hashCode();
-    }
-    return hashCode;
-  }
-
-  @Override public String toString() {
-    StringBuilder sb = Collections2.newStringBuilderForCollection(size())
-        .append('[').append(array[offset]);
+  @Override
+  public String toString() {
+    StringBuilder sb = Collections2.newStringBuilderForCollection(size()).append('[')
+        .append(array[offset]);
     for (int i = offset + 1; i < offset + size; i++) {
       sb.append(", ").append(array[i]);
     }

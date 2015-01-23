@@ -19,19 +19,62 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.GwtIncompatible;
 
+import java.util.Collections;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 /**
  * A sorted set of contiguous values in a given {@link DiscreteDomain}.
+ *
+ * <p><b>Warning:</b> Be extremely careful what you do with conceptually large instances (such as
+ * {@code ContiguousSet.create(Range.greaterThan(0), DiscreteDomains.integers()}). Certain
+ * operations on such a set can be performed efficiently, but others (such as {@link Set#hashCode}
+ * or {@link Collections#frequency}) can cause major performance problems.
  *
  * @author Gregory Kick
  * @since 10.0
  */
 @Beta
-@GwtCompatible
-@SuppressWarnings("unchecked") // allow ungenerified Comparable types
+@GwtCompatible(emulated = true)
+@SuppressWarnings("rawtypes")
+// allow ungenerified Comparable types
 public abstract class ContiguousSet<C extends Comparable> extends ImmutableSortedSet<C> {
+  /**
+   * Returns a {@code ContiguousSet} containing the same values in the given domain
+   * {@linkplain Range#contains contained} by the range.
+   *
+   * @throws IllegalArgumentException if neither range nor the domain has a lower bound, or if
+   *     neither has an upper bound
+   *
+   * @since 13.0
+   */
+  public static <C extends Comparable> ContiguousSet<C> create(Range<C> range,
+      DiscreteDomain<C> domain) {
+    checkNotNull(range);
+    checkNotNull(domain);
+    Range<C> effectiveRange = range;
+    try {
+      if (!range.hasLowerBound()) {
+        effectiveRange = effectiveRange.intersection(Range.atLeast(domain.minValue()));
+      }
+      if (!range.hasUpperBound()) {
+        effectiveRange = effectiveRange.intersection(Range.atMost(domain.maxValue()));
+      }
+    } catch (NoSuchElementException e) {
+      throw new IllegalArgumentException(e);
+    }
+
+    // Per class spec, we are allowed to throw CCE if necessary
+    boolean empty = effectiveRange.isEmpty()
+        || Range.compareOrThrow(range.lowerBound.leastValueAbove(domain),
+            range.upperBound.greatestValueBelow(domain)) > 0;
+
+    return empty ? new EmptyContiguousSet<C>(domain) : new RegularContiguousSet<C>(effectiveRange,
+        domain);
+  }
+
   final DiscreteDomain<C> domain;
 
   ContiguousSet(DiscreteDomain<C> domain) {
@@ -39,22 +82,34 @@ public abstract class ContiguousSet<C extends Comparable> extends ImmutableSorte
     this.domain = domain;
   }
 
-  @Override public ContiguousSet<C> headSet(C toElement) {
-    return headSet(checkNotNull(toElement), false);
+  @Override
+  public ContiguousSet<C> headSet(C toElement) {
+    return headSetImpl(checkNotNull(toElement), false);
   }
 
-  @Override ContiguousSet<C> headSet(C toElement, boolean inclusive) {
+  /**
+   * @since 12.0
+   */
+  @Override
+  @GwtIncompatible("NavigableSet")
+  public ContiguousSet<C> headSet(C toElement, boolean inclusive) {
     return headSetImpl(checkNotNull(toElement), inclusive);
   }
 
-  @Override public ContiguousSet<C> subSet(C fromElement, C toElement) {
+  @Override
+  public ContiguousSet<C> subSet(C fromElement, C toElement) {
     checkNotNull(fromElement);
     checkNotNull(toElement);
     checkArgument(comparator().compare(fromElement, toElement) <= 0);
-    return subSet(fromElement, true, toElement, false);
+    return subSetImpl(fromElement, true, toElement, false);
   }
 
-  @Override ContiguousSet<C> subSet(C fromElement, boolean fromInclusive, C toElement,
+  /**
+   * @since 12.0
+   */
+  @Override
+  @GwtIncompatible("NavigableSet")
+  public ContiguousSet<C> subSet(C fromElement, boolean fromInclusive, C toElement,
       boolean toInclusive) {
     checkNotNull(fromElement);
     checkNotNull(toElement);
@@ -62,23 +117,32 @@ public abstract class ContiguousSet<C extends Comparable> extends ImmutableSorte
     return subSetImpl(fromElement, fromInclusive, toElement, toInclusive);
   }
 
-  @Override public ContiguousSet<C> tailSet(C fromElement) {
-    return tailSet(checkNotNull(fromElement), true);
+  @Override
+  public ContiguousSet<C> tailSet(C fromElement) {
+    return tailSetImpl(checkNotNull(fromElement), true);
   }
 
-  @Override ContiguousSet<C> tailSet(C fromElement, boolean inclusive){
+  /**
+   * @since 12.0
+   */
+  @Override
+  @GwtIncompatible("NavigableSet")
+  public ContiguousSet<C> tailSet(C fromElement, boolean inclusive) {
     return tailSetImpl(checkNotNull(fromElement), inclusive);
   }
 
   /*
    * These methods perform most headSet, subSet, and tailSet logic, besides parameter validation.
    */
-  /*@Override*/ abstract ContiguousSet<C> headSetImpl(C toElement, boolean inclusive);
+  /**/@Override
+  abstract ContiguousSet<C> headSetImpl(C toElement, boolean inclusive);
 
-  /*@Override*/ abstract ContiguousSet<C> subSetImpl(C fromElement, boolean fromInclusive,
-      C toElement, boolean toInclusive);
+  /**/@Override
+  abstract ContiguousSet<C> subSetImpl(C fromElement, boolean fromInclusive, C toElement,
+      boolean toInclusive);
 
-  /*@Override*/ abstract ContiguousSet<C> tailSetImpl(C fromElement, boolean inclusive);
+  /**/@Override
+  abstract ContiguousSet<C> tailSetImpl(C fromElement, boolean inclusive);
 
   /**
    * Returns the set of values that are contained in both this set and the other.
@@ -110,7 +174,8 @@ public abstract class ContiguousSet<C extends Comparable> extends ImmutableSorte
   public abstract Range<C> range(BoundType lowerBoundType, BoundType upperBoundType);
 
   /** Returns a short-hand representation of the contents such as {@code "[1..100]"}. */
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return range().toString();
   }
 }

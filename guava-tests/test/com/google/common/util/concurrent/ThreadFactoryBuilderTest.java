@@ -16,15 +16,14 @@
 
 package com.google.common.util.concurrent;
 
-import static org.junit.contrib.truth.Truth.ASSERT;
-
+import com.google.common.testing.FluentAsserts;
 import com.google.common.testing.NullPointerTester;
-
-import junit.framework.TestCase;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+
+import junit.framework.TestCase;
 
 /**
  * Tests for ThreadFactoryBuilder.
@@ -83,7 +82,7 @@ public class ThreadFactoryBuilderTest extends TestCase {
     ThreadFactory threadFactory2 = builder.build();
     Thread thread3 = threadFactory2.newThread(monitoredRunnable);
     checkThreadPoolName(thread3, 1);
-    ASSERT.that(
+    FluentAsserts.assertThat(
         thread2.getName().substring(0, thread.getName().lastIndexOf('-')))
         .isNotEqualTo(
             thread3.getName().substring(0, thread.getName().lastIndexOf('-')));
@@ -93,11 +92,20 @@ public class ThreadFactoryBuilderTest extends TestCase {
     assertTrue(thread.getName().matches("^pool-\\d+-thread-" + threadId + "$"));
   }
 
-  public void testNameFormat_custom() {
-    final String NAME_FORMAT = "super duper thread #%s";
-    ThreadFactory factory = builder.setNameFormat(NAME_FORMAT).build();
-    for (int i = 0; i < 10; i++) {
-      assertEquals(String.format(NAME_FORMAT, i),
+  public void testNameFormatWithPercentS_custom() {
+    String format = "super-duper-thread-%s";
+    ThreadFactory factory = builder.setNameFormat(format).build();
+    for (int i = 0; i < 11; i++) {
+      assertEquals(String.format(format, i),
+          factory.newThread(monitoredRunnable).getName());
+    }
+  }
+
+  public void testNameFormatWithPercentD_custom() {
+    String format = "super-duper-thread-%d";
+    ThreadFactory factory = builder.setNameFormat(format).build();
+    for (int i = 0; i < 11; i++) {
+      assertEquals(String.format(format, i),
           factory.newThread(monitoredRunnable).getName());
     }
   }
@@ -197,7 +205,7 @@ public class ThreadFactoryBuilderTest extends TestCase {
     assertTrue(completed);
   }
 
-  public void testNulls() throws Exception {
+  public void testNulls() {
     NullPointerTester npTester = new NullPointerTester();
     npTester.testAllPublicConstructors(ThreadFactoryBuilder.class);
     npTester.testAllPublicStaticMethods(ThreadFactoryBuilder.class);

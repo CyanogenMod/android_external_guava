@@ -4,10 +4,10 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.google.guava</groupId>
-    <artifactId>guava-parent</artifactId>
-    <version>11.0.2</version>
+    <artifactId>guava-parent-jdk5</artifactId>
+    <version>14.0.1</version>
   </parent>
-  <artifactId>guava-bootstrap</artifactId>
+  <artifactId>guava-bootstrap-jdk5</artifactId>
   <name>Guava Compilation Bootstrap Classes</name>
   <description>
     ExecutorService's type parameters changed between JDK5 and JDK6 in a
@@ -27,6 +27,28 @@
           <source>1.5</source>
           <target>1.5</target>
         </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.1.2</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>post-integration-test</phase>
+            <goals><goal>jar</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.8</version>
+        <executions>
+          <execution>
+            <id>attach-docs</id>
+            <phase>post-integration-test</phase>
+            <goals><goal>jar</goal></goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
     <sourceDirectory>src</sourceDirectory>

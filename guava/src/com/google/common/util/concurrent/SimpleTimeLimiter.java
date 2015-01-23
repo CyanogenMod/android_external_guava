@@ -80,25 +80,21 @@ public final class SimpleTimeLimiter implements TimeLimiter {
     this(Executors.newCachedThreadPool());
   }
 
-  @Override
-  public <T> T newProxy(final T target, Class<T> interfaceType,
-      final long timeoutDuration, final TimeUnit timeoutUnit) {
+  public <T> T newProxy(final T target, Class<T> interfaceType, final long timeoutDuration,
+      final TimeUnit timeoutUnit) {
     checkNotNull(target);
     checkNotNull(interfaceType);
     checkNotNull(timeoutUnit);
     checkArgument(timeoutDuration > 0, "bad timeout: " + timeoutDuration);
-    checkArgument(interfaceType.isInterface(),
-        "interfaceType must be an interface type");
+    checkArgument(interfaceType.isInterface(), "interfaceType must be an interface type");
 
-    final Set<Method> interruptibleMethods
-        = findInterruptibleMethods(interfaceType);
+    final Set<Method> interruptibleMethods = findInterruptibleMethods(interfaceType);
 
     InvocationHandler handler = new InvocationHandler() {
-      @Override
-      public Object invoke(Object obj, final Method method, final Object[] args)
-          throws Throwable {
+
+      public Object invoke(Object obj, final Method method, final Object[] args) throws Throwable {
         Callable<Object> callable = new Callable<Object>() {
-          @Override
+
           public Object call() throws Exception {
             try {
               return method.invoke(target, args);
@@ -116,13 +112,12 @@ public final class SimpleTimeLimiter implements TimeLimiter {
   }
 
   // TODO: should this actually throw only ExecutionException?
-  @Override
-  public <T> T callWithTimeout(Callable<T> callable, long timeoutDuration,
-      TimeUnit timeoutUnit, boolean amInterruptible) throws Exception {
+
+  public <T> T callWithTimeout(Callable<T> callable, long timeoutDuration, TimeUnit timeoutUnit,
+      boolean amInterruptible) throws Exception {
     checkNotNull(callable);
     checkNotNull(timeoutUnit);
-    checkArgument(timeoutDuration > 0, "timeout must be positive: %s",
-        timeoutDuration);
+    checkArgument(timeoutDuration > 0, "timeout must be positive: %s", timeoutDuration);
     Future<T> future = executor.submit(callable);
     try {
       if (amInterruptible) {
@@ -133,8 +128,7 @@ public final class SimpleTimeLimiter implements TimeLimiter {
           throw e;
         }
       } else {
-        return Uninterruptibles.getUninterruptibly(future, 
-            timeoutDuration, timeoutUnit);
+        return Uninterruptibles.getUninterruptibly(future, timeoutDuration, timeoutUnit);
       }
     } catch (ExecutionException e) {
       throw throwCause(e, true);
@@ -144,15 +138,14 @@ public final class SimpleTimeLimiter implements TimeLimiter {
     }
   }
 
-  private static Exception throwCause(Exception e, boolean combineStackTraces)
-      throws Exception {
+  private static Exception throwCause(Exception e, boolean combineStackTraces) throws Exception {
     Throwable cause = e.getCause();
     if (cause == null) {
       throw e;
     }
     if (combineStackTraces) {
-      StackTraceElement[] combined = ObjectArrays.concat(cause.getStackTrace(),
-          e.getStackTrace(), StackTraceElement.class);
+      StackTraceElement[] combined = ObjectArrays.concat(cause.getStackTrace(), e.getStackTrace(),
+          StackTraceElement.class);
       cause.setStackTrace(combined);
     }
     if (cause instanceof Exception) {
@@ -186,8 +179,7 @@ public final class SimpleTimeLimiter implements TimeLimiter {
   }
 
   // TODO: replace with version in common.reflect if and when it's open-sourced
-  private static <T> T newProxy(
-      Class<T> interfaceType, InvocationHandler handler) {
+  private static <T> T newProxy(Class<T> interfaceType, InvocationHandler handler) {
     Object object = Proxy.newProxyInstance(interfaceType.getClassLoader(),
         new Class<?>[] { interfaceType }, handler);
     return interfaceType.cast(object);
