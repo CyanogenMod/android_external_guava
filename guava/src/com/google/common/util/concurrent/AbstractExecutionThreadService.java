@@ -34,14 +34,15 @@ import java.util.logging.Logger;
  */
 @Beta
 public abstract class AbstractExecutionThreadService implements Service {
-  private static final Logger logger = Logger.getLogger(
-      AbstractExecutionThreadService.class.getName());
-  
+  private static final Logger logger = Logger.getLogger(AbstractExecutionThreadService.class
+      .getName());
+
   /* use AbstractService for state management */
   private final Service delegate = new AbstractService() {
-    @Override protected final void doStart() {
+    @Override
+    protected final void doStart() {
       executor().execute(new Runnable() {
-        @Override
+
         public void run() {
           try {
             startUp();
@@ -54,8 +55,8 @@ public abstract class AbstractExecutionThreadService implements Service {
                 try {
                   shutDown();
                 } catch (Exception ignored) {
-                  logger.log(Level.WARNING, 
-                      "Error while attempting to shut down the service after failure.", ignored);
+                  logger.log(Level.WARNING, "Error while attempting to shut down the service"
+                      + " after failure.", ignored);
                 }
                 throw t;
               }
@@ -71,13 +72,21 @@ public abstract class AbstractExecutionThreadService implements Service {
       });
     }
 
-    @Override protected void doStop() {
+    @Override
+    protected void doStop() {
       triggerShutdown();
     }
   };
 
   /**
+   * Constructor for use by subclasses.
+   */
+  protected AbstractExecutionThreadService() {}
+
+  /**
    * Start the service. This method is invoked on the execution thread.
+   * 
+   * <p>By default this method does nothing.
    */
   protected void startUp() throws Exception {}
 
@@ -99,12 +108,16 @@ public abstract class AbstractExecutionThreadService implements Service {
 
   /**
    * Stop the service. This method is invoked on the execution thread.
+   * 
+   * <p>By default this method does nothing.
    */
   // TODO: consider supporting a TearDownTestCase-like API
   protected void shutDown() throws Exception {}
 
   /**
    * Invoked to request the service to stop.
+   * 
+   * <p>By default this method does nothing.
    */
   protected void triggerShutdown() {}
 
@@ -117,56 +130,71 @@ public abstract class AbstractExecutionThreadService implements Service {
    * promptly.
    * 
    * <p>The default implementation returns a new {@link Executor} that sets the 
-   * name of its threads to the string returned by {@link #getServiceName}
+   * name of its threads to the string returned by {@link #serviceName}
    */
   protected Executor executor() {
     return new Executor() {
-      @Override
+
       public void execute(Runnable command) {
-        new Thread(command, getServiceName()).start();
+        MoreExecutors.newThread(serviceName(), command).start();
       }
     };
   }
 
-  @Override public String toString() {
-    return getServiceName() + " [" + state() + "]";
+  @Override
+  public String toString() {
+    return serviceName() + " [" + state() + "]";
   }
 
   // We override instead of using ForwardingService so that these can be final.
 
-  @Override public final ListenableFuture<State> start() {
+  public final ListenableFuture<State> start() {
     return delegate.start();
   }
 
-  @Override public final State startAndWait() {
+  public final State startAndWait() {
     return delegate.startAndWait();
   }
 
-  @Override public final boolean isRunning() {
+  public final boolean isRunning() {
     return delegate.isRunning();
   }
 
-  @Override public final State state() {
+  public final State state() {
     return delegate.state();
   }
 
-  @Override public final ListenableFuture<State> stop() {
+  public final ListenableFuture<State> stop() {
     return delegate.stop();
   }
 
-  @Override public final State stopAndWait() {
+  public final State stopAndWait() {
     return delegate.stopAndWait();
   }
 
   /**
-   * Returns the name of this service. {@link AbstractExecutionThreadService} may include the name
-   * in debugging output.
+   * @since 13.0
+   */
+  public final void addListener(Listener listener, Executor executor) {
+    delegate.addListener(listener, executor);
+  }
+
+  /**
+   * @since 14.0
+   */
+  public final Throwable failureCause() {
+    return delegate.failureCause();
+  }
+
+  /**
+   * Returns the name of this service. {@link AbstractExecutionThreadService}
+   * may include the name in debugging output.
    *
    * <p>Subclasses may override this method.
    *
-   * @since 10.0
+   * @since 14.0 (present in 10.0 as getServiceName)
    */
-  protected String getServiceName() {
+  protected String serviceName() {
     return getClass().getSimpleName();
   }
 }

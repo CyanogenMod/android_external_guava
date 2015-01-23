@@ -53,6 +53,10 @@ import javax.annotation.Nullable;
  * perhaps ever. Postcondition or other invariant failures should not throw
  * these types of exceptions.
  *
+ * <p>See the Guava User Guide on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/PreconditionsExplained">
+ * using {@code Preconditions}</a>.
+ *
  * @author Kevin Bourrillion
  * @since 2.0 (imported from Google Collections Library)
  */
@@ -82,8 +86,7 @@ public final class Preconditions {
    *     be converted to a string using {@link String#valueOf(Object)}
    * @throws IllegalArgumentException if {@code expression} is false
    */
-  public static void checkArgument(
-      boolean expression, @Nullable Object errorMessage) {
+  public static void checkArgument(boolean expression, @Nullable Object errorMessage) {
     if (!expression) {
       throw new IllegalArgumentException(String.valueOf(errorMessage));
     }
@@ -108,12 +111,10 @@ public final class Preconditions {
    *     errorMessageTemplate} or {@code errorMessageArgs} is null (don't let
    *     this happen)
    */
-  public static void checkArgument(boolean expression,
-      @Nullable String errorMessageTemplate,
+  public static void checkArgument(boolean expression, @Nullable String errorMessageTemplate,
       @Nullable Object... errorMessageArgs) {
     if (!expression) {
-      throw new IllegalArgumentException(
-          format(errorMessageTemplate, errorMessageArgs));
+      throw new IllegalArgumentException(format(errorMessageTemplate, errorMessageArgs));
     }
   }
 
@@ -139,8 +140,7 @@ public final class Preconditions {
    *     be converted to a string using {@link String#valueOf(Object)}
    * @throws IllegalStateException if {@code expression} is false
    */
-  public static void checkState(
-      boolean expression, @Nullable Object errorMessage) {
+  public static void checkState(boolean expression, @Nullable Object errorMessage) {
     if (!expression) {
       throw new IllegalStateException(String.valueOf(errorMessage));
     }
@@ -165,12 +165,10 @@ public final class Preconditions {
    *     errorMessageTemplate} or {@code errorMessageArgs} is null (don't let
    *     this happen)
    */
-  public static void checkState(boolean expression,
-      @Nullable String errorMessageTemplate,
+  public static void checkState(boolean expression, @Nullable String errorMessageTemplate,
       @Nullable Object... errorMessageArgs) {
     if (!expression) {
-      throw new IllegalStateException(
-          format(errorMessageTemplate, errorMessageArgs));
+      throw new IllegalStateException(format(errorMessageTemplate, errorMessageArgs));
     }
   }
 
@@ -223,13 +221,11 @@ public final class Preconditions {
    * @return the non-null reference that was validated
    * @throws NullPointerException if {@code reference} is null
    */
-  public static <T> T checkNotNull(T reference,
-      @Nullable String errorMessageTemplate,
+  public static <T> T checkNotNull(T reference, @Nullable String errorMessageTemplate,
       @Nullable Object... errorMessageArgs) {
     if (reference == null) {
       // If either of these parameters is null, the right thing happens anyway
-      throw new NullPointerException(
-          format(errorMessageTemplate, errorMessageArgs));
+      throw new NullPointerException(format(errorMessageTemplate, errorMessageArgs));
     }
     return reference;
   }
@@ -294,8 +290,7 @@ public final class Preconditions {
    *     less than {@code size}
    * @throws IllegalArgumentException if {@code size} is negative
    */
-  public static int checkElementIndex(
-      int index, int size, @Nullable String desc) {
+  public static int checkElementIndex(int index, int size, @Nullable String desc) {
     // Carefully optimized for execution by hotspot (explanatory comment above)
     if (index < 0 || index >= size) {
       throw new IndexOutOfBoundsException(badElementIndex(index, size, desc));
@@ -344,8 +339,7 @@ public final class Preconditions {
    *     greater than {@code size}
    * @throws IllegalArgumentException if {@code size} is negative
    */
-  public static int checkPositionIndex(
-      int index, int size, @Nullable String desc) {
+  public static int checkPositionIndex(int index, int size, @Nullable String desc) {
     // Carefully optimized for execution by hotspot (explanatory comment above)
     if (index < 0 || index > size) {
       throw new IndexOutOfBoundsException(badPositionIndex(index, size, desc));
@@ -359,8 +353,7 @@ public final class Preconditions {
     } else if (size < 0) {
       throw new IllegalArgumentException("negative size: " + size);
     } else { // index > size
-      return format("%s (%s) must not be greater than size (%s)",
-                    desc, index, size);
+      return format("%s (%s) must not be greater than size (%s)", desc, index, size);
     }
   }
 
@@ -393,8 +386,7 @@ public final class Preconditions {
       return badPositionIndex(end, size, "end index");
     }
     // end < start
-    return format("end index (%s) must not be less than start index (%s)",
-                  end, start);
+    return format("end index (%s) must not be less than start index (%s)", end, start);
   }
 
   /**
@@ -409,13 +401,12 @@ public final class Preconditions {
    *     template. Arguments are converted to strings using
    *     {@link String#valueOf(Object)}. Arguments can be null.
    */
-  @VisibleForTesting static String format(String template,
-      @Nullable Object... args) {
+  @VisibleForTesting
+  static String format(String template, @Nullable Object... args) {
     template = String.valueOf(template); // null -> "null"
 
     // start substituting the arguments into the '%s' placeholders
-    StringBuilder builder = new StringBuilder(
-        template.length() + 16 * args.length);
+    StringBuilder builder = new StringBuilder(template.length() + 16 * args.length);
     int templateStart = 0;
     int i = 0;
     while (i < args.length) {

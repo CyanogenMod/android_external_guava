@@ -52,41 +52,36 @@ import javax.annotation.Nullable;
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible
-public abstract class ForwardingSortedMap<K, V> extends ForwardingMap<K, V>
-    implements SortedMap<K, V> {
+public abstract class ForwardingSortedMap<K, V> extends ForwardingMap<K, V> implements
+    SortedMap<K, V> {
   // TODO(user): identify places where thread safety is actually lost
 
   /** Constructor for use by subclasses. */
   protected ForwardingSortedMap() {}
 
-  @Override protected abstract SortedMap<K, V> delegate();
-
   @Override
+  protected abstract SortedMap<K, V> delegate();
+
   public Comparator<? super K> comparator() {
     return delegate().comparator();
   }
 
-  @Override
   public K firstKey() {
     return delegate().firstKey();
   }
 
-  @Override
   public SortedMap<K, V> headMap(K toKey) {
     return delegate().headMap(toKey);
   }
 
-  @Override
   public K lastKey() {
     return delegate().lastKey();
   }
 
-  @Override
   public SortedMap<K, V> subMap(K fromKey, K toKey) {
     return delegate().subMap(fromKey, toKey);
   }
 
-  @Override
   public SortedMap<K, V> tailMap(K fromKey) {
     return delegate().tailMap(fromKey);
   }
@@ -110,7 +105,9 @@ public abstract class ForwardingSortedMap<K, V> extends ForwardingMap<K, V>
    *
    * @since 7.0
    */
-  @Override @Beta protected boolean standardContainsKey(@Nullable Object key) {
+  @Override
+  @Beta
+  protected boolean standardContainsKey(@Nullable Object key) {
     try {
       // any CCE will be caught
       @SuppressWarnings("unchecked")
@@ -134,13 +131,14 @@ public abstract class ForwardingSortedMap<K, V> extends ForwardingMap<K, V>
    *
    * @since 7.0
    */
-  @Override @Beta protected V standardRemove(@Nullable Object key) {
+  @Override
+  @Beta
+  protected V standardRemove(@Nullable Object key) {
     try {
       // any CCE will be caught
       @SuppressWarnings("unchecked")
       SortedMap<Object, V> self = (SortedMap<Object, V>) this;
-      Iterator<Entry<Object, V>> entryIterator =
-          self.tailMap(key).entrySet().iterator();
+      Iterator<Entry<Object, V>> entryIterator = self.tailMap(key).entrySet().iterator();
       if (entryIterator.hasNext()) {
         Entry<Object, V> ceilingEntry = entryIterator.next();
         if (unsafeCompare(ceilingEntry.getKey(), key) == 0) {
@@ -165,7 +163,8 @@ public abstract class ForwardingSortedMap<K, V> extends ForwardingMap<K, V>
    *
    * @since 7.0
    */
-  @Beta protected SortedMap<K, V> standardSubMap(K fromKey, K toKey) {
+  @Beta
+  protected SortedMap<K, V> standardSubMap(K fromKey, K toKey) {
     return tailMap(fromKey).headMap(toKey);
   }
 }

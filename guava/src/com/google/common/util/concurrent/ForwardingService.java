@@ -19,43 +19,67 @@ package com.google.common.util.concurrent;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ForwardingObject;
 
+import java.util.concurrent.Executor;
+
 /**
  * A {@link Service} that forwards all method calls to another service.
+ *
+ * @deprecated Instead of using a {@link ForwardingService}, consider using the 
+ * {@link Service.Listener} functionality to hook into the {@link Service} 
+ * lifecycle, or if you really do need to provide access to some Service 
+ * methods, consider just providing the few that you actually need (e.g. just 
+ * {@link #startAndWait()}) and not implementing Service.
  *
  * @author Chris Nokleberg
  * @since 1.0
  */
 @Beta
+@Deprecated
 public abstract class ForwardingService extends ForwardingObject
     implements Service {
 
   /** Constructor for use by subclasses. */
   protected ForwardingService() {}
 
-  @Override protected abstract Service delegate();
+  @Override
+  protected abstract Service delegate();
 
-  @Override public ListenableFuture<State> start() {
+  public ListenableFuture<State> start() {
     return delegate().start();
   }
 
-  @Override public State state() {
+  public State state() {
     return delegate().state();
   }
 
-  @Override public ListenableFuture<State> stop() {
+  public ListenableFuture<State> stop() {
     return delegate().stop();
   }
 
-  @Override public State startAndWait() {
+  public State startAndWait() {
     return delegate().startAndWait();
   }
 
-  @Override public State stopAndWait() {
+  public State stopAndWait() {
     return delegate().stopAndWait();
   }
 
-  @Override public boolean isRunning() {
+  public boolean isRunning() {
     return delegate().isRunning();
+  }
+
+  /**
+   * @since 13.0
+   */
+  public void addListener(Listener listener, Executor executor) {
+    delegate().addListener(listener, executor);
+  }
+
+  /**
+   * @since 14.0
+   */
+  public Throwable failureCause() {
+    return delegate().failureCause();
   }
 
   /**

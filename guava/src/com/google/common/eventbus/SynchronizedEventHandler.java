@@ -40,8 +40,8 @@ class SynchronizedEventHandler extends EventHandler {
     super(target, method);
   }
 
-  @Override public synchronized void handleEvent(Object event)
-      throws InvocationTargetException {
+  @Override
+  public synchronized void handleEvent(Object event) throws InvocationTargetException {
     super.handleEvent(event);
   }
 

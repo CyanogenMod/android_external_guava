@@ -27,8 +27,8 @@ import java.lang.ref.SoftReference;
  * @author Bob Lee
  * @since 2.0 (imported from Google Collections Library)
  */
-public abstract class FinalizableSoftReference<T> extends SoftReference<T>
-    implements FinalizableReference {
+public abstract class FinalizableSoftReference<T> extends SoftReference<T> implements
+    FinalizableReference {
   /**
    * Constructs a new finalizable soft reference.
    *

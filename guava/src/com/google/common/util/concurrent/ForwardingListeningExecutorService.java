@@ -27,8 +27,8 @@ import java.util.concurrent.Callable;
  * @author Isaac Shum
  * @since 10.0
  */
-public abstract class ForwardingListeningExecutorService
-    extends ForwardingExecutorService implements ListeningExecutorService {
+public abstract class ForwardingListeningExecutorService extends ForwardingExecutorService
+    implements ListeningExecutorService {
   /** Constructor for use by subclasses. */
   protected ForwardingListeningExecutorService() {}
 

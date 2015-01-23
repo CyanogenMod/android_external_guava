@@ -46,7 +46,6 @@ abstract class AbstractIterator<T> implements Iterator<T> {
     return null;
   }
 
-  @Override
   public final boolean hasNext() {
     checkState(state != State.FAILED);
     switch (state) {
@@ -69,7 +68,6 @@ abstract class AbstractIterator<T> implements Iterator<T> {
     return false;
   }
 
-  @Override
   public final T next() {
     if (!hasNext()) {
       throw new NoSuchElementException();
@@ -78,7 +76,7 @@ abstract class AbstractIterator<T> implements Iterator<T> {
     return next;
   }
 
-  @Override public final void remove() {
+  public final void remove() {
     throw new UnsupportedOperationException();
   }
 }

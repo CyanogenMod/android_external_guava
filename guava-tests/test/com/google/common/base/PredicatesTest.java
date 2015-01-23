@@ -21,11 +21,10 @@ import static com.google.common.base.CharMatcher.WHITESPACE;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.testing.ClassSanityTester;
 import com.google.common.testing.EqualsTester;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
-
-import junit.framework.TestCase;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -35,6 +34,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import junit.framework.TestCase;
 
 /**
  * Unit test for {@link Predicates}.
@@ -596,15 +597,15 @@ public class PredicatesTest extends TestCase {
   public void testIsInstanceOf_serialization() {
     checkSerialization(Predicates.instanceOf(Integer.class));
   }
-  
+
   @GwtIncompatible("Predicates.assignableFrom")
   public void testIsAssignableFrom_apply() {
     Predicate<Class<?>> isInteger = Predicates.assignableFrom(Integer.class);
 
     assertTrue(isInteger.apply(Integer.class));
     assertFalse(isInteger.apply(Float.class));
-    
-    try {      
+
+    try {
       isInteger.apply(null);
       fail();
     } catch(NullPointerException expected) {}
@@ -640,7 +641,7 @@ public class PredicatesTest extends TestCase {
 
   @GwtIncompatible("Predicates.assignableFrom, SerializableTester")
   public void testIsAssignableFrom_serialization() {
-    Predicate<Class<?>> predicate = 
+    Predicate<Class<?>> predicate =
         Predicates.assignableFrom(Integer.class);
     Predicate<Class<?>> reserialized =
         SerializableTester.reserializeAndAssert(predicate);
@@ -763,7 +764,7 @@ public class PredicatesTest extends TestCase {
   }
 
   @GwtIncompatible("NullPointerTester")
-  public void testNullPointerExceptions() throws Exception {
+  public void testNullPointerExceptions() {
     NullPointerTester tester = new NullPointerTester();
     tester.testAllPublicStaticMethods(Predicates.class);
   }
@@ -908,10 +909,20 @@ public class PredicatesTest extends TestCase {
     assertEqualHashCode(
         Predicates.or(p1, p2),
         Predicates.or(p1, p2));
- 
+
     // While not a contractual requirement, we'd like the hash codes for ands
-    // & ors of the same predicates to not collide. 
+    // & ors of the same predicates to not collide.
     assertTrue(Predicates.and(p1, p2).hashCode() != Predicates.or(p1, p2).hashCode());
+  }
+
+  @GwtIncompatible("reflection")
+  public void testNulls() throws Exception {
+    new ClassSanityTester().forAllPublicStaticMethods(Predicates.class).testNulls();
+  }
+
+  @GwtIncompatible("reflection")
+  public void testEqualsAndSerializable() throws Exception {
+    new ClassSanityTester().forAllPublicStaticMethods(Predicates.class).testEqualsAndSerializable();
   }
 
   private static void assertEvalsToTrue(Predicate<? super Integer> predicate) {

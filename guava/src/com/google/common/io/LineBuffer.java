@@ -75,6 +75,9 @@ abstract class LineBuffer {
           finishLine(true);
           start = pos + 1;
           break;
+
+        default:
+          // do nothing
       }
     }
     line.append(cbuf, start, off + len - start);
@@ -82,9 +85,7 @@ abstract class LineBuffer {
 
   /** Called when a line is complete. */
   private boolean finishLine(boolean sawNewline) throws IOException {
-    handleLine(line.toString(), sawReturn
-        ? (sawNewline ? "\r\n" : "\r")
-        : (sawNewline ? "\n" : ""));
+    handleLine(line.toString(), sawReturn ? (sawNewline ? "\r\n" : "\r") : (sawNewline ? "\n" : ""));
     line = new StringBuilder();
     sawReturn = false;
     return sawNewline;
@@ -112,6 +113,5 @@ abstract class LineBuffer {
    *     {@code "\r\n"}, or {@code ""}
    * @throws IOException if an I/O error occurs
    */
-  protected abstract void handleLine(String line, String end)
-      throws IOException;
+  protected abstract void handleLine(String line, String end) throws IOException;
 }

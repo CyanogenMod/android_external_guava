@@ -61,9 +61,12 @@ public final class ThreadFactoryBuilder {
    * @param nameFormat a {@link String#format(String, Object...)}-compatible
    *     format String, to which a unique integer (0, 1, etc.) will be supplied
    *     as the single parameter. This integer will be unique to the built
-   *     instance of the ThreadFactory and will be assigned sequentially.
+   *     instance of the ThreadFactory and will be assigned sequentially. For
+   *     example, {@code "rpc-pool-%d"} will generate thread names like
+   *     {@code "rpc-pool-0"}, {@code "rpc-pool-1"}, {@code "rpc-pool-2"}, etc.
    * @return this for the builder pattern
    */
+  @SuppressWarnings("ReturnValueIgnored")
   public ThreadFactoryBuilder setNameFormat(String nameFormat) {
     String.format(nameFormat, 0); // fail fast if the format is bad or null
     this.nameFormat = nameFormat;
@@ -92,10 +95,10 @@ public final class ThreadFactoryBuilder {
   public ThreadFactoryBuilder setPriority(int priority) {
     // Thread#setPriority() already checks for validity. These error messages
     // are nicer though and will fail-fast.
-    checkArgument(priority >= Thread.MIN_PRIORITY,
-        "Thread priority (%s) must be >= %s", priority, Thread.MIN_PRIORITY);
-    checkArgument(priority <= Thread.MAX_PRIORITY,
-        "Thread priority (%s) must be <= %s", priority, Thread.MAX_PRIORITY);
+    checkArgument(priority >= Thread.MIN_PRIORITY, "Thread priority (%s) must be >= %s", priority,
+        Thread.MIN_PRIORITY);
+    checkArgument(priority <= Thread.MAX_PRIORITY, "Thread priority (%s) must be <= %s", priority,
+        Thread.MAX_PRIORITY);
     this.priority = priority;
     return this;
   }
@@ -125,8 +128,7 @@ public final class ThreadFactoryBuilder {
    *
    * @see MoreExecutors
    */
-  public ThreadFactoryBuilder setThreadFactory(
-      ThreadFactory backingThreadFactory) {
+  public ThreadFactoryBuilder setThreadFactory(ThreadFactory backingThreadFactory) {
     this.backingThreadFactory = checkNotNull(backingThreadFactory);
     return this;
   }
@@ -147,15 +149,12 @@ public final class ThreadFactoryBuilder {
     final String nameFormat = builder.nameFormat;
     final Boolean daemon = builder.daemon;
     final Integer priority = builder.priority;
-    final UncaughtExceptionHandler uncaughtExceptionHandler =
-        builder.uncaughtExceptionHandler;
-    final ThreadFactory backingThreadFactory =
-        (builder.backingThreadFactory != null)
-        ? builder.backingThreadFactory
+    final UncaughtExceptionHandler uncaughtExceptionHandler = builder.uncaughtExceptionHandler;
+    final ThreadFactory backingThreadFactory = (builder.backingThreadFactory != null) ? builder.backingThreadFactory
         : Executors.defaultThreadFactory();
     final AtomicLong count = (nameFormat != null) ? new AtomicLong(0) : null;
     return new ThreadFactory() {
-      @Override public Thread newThread(Runnable runnable) {
+      public Thread newThread(Runnable runnable) {
         Thread thread = backingThreadFactory.newThread(runnable);
         if (nameFormat != null) {
           thread.setName(String.format(nameFormat, count.getAndIncrement()));

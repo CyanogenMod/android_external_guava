@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Iterator;
 
+import javax.annotation.Nullable;
+
 /**
  * A {@link Reader} that concatenates multiple readers.
  *
@@ -32,8 +34,7 @@ class MultiReader extends Reader {
   private final Iterator<? extends InputSupplier<? extends Reader>> it;
   private Reader current;
 
-  MultiReader(Iterator<? extends InputSupplier<? extends Reader>> readers)
-      throws IOException {
+  MultiReader(Iterator<? extends InputSupplier<? extends Reader>> readers) throws IOException {
     this.it = readers;
     advance();
   }
@@ -48,7 +49,8 @@ class MultiReader extends Reader {
     }
   }
 
-  @Override public int read(char cbuf[], int off, int len) throws IOException {
+  @Override
+  public int read(@Nullable char cbuf[], int off, int len) throws IOException {
     if (current == null) {
       return -1;
     }
@@ -60,7 +62,8 @@ class MultiReader extends Reader {
     return result;
   }
 
-  @Override public long skip(long n) throws IOException {
+  @Override
+  public long skip(long n) throws IOException {
     Preconditions.checkArgument(n >= 0, "n is negative");
     if (n > 0) {
       while (current != null) {
@@ -74,11 +77,13 @@ class MultiReader extends Reader {
     return 0;
   }
 
-  @Override public boolean ready() throws IOException {
+  @Override
+  public boolean ready() throws IOException {
     return (current != null) && current.ready();
   }
 
-  @Override public void close() throws IOException {
+  @Override
+  public void close() throws IOException {
     if (current != null) {
       try {
         current.close();

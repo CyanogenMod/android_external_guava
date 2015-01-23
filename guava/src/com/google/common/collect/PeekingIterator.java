@@ -23,6 +23,10 @@ import java.util.NoSuchElementException;
 
 /**
  * An iterator that supports a one-element lookahead while iterating.
+ * 
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/CollectionHelpersExplained#PeekingIterator">
+ * {@code PeekingIterator}</a>.
  *
  * @author Mick Killianey
  * @since 2.0 (imported from Google Collections Library)
@@ -47,7 +51,7 @@ public interface PeekingIterator<E> extends Iterator<E> {
    * <p>The objects returned by consecutive calls to {@link #peek()} then {@link
    * #next()} are guaranteed to be equal to each other.
    */
-  @Override
+
   E next();
 
   /**
@@ -60,6 +64,6 @@ public interface PeekingIterator<E> extends Iterator<E> {
    *     since the most recent call to {@link #next()} and this implementation
    *     does not support this sequence of calls (optional)
    */
-  @Override
+
   void remove();
 }

@@ -17,28 +17,24 @@ package com.google.common.collect;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
 
-import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Static utility methods pertaining to {@link Queue}
- * instances. Also see this class's counterparts
- * {@link Lists}, {@link Sets}, and {@link Maps}.
+ * Static utility methods pertaining to {@link Queue} and {@link Deque} instances.
+ * Also see this class's counterparts {@link Lists}, {@link Sets}, and {@link Maps}.
  *
  * @author Kurt Alfred Kluever
  * @since 11.0
  */
-@Beta
 public final class Queues {
   private Queues() {}
 
@@ -52,9 +48,7 @@ public final class Queues {
   public static <E> ArrayBlockingQueue<E> newArrayBlockingQueue(int capacity) {
     return new ArrayBlockingQueue<E>(capacity);
   }
-
-  // ArrayDeque
-
+  
   // ConcurrentLinkedQueue
 
   /**
@@ -72,8 +66,7 @@ public final class Queues {
    * @param elements the elements that the queue should contain, in order
    * @return a new {@code ConcurrentLinkedQueue} containing those elements
    */
-  public static <E> ConcurrentLinkedQueue<E> newConcurrentLinkedQueue(
-      Iterable<? extends E> elements) {
+  public static <E> ConcurrentLinkedQueue<E> newConcurrentLinkedQueue(Iterable<? extends E> elements) {
     if (elements instanceof Collection) {
       return new ConcurrentLinkedQueue<E>(Collections2.cast(elements));
     }
@@ -81,8 +74,6 @@ public final class Queues {
     Iterables.addAll(queue, elements);
     return queue;
   }
-
-  // LinkedBlockingDeque
 
   // LinkedBlockingQueue
 
@@ -140,8 +131,7 @@ public final class Queues {
    * @param elements the elements that the queue should contain, in order
    * @return a new {@code PriorityBlockingQueue} containing those elements
    */
-  public static <E> PriorityBlockingQueue<E> newPriorityBlockingQueue(
-      Iterable<? extends E> elements) {
+  public static <E> PriorityBlockingQueue<E> newPriorityBlockingQueue(Iterable<? extends E> elements) {
     if (elements instanceof Collection) {
       return new PriorityBlockingQueue<E>(Collections2.cast(elements));
     }
@@ -188,10 +178,10 @@ public final class Queues {
   }
 
   /**
-   * Drains the queue as {@link BlockingQueue#drainTo(Collection, int)}, but if the requested
+   * Drains the queue as {@link BlockingQueue#drainTo(Collection, int)}, but if the requested 
    * {@code numElements} elements are not available, it will wait for them up to the specified
    * timeout.
-   *
+   * 
    * @param q the blocking queue to be drained
    * @param buffer where to add the transferred elements
    * @param numElements the number of elements to be waited for
@@ -200,6 +190,7 @@ public final class Queues {
    * @return the number of elements transferred
    * @throws InterruptedException if interrupted while waiting
    */
+  @Beta
   public static <E> int drain(BlockingQueue<E> q, Collection<? super E> buffer, int numElements,
       long timeout, TimeUnit unit) throws InterruptedException {
     Preconditions.checkNotNull(buffer);
@@ -227,11 +218,11 @@ public final class Queues {
   }
 
   /**
-   * Drains the queue as {@linkplain #drain(BlockingQueue, Collection, int, long, TimeUnit)},
-   * but with a different behavior in case it is interrupted while waiting. In that case, the
-   * operation will continue as usual, and in the end the thread's interruption status will be set
-   * (no {@code InterruptedException} is thrown).
-   *
+   * Drains the queue as {@linkplain #drain(BlockingQueue, Collection, int, long, TimeUnit)}, 
+   * but with a different behavior in case it is interrupted while waiting. In that case, the 
+   * operation will continue as usual, and in the end the thread's interruption status will be set 
+   * (no {@code InterruptedException} is thrown). 
+   * 
    * @param q the blocking queue to be drained
    * @param buffer where to add the transferred elements
    * @param numElements the number of elements to be waited for
@@ -239,6 +230,7 @@ public final class Queues {
    * @param unit a {@code TimeUnit} determining how to interpret the timeout parameter
    * @return the number of elements transferred
    */
+  @Beta
   public static <E> int drainUninterruptibly(BlockingQueue<E> q, Collection<? super E> buffer,
       int numElements, long timeout, TimeUnit unit) {
     Preconditions.checkNotNull(buffer);
@@ -247,7 +239,7 @@ public final class Queues {
     boolean interrupted = false;
     try {
       while (added < numElements) {
-        // we could rely solely on #poll, but #drainTo might be more efficient when there are
+        // we could rely solely on #poll, but #drainTo might be more efficient when there are 
         // multiple elements already available (e.g. LinkedBlockingQueue#drainTo locks only once)
         added += q.drainTo(buffer, numElements - added);
         if (added < numElements) { // not enough elements immediately available; will have to poll
@@ -273,5 +265,37 @@ public final class Queues {
       }
     }
     return added;
+  }
+
+  /**
+   * Returns a synchronized (thread-safe) queue backed by the specified queue. In order to
+   * guarantee serial access, it is critical that <b>all</b> access to the backing queue is
+   * accomplished through the returned queue.
+   *
+   * <p>It is imperative that the user manually synchronize on the returned queue when accessing
+   * the queue's iterator: <pre>   {@code
+   *
+   *   Queue<E> queue = Queues.synchronizedQueue(MinMaxPriorityQueue<E>.create());
+   *   ...
+   *   queue.add(element);  // Needn't be in synchronized block
+   *   ...
+   *   synchronized (queue) {  // Must synchronize on queue!
+   *     Iterator<E> i = queue.iterator(); // Must be in synchronized block
+   *     while (i.hasNext()) {
+   *       foo(i.next());
+   *     }
+   *   }}</pre>
+   *
+   * Failure to follow this advice may result in non-deterministic behavior.
+   *
+   * <p>The returned queue will be serializable if the specified queue is serializable.
+   *
+   * @param queue the queue to be wrapped in a synchronized view
+   * @return a synchronized view of the specified queue
+   * @since 14.0
+   */
+  @Beta
+  public static <E> Queue<E> synchronizedQueue(Queue<E> queue) {
+    return Synchronized.queue(queue, null);
   }
 }

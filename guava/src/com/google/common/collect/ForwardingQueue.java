@@ -16,7 +16,6 @@
 
 package com.google.common.collect;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 
 import java.util.NoSuchElementException;
@@ -43,35 +42,30 @@ import java.util.Queue;
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible
-public abstract class ForwardingQueue<E> extends ForwardingCollection<E>
-    implements Queue<E> {
+public abstract class ForwardingQueue<E> extends ForwardingCollection<E> implements Queue<E> {
 
   /** Constructor for use by subclasses. */
   protected ForwardingQueue() {}
 
-  @Override protected abstract Queue<E> delegate();
-
   @Override
+  protected abstract Queue<E> delegate();
+
   public boolean offer(E o) {
     return delegate().offer(o);
   }
 
-  @Override
   public E poll() {
     return delegate().poll();
   }
 
-  @Override
   public E remove() {
     return delegate().remove();
   }
 
-  @Override
   public E peek() {
     return delegate().peek();
   }
 
-  @Override
   public E element() {
     return delegate().element();
   }
@@ -83,7 +77,7 @@ public abstract class ForwardingQueue<E> extends ForwardingCollection<E>
    * 
    * @since 7.0
    */
-  @Beta protected boolean standardOffer(E e) {
+  protected boolean standardOffer(E e) {
     try {
       return add(e);
     } catch (IllegalStateException caught) {
@@ -98,7 +92,7 @@ public abstract class ForwardingQueue<E> extends ForwardingCollection<E>
    * 
    * @since 7.0
    */
-  @Beta protected E standardPeek() {
+  protected E standardPeek() {
     try {
       return element();
     } catch (NoSuchElementException caught) {
@@ -113,7 +107,7 @@ public abstract class ForwardingQueue<E> extends ForwardingCollection<E>
    * 
    * @since 7.0
    */
-  @Beta protected E standardPoll() {
+  protected E standardPoll() {
     try {
       return remove();
     } catch (NoSuchElementException caught) {

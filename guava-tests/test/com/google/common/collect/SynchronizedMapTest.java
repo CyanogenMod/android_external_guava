@@ -22,13 +22,13 @@ import com.google.common.collect.Synchronized.SynchronizedCollection;
 import com.google.common.collect.Synchronized.SynchronizedSet;
 import com.google.common.testing.SerializableTester;
 
-import junit.framework.TestCase;
-
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import junit.framework.TestCase;
 
 /**
  * Tests for {@code Synchronized#map}.

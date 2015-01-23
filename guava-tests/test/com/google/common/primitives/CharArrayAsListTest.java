@@ -19,6 +19,7 @@ package com.google.common.primitives;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.testing.ListTestSuiteBuilder;
 import com.google.common.collect.testing.SampleElements;
@@ -27,18 +28,18 @@ import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.ListFeature;
 
+import java.util.List;
+
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import java.util.List;
 
 /**
  * Test suite covering {@link Chars#asList(char[])}.
  *
  * @author Kevin Bourrillion
  */
-@GwtCompatible
+@GwtCompatible(emulated = true)
 public class CharArrayAsListTest extends TestCase {
 
   private static List<Character> asList(Character[] values) {
@@ -49,6 +50,7 @@ public class CharArrayAsListTest extends TestCase {
     return Chars.asList(temp);
   }
 
+  @GwtIncompatible("suite")
   public static Test suite() {
     List<ListTestSuiteBuilder<Character>> builders =
         ImmutableList.of(

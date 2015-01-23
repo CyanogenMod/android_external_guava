@@ -35,6 +35,5 @@ import java.util.concurrent.ScheduledExecutorService;
  * @since 10.0
  */
 @Beta
-public interface ListeningScheduledExecutorService
-    extends ScheduledExecutorService, ListeningExecutorService {
-}
+public interface ListeningScheduledExecutorService extends ScheduledExecutorService,
+    ListeningExecutorService {}

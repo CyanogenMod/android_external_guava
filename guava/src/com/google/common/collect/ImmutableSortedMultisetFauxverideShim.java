@@ -127,13 +127,7 @@ abstract class ImmutableSortedMultisetFauxverideShim<E> extends ImmutableMultise
    *             Comparable, Comparable, Comparable...)} . </b>
    */
   @Deprecated
-  public static <E> ImmutableSortedMultiset<E> of(
-      E e1,
-      E e2,
-      E e3,
-      E e4,
-      E e5,
-      E e6,
+  public static <E> ImmutableSortedMultiset<E> of(E e1, E e2, E e3, E e4, E e5, E e6,
       E... remaining) {
     throw new UnsupportedOperationException();
   }

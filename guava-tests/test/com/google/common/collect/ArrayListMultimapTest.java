@@ -17,21 +17,60 @@
 package com.google.common.collect;
 
 import static java.util.Arrays.asList;
-import static org.junit.contrib.truth.Truth.ASSERT;
+import static org.truth0.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.GwtIncompatible;
+import com.google.common.collect.testing.features.CollectionFeature;
+import com.google.common.collect.testing.features.CollectionSize;
+import com.google.common.collect.testing.features.MapFeature;
+import com.google.common.collect.testing.google.ListMultimapTestSuiteBuilder;
+import com.google.common.collect.testing.google.TestStringListMultimapGenerator;
 
+import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.RandomAccess;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
+
+import org.truth0.subjects.CollectionSubject;
 
 /**
  * Unit tests for {@code ArrayListMultimap}.
  *
  * @author Jared Levy
  */
-@GwtCompatible
+@GwtCompatible(emulated = true)
 public class ArrayListMultimapTest extends AbstractListMultimapTest {
+
+  @GwtIncompatible("suite")
+  public static Test suite() {
+    TestSuite suite = new TestSuite();
+    suite.addTest(ListMultimapTestSuiteBuilder.using(new TestStringListMultimapGenerator() {
+        @Override
+        protected ListMultimap<String, String> create(Entry<String, String>[] entries) {
+          ListMultimap<String, String> multimap = ArrayListMultimap.create();
+          for (Entry<String, String> entry : entries) {
+            multimap.put(entry.getKey(), entry.getValue());
+          }
+          return multimap;
+        }
+      })
+      .named("ArrayListMultimap")
+      .withFeatures(
+          MapFeature.ALLOWS_NULL_KEYS,
+          MapFeature.ALLOWS_NULL_VALUES,
+          MapFeature.GENERAL_PURPOSE,
+          MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
+          CollectionFeature.SERIALIZABLE,
+          CollectionSize.ANY)
+      .createTestSuite());
+    suite.addTestSuite(ArrayListMultimapTest.class);
+    return suite;
+  }
 
   @Override protected ListMultimap<String, Integer> create() {
     return ArrayListMultimap.create();
@@ -80,9 +119,9 @@ public class ArrayListMultimapTest extends AbstractListMultimapTest {
     ListMultimap<String, Integer> multimap = create();
     multimap.putAll("foo", asList(1, 2, 3, 4, 5));
     List<Integer> list = multimap.get("foo");
-    ASSERT.that(multimap.get("foo")).hasContentsInOrder(1, 2, 3, 4, 5);
+    assertThat(multimap.get("foo")).has().allOf(1, 2, 3, 4, 5).inOrder();
     List<Integer> sublist = list.subList(0, 5);
-    ASSERT.that(sublist).hasContentsInOrder(1, 2, 3, 4, 5);
+    assertThat(sublist).has().allOf(1, 2, 3, 4, 5).inOrder();
 
     sublist.clear();
     assertTrue(sublist.isEmpty());
@@ -104,7 +143,7 @@ public class ArrayListMultimapTest extends AbstractListMultimapTest {
   public void testCreate() {
     ArrayListMultimap<String, Integer> multimap
         = ArrayListMultimap.create();
-    assertEquals(10, multimap.expectedValuesPerKey);
+    assertEquals(3, multimap.expectedValuesPerKey);
   }
 
   public void testCreateFromSizes() {
@@ -129,7 +168,7 @@ public class ArrayListMultimapTest extends AbstractListMultimapTest {
     Multimap<String, Integer> original = HashMultimap.create();
     ArrayListMultimap<String, Integer> multimap
         = ArrayListMultimap.create(original);
-    assertEquals(10, multimap.expectedValuesPerKey);
+    assertEquals(3, multimap.expectedValuesPerKey);
   }
 
   public void testCreateFromArrayListMultimap() {
@@ -148,7 +187,13 @@ public class ArrayListMultimapTest extends AbstractListMultimapTest {
     multimap.put("bar", 3);
     multimap.trimToSize();
     assertEquals(3, multimap.size());
-    ASSERT.that(multimap.get("foo")).hasContentsInOrder(1, 2);
-    ASSERT.that(multimap.get("bar")).hasContentsInOrder(3);
+    assertThat(multimap.get("foo")).has().allOf(1, 2).inOrder();
+    assertThat(multimap.get("bar")).has().item(3);
+  }
+
+  // Hack for JDK5 type inference.
+  private static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> assertThat(
+      Collection<T> collection) {
+    return ASSERT.<T, Collection<T>>that(collection);
   }
 }

@@ -18,7 +18,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtIncompatible;
-import com.google.common.base.Equivalences;
+import com.google.common.base.Equivalence;
 import com.google.common.base.Function;
 import com.google.common.collect.MapMakerInternalMap.ReferenceEntry;
 
@@ -44,25 +44,31 @@ public final class Interners {
   public static <E> Interner<E> newStrongInterner() {
     final ConcurrentMap<E, E> map = new MapMaker().makeMap();
     return new Interner<E>() {
-      @Override public E intern(E sample) {
+      public E intern(E sample) {
         E canonical = map.putIfAbsent(checkNotNull(sample), sample);
         return (canonical == null) ? sample : canonical;
       }
     };
   }
 
-  private static class CustomInterner<E> implements Interner<E> {
+  /**
+   * Returns a new thread-safe interner which retains a weak reference to each instance it has
+   * interned, and so does not prevent these instances from being garbage-collected. This most
+   * likely does not perform as well as {@link #newStrongInterner}, but is the best alternative
+   * when the memory usage of that implementation is unacceptable. Note that unlike {@link
+   * String#intern}, using this interner does not consume memory in the permanent generation.
+   */
+  @GwtIncompatible("java.lang.ref.WeakReference")
+  public static <E> Interner<E> newWeakInterner() {
+    return new WeakInterner<E>();
+  }
+
+  private static class WeakInterner<E> implements Interner<E> {
     // MapMaker is our friend, we know about this type
-    private final MapMakerInternalMap<E, Dummy> map;
+    private final MapMakerInternalMap<E, Dummy> map = new MapMaker().weakKeys()
+        .keyEquivalence(Equivalence.equals()).makeCustomMap();
 
-    CustomInterner(GenericMapMaker<? super E, Object> mm) {
-      this.map = mm
-          .strongValues()
-          .keyEquivalence(Equivalences.equals())
-          .makeCustomMap();
-    }
-
-    @Override public E intern(E sample) {
+    public E intern(E sample) {
       while (true) {
         // trying to read the canonical...
         ReferenceEntry<E, Dummy> entry = map.getEntry(sample);
@@ -88,19 +94,9 @@ public final class Interners {
       }
     }
 
-    private enum Dummy { VALUE }
-  }
-
-  /**
-   * Returns a new thread-safe interner which retains a weak reference to each instance it has
-   * interned, and so does not prevent these instances from being garbage-collected. This most
-   * likely does not perform as well as {@link #newStrongInterner}, but is the best alternative
-   * when the memory usage of that implementation is unacceptable. Note that unlike {@link
-   * String#intern}, using this interner does not consume memory in the permanent generation.
-   */
-  @GwtIncompatible("java.lang.ref.WeakReference")
-  public static <E> Interner<E> newWeakInterner() {
-    return new CustomInterner<E>(new MapMaker().weakKeys());
+    private enum Dummy {
+      VALUE
+    }
   }
 
   /**
@@ -120,16 +116,18 @@ public final class Interners {
       this.interner = interner;
     }
 
-    @Override public E apply(E input) {
+    public E apply(E input) {
       return interner.intern(input);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       return interner.hashCode();
     }
 
-    @Override public boolean equals(Object other) {
-      if (other instanceof InternerFunction<?>) {
+    @Override
+    public boolean equals(Object other) {
+      if (other instanceof InternerFunction) {
         InternerFunction<?> that = (InternerFunction<?>) other;
         return interner.equals(that.interner);
       }

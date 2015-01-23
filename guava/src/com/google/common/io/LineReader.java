@@ -42,7 +42,8 @@ public final class LineReader {
 
   private final Queue<String> lines = new LinkedList<String>();
   private final LineBuffer lineBuf = new LineBuffer() {
-    @Override protected void handleLine(String line, String end) {
+    @Override
+    protected void handleLine(String line, String end) {
       lines.add(line);
     }
   };
@@ -73,9 +74,7 @@ public final class LineReader {
       cbuf.clear();
       // The default implementation of Reader#read(CharBuffer) allocates a
       // temporary char[], so we call Reader#read(char[], int, int) instead.
-      int read = (reader != null)
-          ? reader.read(buf, 0, buf.length)
-          : readable.read(cbuf);
+      int read = (reader != null) ? reader.read(buf, 0, buf.length) : readable.read(cbuf);
       if (read == -1) {
         lineBuf.finish();
         break;

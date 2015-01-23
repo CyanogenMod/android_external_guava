@@ -19,20 +19,23 @@ package com.google.common.math;
 import static com.google.common.math.MathTesting.ALL_DOUBLE_CANDIDATES;
 import static com.google.common.math.MathTesting.ALL_ROUNDING_MODES;
 import static com.google.common.math.MathTesting.ALL_SAFE_ROUNDING_MODES;
+import static com.google.common.math.MathTesting.DOUBLE_CANDIDATES_EXCEPT_NAN;
+import static com.google.common.math.MathTesting.FINITE_DOUBLE_CANDIDATES;
 import static com.google.common.math.MathTesting.FRACTIONAL_DOUBLE_CANDIDATES;
+import static com.google.common.math.MathTesting.INFINITIES;
 import static com.google.common.math.MathTesting.INTEGRAL_DOUBLE_CANDIDATES;
 import static com.google.common.math.MathTesting.NEGATIVE_INTEGER_CANDIDATES;
 import static com.google.common.math.MathTesting.POSITIVE_FINITE_DOUBLE_CANDIDATES;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.DOWN;
 import static java.math.RoundingMode.FLOOR;
-import static java.math.RoundingMode.HALF_DOWN;
-import static java.math.RoundingMode.HALF_EVEN;
-import static java.math.RoundingMode.HALF_UP;
 import static java.math.RoundingMode.UNNECESSARY;
 import static java.math.RoundingMode.UP;
 import static java.util.Arrays.asList;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.primitives.Doubles;
 import com.google.common.testing.NullPointerTester;
 
 import junit.framework.TestCase;
@@ -41,6 +44,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Tests for {@code DoubleMath}.
@@ -55,7 +59,9 @@ public class DoubleMathTest extends TestCase {
   private static final BigDecimal MAX_LONG_AS_BIG_DECIMAL = BigDecimal.valueOf(Long.MAX_VALUE);
   private static final BigDecimal MIN_LONG_AS_BIG_DECIMAL = BigDecimal.valueOf(Long.MIN_VALUE);
 
-  public void testConstantsMaxFactorial(){
+  private static final double MIN_NORMAL = 2.2250738585072014E-308; // Doubles.MIN_NORMAL from 1.6
+
+  public void testConstantsMaxFactorial() {
     BigInteger MAX_DOUBLE_VALUE = BigDecimal.valueOf(Double.MAX_VALUE).toBigInteger();
     assertTrue(BigIntegerMath.factorial(DoubleMath.MAX_FACTORIAL).compareTo(MAX_DOUBLE_VALUE) <= 0);
     assertTrue(
@@ -65,10 +71,10 @@ public class DoubleMathTest extends TestCase {
   public void testConstantsEverySixteenthFactorial() {
     for (int i = 0, n = 0; n <= DoubleMath.MAX_FACTORIAL; i++, n += 16) {
       assertEquals(
-          BigIntegerMath.factorial(n).doubleValue(), DoubleMath.EVERY_SIXTEENTH_FACTORIAL[i]);
+          BigIntegerMath.factorial(n).doubleValue(), DoubleMath.everySixteenthFactorial[i]);
     }
   }
-  
+
   public void testRoundIntegralDoubleToInt() {
     for (double d : INTEGRAL_DOUBLE_CANDIDATES) {
       for (RoundingMode mode : ALL_SAFE_ROUNDING_MODES) {
@@ -333,22 +339,6 @@ public class DoubleMathTest extends TestCase {
     }
   }
 
-  public void testRoundLog2Half() {
-    // We don't expect perfect rounding accuracy.
-    for (int exp : asList(-1022, -50, -1, 0, 1, 2, 3, 4, 100, 1022, 1023)) {
-      for (RoundingMode mode : asList(HALF_EVEN, HALF_UP, HALF_DOWN)) {
-        double x = Math.scalb(Math.sqrt(2) + 0.001, exp);
-        double y = Math.scalb(Math.sqrt(2) - 0.001, exp);
-        if (exp < 0) {
-          assertEquals(exp + 1, DoubleMath.log2(x, mode));
-          assertEquals(exp, DoubleMath.log2(y, mode));
-        } else {
-          assertEquals(exp + 1, DoubleMath.log2(x, mode));
-          assertEquals(exp, DoubleMath.log2(y, mode));
-        }
-      }
-    }
-  }
 
   public void testRoundLog2ThrowsOnZerosInfinitiesAndNaN() {
     for (RoundingMode mode : ALL_ROUNDING_MODES) {
@@ -387,20 +377,13 @@ public class DoubleMathTest extends TestCase {
     }
   }
 
-  public void testLog2Accuracy() {
-    for (double d : POSITIVE_FINITE_DOUBLE_CANDIDATES) {
-      double dmLog2 = DoubleMath.log2(d);
-      double trueLog2 = trueLog2(d);
-      assertTrue(Math.abs(dmLog2 - trueLog2) <= Math.ulp(trueLog2));
-    }
-  }
 
-  public void testLog2SemiMonotonic(){
+  public void testLog2SemiMonotonic() {
     for (double d : POSITIVE_FINITE_DOUBLE_CANDIDATES) {
       assertTrue(DoubleMath.log2(d + 0.01) >= DoubleMath.log2(d));
     }
   }
-  
+
   public void testLog2Negative() {
     for (double d : POSITIVE_FINITE_DOUBLE_CANDIDATES) {
       assertTrue(Double.isNaN(DoubleMath.log2(-d)));
@@ -416,23 +399,6 @@ public class DoubleMathTest extends TestCase {
     assertEquals(Double.POSITIVE_INFINITY, DoubleMath.log2(Double.POSITIVE_INFINITY));
     assertTrue(Double.isNaN(DoubleMath.log2(Double.NEGATIVE_INFINITY)));
     assertTrue(Double.isNaN(DoubleMath.log2(Double.NaN)));
-  }
-
-  private strictfp double trueLog2(double d) {
-    double trueLog2 = StrictMath.log(d) / StrictMath.log(2);
-    // increment until it's >= the true value
-    while (StrictMath.pow(2.0, trueLog2) < d) {
-      trueLog2 = StrictMath.nextUp(trueLog2);
-    }
-    // decrement until it's <= the true value
-    while (StrictMath.pow(2.0, trueLog2) > d) {
-      trueLog2 = StrictMath.nextAfter(trueLog2, Double.NEGATIVE_INFINITY);
-    }
-    if (StrictMath.abs(StrictMath.pow(2.0, trueLog2) - d)
-        > StrictMath.abs(StrictMath.pow(2.0, StrictMath.nextUp(trueLog2)) - d)) {
-      trueLog2 = StrictMath.nextUp(trueLog2);
-    }
-    return trueLog2;
   }
 
   public void testIsMathematicalIntegerIntegral() {
@@ -475,10 +441,120 @@ public class DoubleMathTest extends TestCase {
       } catch (IllegalArgumentException expected) {}
     }
   }
-  
-  public void testNullPointers() throws Exception {
+
+  private static final ImmutableList<Double> FINITE_TOLERANCE_CANDIDATES =
+      ImmutableList.of(-0.0, 0.0, 1.0, 100.0, 10000.0, Double.MAX_VALUE);
+
+  private static final Iterable<Double> TOLERANCE_CANDIDATES =
+      Iterables.concat(FINITE_TOLERANCE_CANDIDATES, ImmutableList.of(Double.POSITIVE_INFINITY));
+
+  private static final List<Double> BAD_TOLERANCE_CANDIDATES =
+      Doubles.asList(-Double.MIN_VALUE, -MIN_NORMAL, -1, -20, Double.NaN,
+          Double.NEGATIVE_INFINITY, -0.001);
+
+  public void testFuzzyEqualsFinite() {
+    for (double a : FINITE_DOUBLE_CANDIDATES) {
+      for (double b : FINITE_DOUBLE_CANDIDATES) {
+        for (double tolerance : FINITE_TOLERANCE_CANDIDATES) {
+          assertEquals(
+              Math.abs(a - b) <= tolerance,
+              DoubleMath.fuzzyEquals(a, b, tolerance));
+        }
+      }
+    }
+  }
+
+  public void testFuzzyInfiniteVersusFiniteWithFiniteTolerance() {
+    for (double inf : INFINITIES) {
+      for (double a : FINITE_DOUBLE_CANDIDATES) {
+        for (double tolerance : FINITE_TOLERANCE_CANDIDATES) {
+          assertFalse(DoubleMath.fuzzyEquals(a, inf, tolerance));
+          assertFalse(DoubleMath.fuzzyEquals(inf, a, tolerance));
+        }
+      }
+    }
+  }
+
+  public void testFuzzyInfiniteVersusInfiniteWithFiniteTolerance() {
+    for (double inf : INFINITIES) {
+      for (double tolerance : FINITE_TOLERANCE_CANDIDATES) {
+        assertTrue(DoubleMath.fuzzyEquals(inf, inf, tolerance));
+        assertFalse(DoubleMath.fuzzyEquals(inf, -inf, tolerance));
+      }
+    }
+  }
+
+  public void testFuzzyEqualsInfiniteTolerance() {
+    for (double a : DOUBLE_CANDIDATES_EXCEPT_NAN) {
+      for (double b : DOUBLE_CANDIDATES_EXCEPT_NAN) {
+        assertTrue(DoubleMath.fuzzyEquals(a, b, Double.POSITIVE_INFINITY));
+      }
+    }
+  }
+
+  public void testFuzzyEqualsOneNaN() {
+    for (double a : DOUBLE_CANDIDATES_EXCEPT_NAN) {
+      for (double tolerance : TOLERANCE_CANDIDATES) {
+        assertFalse(DoubleMath.fuzzyEquals(a, Double.NaN, tolerance));
+        assertFalse(DoubleMath.fuzzyEquals(Double.NaN, a, tolerance));
+      }
+    }
+  }
+
+  public void testFuzzyEqualsTwoNaNs() {
+    for (double tolerance : TOLERANCE_CANDIDATES) {
+      assertTrue(DoubleMath.fuzzyEquals(Double.NaN, Double.NaN, tolerance));
+    }
+  }
+
+  public void testFuzzyEqualsZeroTolerance() {
+    // make sure we test -0 tolerance
+    for (double zero : Doubles.asList(0.0, -0.0)) {
+      for (double a : ALL_DOUBLE_CANDIDATES) {
+        for (double b : ALL_DOUBLE_CANDIDATES) {
+          assertEquals(a == b || (Double.isNaN(a) && Double.isNaN(b)),
+              DoubleMath.fuzzyEquals(a, b, zero));
+        }
+      }
+    }
+  }
+
+  public void testFuzzyEqualsBadTolerance() {
+    for (double tolerance : BAD_TOLERANCE_CANDIDATES) {
+      try {
+        DoubleMath.fuzzyEquals(1, 2, tolerance);
+        fail("Expected IllegalArgumentException");
+      } catch (IllegalArgumentException expected) {
+        // success
+      }
+    }
+  }
+
+  public void testFuzzyCompare() {
+    for (double a : ALL_DOUBLE_CANDIDATES) {
+      for (double b : ALL_DOUBLE_CANDIDATES) {
+        for (double tolerance : TOLERANCE_CANDIDATES) {
+          int expected = DoubleMath.fuzzyEquals(a, b, tolerance) ? 0 : Double.compare(a, b);
+          int actual = DoubleMath.fuzzyCompare(a, b, tolerance);
+          assertEquals(Integer.signum(expected), Integer.signum(actual));
+        }
+      }
+    }
+  }
+
+  public void testFuzzyCompareBadTolerance() {
+    for (double tolerance : BAD_TOLERANCE_CANDIDATES) {
+      try {
+        DoubleMath.fuzzyCompare(1, 2, tolerance);
+        fail("Expected IllegalArgumentException");
+      } catch (IllegalArgumentException expected) {
+        // success
+      }
+    }
+  }
+
+  public void testNullPointers() {
     NullPointerTester tester = new NullPointerTester();
-    tester.setDefault(RoundingMode.class, FLOOR);
     tester.setDefault(double.class, 3.0);
     tester.testAllPublicStaticMethods(DoubleMath.class);
   }

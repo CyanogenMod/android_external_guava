@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Google Inc.
+ * Copyright (C) 2009 The Guava Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import javax.annotation.concurrent.Immutable;
 /**
  * An empty implementation of {@link ImmutableTable}.
  *
- * @author gak@google.com (Gregory Kick)
+ * @author Gregory Kick
  */
 @GwtCompatible
 @Immutable
@@ -37,23 +37,23 @@ final class EmptyImmutableTable extends ImmutableTable<Object, Object, Object> {
 
   private EmptyImmutableTable() {}
 
-  @Override public int size() {
+  public int size() {
     return 0;
   }
 
-  @Override public Object get(@Nullable Object rowKey,
-      @Nullable Object columnKey) {
+  public Object get(@Nullable Object rowKey, @Nullable Object columnKey) {
     return null;
   }
 
-  @Override public boolean isEmpty() {
+  public boolean isEmpty() {
     return true;
   }
 
-  @Override public boolean equals(@Nullable Object obj) {
+  @Override
+  public boolean equals(@Nullable Object obj) {
     if (obj == this) {
       return true;
-    } else if (obj instanceof Table<?, ?, ?>) {
+    } else if (obj instanceof Table) {
       Table<?, ?, ?> that = (Table<?, ?, ?>) obj;
       return that.isEmpty();
     } else {
@@ -61,62 +61,70 @@ final class EmptyImmutableTable extends ImmutableTable<Object, Object, Object> {
     }
   }
 
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return 0;
   }
 
-  @Override public ImmutableSet<Cell<Object, Object, Object>> cellSet() {
+  @Override
+  public ImmutableSet<Cell<Object, Object, Object>> cellSet() {
     return ImmutableSet.of();
   }
 
-  @Override public ImmutableMap<Object, Object> column(Object columnKey) {
+  @Override
+  public ImmutableMap<Object, Object> column(Object columnKey) {
     checkNotNull(columnKey);
     return ImmutableMap.of();
   }
 
-  @Override public ImmutableSet<Object> columnKeySet() {
+  @Override
+  public ImmutableSet<Object> columnKeySet() {
     return ImmutableSet.of();
   }
 
-  @Override public ImmutableMap<Object, Map<Object, Object>> columnMap() {
+  @Override
+  public ImmutableMap<Object, Map<Object, Object>> columnMap() {
     return ImmutableMap.of();
   }
 
-  @Override public boolean contains(@Nullable Object rowKey,
-      @Nullable Object columnKey) {
+  public boolean contains(@Nullable Object rowKey, @Nullable Object columnKey) {
     return false;
   }
 
-  @Override public boolean containsColumn(@Nullable Object columnKey) {
+  public boolean containsColumn(@Nullable Object columnKey) {
     return false;
   }
 
-  @Override public boolean containsRow(@Nullable Object rowKey) {
+  public boolean containsRow(@Nullable Object rowKey) {
     return false;
   }
 
-  @Override public boolean containsValue(@Nullable Object value) {
+  public boolean containsValue(@Nullable Object value) {
     return false;
   }
 
-  @Override public ImmutableMap<Object, Object> row(Object rowKey) {
+  @Override
+  public ImmutableMap<Object, Object> row(Object rowKey) {
     checkNotNull(rowKey);
     return ImmutableMap.of();
   }
 
-  @Override public ImmutableSet<Object> rowKeySet() {
+  @Override
+  public ImmutableSet<Object> rowKeySet() {
     return ImmutableSet.of();
   }
 
-  @Override public ImmutableMap<Object, Map<Object, Object>> rowMap() {
+  @Override
+  public ImmutableMap<Object, Map<Object, Object>> rowMap() {
     return ImmutableMap.of();
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "{}";
   }
 
-  @Override public ImmutableCollection<Object> values() {
+  public ImmutableCollection<Object> values() {
     return ImmutableSet.of();
   }
 

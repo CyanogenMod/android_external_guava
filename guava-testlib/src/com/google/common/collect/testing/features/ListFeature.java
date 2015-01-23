@@ -16,6 +16,7 @@
 
 package com.google.common.collect.testing.features;
 
+import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.Helpers;
 
 import java.lang.annotation.Inherited;
@@ -33,23 +34,22 @@ import java.util.Set;
  */
 // Enum values use constructors with generic varargs.
 @SuppressWarnings("unchecked")
+@GwtCompatible
 public enum ListFeature implements Feature<List> {
   SUPPORTS_SET,
-  SUPPORTS_ADD_WITH_INDEX,
-  SUPPORTS_ADD_ALL_WITH_INDEX,
-  SUPPORTS_REMOVE_WITH_INDEX,
+  SUPPORTS_ADD_WITH_INDEX(CollectionFeature.SUPPORTS_ADD),
+  SUPPORTS_REMOVE_WITH_INDEX(CollectionFeature.SUPPORTS_REMOVE),
 
   GENERAL_PURPOSE(
       CollectionFeature.GENERAL_PURPOSE,
       SUPPORTS_SET,
       SUPPORTS_ADD_WITH_INDEX,
-      SUPPORTS_ADD_ALL_WITH_INDEX,
       SUPPORTS_REMOVE_WITH_INDEX
   ),
 
   /** Features supported by lists where only removal is allowed. */
   REMOVE_OPERATIONS(
-      CollectionFeature.REMOVE_OPERATIONS,
+      CollectionFeature.SUPPORTS_REMOVE,
       SUPPORTS_REMOVE_WITH_INDEX
   );
 

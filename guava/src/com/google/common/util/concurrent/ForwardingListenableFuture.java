@@ -33,8 +33,8 @@ import java.util.concurrent.Executor;
  * @author Shardul Deo
  * @since 4.0
  */
-public abstract class ForwardingListenableFuture<V> extends ForwardingFuture<V>
-    implements ListenableFuture<V> {
+public abstract class ForwardingListenableFuture<V> extends ForwardingFuture<V> implements
+    ListenableFuture<V> {
 
   /** Constructor for use by subclasses. */
   protected ForwardingListenableFuture() {}
@@ -42,7 +42,6 @@ public abstract class ForwardingListenableFuture<V> extends ForwardingFuture<V>
   @Override
   protected abstract ListenableFuture<V> delegate();
 
-  @Override
   public void addListener(Runnable listener, Executor exec) {
     delegate().addListener(listener, exec);
   }
@@ -58,8 +57,8 @@ public abstract class ForwardingListenableFuture<V> extends ForwardingFuture<V>
    * 
    * @since 9.0
    */
-  public abstract static class SimpleForwardingListenableFuture<V>
-      extends ForwardingListenableFuture<V> {
+  public abstract static class SimpleForwardingListenableFuture<V> extends
+      ForwardingListenableFuture<V> {
     private final ListenableFuture<V> delegate;
 
     protected SimpleForwardingListenableFuture(ListenableFuture<V> delegate) {

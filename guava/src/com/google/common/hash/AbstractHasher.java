@@ -14,8 +14,8 @@
 
 package com.google.common.hash;
 
-import com.google.common.base.Charsets;
-
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 
 /**
@@ -23,31 +23,30 @@ import java.nio.charset.Charset;
  * {@link #putFloat(float)}, {@link #putString(CharSequence)}, and
  * {@link #putString(CharSequence, Charset)} as prescribed by {@link Hasher}.
  *
- * @author andreou@google.com (Dimitris Andreou)
+ * @author Dimitris Andreou
  */
 abstract class AbstractHasher implements Hasher {
-  @Override public final Hasher putBoolean(boolean b) {
+  public final Hasher putBoolean(boolean b) {
     return putByte(b ? (byte) 1 : (byte) 0);
   }
 
-  @Override public final Hasher putDouble(double d) {
+  public final Hasher putDouble(double d) {
     return putLong(Double.doubleToRawLongBits(d));
   }
 
-  @Override public final Hasher putFloat(float f) {
+  public final Hasher putFloat(float f) {
     return putInt(Float.floatToRawIntBits(f));
   }
 
-  @Override public Hasher putString(CharSequence charSequence) {
-    // TODO(user): Should we instead loop over the CharSequence and call #putChar?
-    return putString(charSequence, Charsets.UTF_16LE);
+  public Hasher putString(CharSequence charSequence) {
+    for (int i = 0, len = charSequence.length(); i < len; i++) {
+      putChar(charSequence.charAt(i));
+    }
+    return this;
   }
 
-  @Override public Hasher putString(CharSequence charSequence, Charset charset) {
-    try {
-      return putBytes(charSequence.toString().getBytes(charset.name()));
-    } catch (java.io.UnsupportedEncodingException impossible) {
-      throw new AssertionError(impossible);
-    }
+  public Hasher putString(CharSequence charSequence, Charset charset) {
+    ByteBuffer bytes = charset.encode(CharBuffer.wrap(charSequence));
+    return putObject(bytes, Funnels.byteBufferFunnel());
   }
 }

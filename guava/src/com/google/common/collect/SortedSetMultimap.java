@@ -31,13 +31,18 @@ import javax.annotation.Nullable;
  * that is, they comprise a {@link SortedSet}. It cannot hold duplicate
  * key-value pairs; adding a key-value pair that's already in the multimap has
  * no effect. This interface does not specify the ordering of the multimap's
- * keys.
+ * keys. See the {@link Multimap} documentation for information common to all
+ * multimaps.
  *
  * <p>The {@link #get}, {@link #removeAll}, and {@link #replaceValues} methods
  * each return a {@link SortedSet} of values, while {@link Multimap#entries()}
  * returns a {@link Set} of map entries. Though the method signature doesn't say
  * so explicitly, the map returned by {@link #asMap} has {@code SortedSet}
  * values.
+ * 
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multimap">
+ * {@code Multimap}</a>.
  *
  * @author Jared Levy
  * @since 2.0 (imported from Google Collections Library)
@@ -58,7 +63,7 @@ public interface SortedSetMultimap<K, V> extends SetMultimap<K, V> {
    * key, this method returns a {@link SortedSet}, instead of the
    * {@link java.util.Collection} specified in the {@link Multimap} interface.
    */
-  @Override
+
   SortedSet<V> get(@Nullable K key);
 
   /**
@@ -68,7 +73,7 @@ public interface SortedSetMultimap<K, V> extends SetMultimap<K, V> {
    * key, this method returns a {@link SortedSet}, instead of the
    * {@link java.util.Collection} specified in the {@link Multimap} interface.
    */
-  @Override
+
   SortedSet<V> removeAll(@Nullable Object key);
 
   /**
@@ -81,7 +86,7 @@ public interface SortedSetMultimap<K, V> extends SetMultimap<K, V> {
    *
    * <p>Any duplicates in {@code values} will be stored in the multimap once.
    */
-  @Override
+
   SortedSet<V> replaceValues(K key, Iterable<? extends V> values);
 
   /**
@@ -98,7 +103,7 @@ public interface SortedSetMultimap<K, V> extends SetMultimap<K, V> {
    * <p>Though the method signature doesn't say so explicitly, the returned map
    * has {@link SortedSet} values.
    */
-  @Override
+
   Map<K, Collection<V>> asMap();
 
   /**

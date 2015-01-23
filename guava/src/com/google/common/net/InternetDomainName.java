@@ -73,11 +73,10 @@ import javax.annotation.Nullable;
  * @since 5.0
  */
 @Beta
-@GwtCompatible(emulated = true)
+@GwtCompatible
 public final class InternetDomainName {
 
-  private static final CharMatcher DOTS_MATCHER =
-      CharMatcher.anyOf(".\u3002\uFF0E\uFF61");
+  private static final CharMatcher DOTS_MATCHER = CharMatcher.anyOf(".\u3002\uFF0E\uFF61");
   private static final Splitter DOT_SPLITTER = Splitter.on('.');
   private static final Joiner DOT_JOINER = Joiner.on('.');
 
@@ -192,7 +191,7 @@ public final class InternetDomainName {
    *
    * @param domain A domain name (not IP address)
    * @throws IllegalArgumentException if {@code name} is not syntactically valid
-   *     according to {@link #isValidLenient}
+   *     according to {@link #isValid}
    * @since 8.0 (previously named {@code from})
    * @deprecated Use {@link #from(String)}
    */
@@ -252,8 +251,8 @@ public final class InternetDomainName {
 
   private static final CharMatcher DASH_MATCHER = CharMatcher.anyOf("-_");
 
-  private static final CharMatcher PART_CHAR_MATCHER =
-      CharMatcher.JAVA_LETTER_OR_DIGIT.or(DASH_MATCHER);
+  private static final CharMatcher PART_CHAR_MATCHER = CharMatcher.JAVA_LETTER_OR_DIGIT
+      .or(DASH_MATCHER);
 
   /**
    * Helper method for {@link #validateSyntax(List)}. Validates that one part of
@@ -545,6 +544,7 @@ public final class InternetDomainName {
   }
 
   // TODO: specify this to return the same as name(); remove name()
+
   @Override
   public String toString() {
     return Objects.toStringHelper(this).add("name", name).toString();
@@ -557,6 +557,7 @@ public final class InternetDomainName {
    * of the same domain name would not be considered equal.
    *
    */
+
   @Override
   public boolean equals(@Nullable Object object) {
     if (object == this) {

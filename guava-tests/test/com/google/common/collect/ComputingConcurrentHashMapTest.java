@@ -34,8 +34,6 @@ import com.google.common.collect.MapMakerInternalMapTest.DummyValueReference;
 import com.google.common.collect.MapMakerInternalMapTest.QueuingRemovalListener;
 import com.google.common.testing.NullPointerTester;
 
-import junit.framework.TestCase;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -44,6 +42,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+
+import junit.framework.TestCase;
 
 /**
  * @author Charles Fry

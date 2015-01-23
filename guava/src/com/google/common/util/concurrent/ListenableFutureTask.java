@@ -27,12 +27,16 @@ import javax.annotation.Nullable;
  * interface.  Unlike {@code FutureTask}, {@code ListenableFutureTask} does not
  * provide an overrideable {@link FutureTask#done() done()} method.  For similar
  * functionality, call {@link #addListener}.
+ * 
+ * <p>
  *
  * @author Sven Mawson
  * @since 1.0
  */
-public final class ListenableFutureTask<V> extends FutureTask<V>
-    implements ListenableFuture<V> {
+public class ListenableFutureTask<V> extends FutureTask<V> implements ListenableFuture<V> {
+  // TODO(cpovirk): explore ways of making ListenableFutureTask final. There are
+  // some valid reasons such as BoundedQueueExecutorService to allow extends but it
+  // would be nice to make it final to avoid unintended usage.
 
   // The execution list to hold our listeners.
   private final ExecutionList executionList = new ExecutionList();
@@ -60,20 +64,18 @@ public final class ListenableFutureTask<V> extends FutureTask<V>
    *     null)}
    * @since 10.0
    */
-  public static <V> ListenableFutureTask<V> create(
-      Runnable runnable, @Nullable V result) {
+  public static <V> ListenableFutureTask<V> create(Runnable runnable, @Nullable V result) {
     return new ListenableFutureTask<V>(runnable, result);
   }
 
-  private ListenableFutureTask(Callable<V> callable) {
+  ListenableFutureTask(Callable<V> callable) {
     super(callable);
   }
 
-  private ListenableFutureTask(Runnable runnable, @Nullable V result) {
+  ListenableFutureTask(Runnable runnable, @Nullable V result) {
     super(runnable, result);
   }
 
-  @Override
   public void addListener(Runnable listener, Executor exec) {
     executionList.add(listener, exec);
   }
@@ -81,6 +83,7 @@ public final class ListenableFutureTask<V> extends FutureTask<V>
   /**
    * Internal implementation detail used to invoke the listeners.
    */
+
   @Override
   protected void done() {
     executionList.execute();

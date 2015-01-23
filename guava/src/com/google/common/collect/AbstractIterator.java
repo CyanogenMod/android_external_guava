@@ -125,7 +125,6 @@ public abstract class AbstractIterator<T> extends UnmodifiableIterator<T> {
     return null;
   }
 
-  @Override
   public final boolean hasNext() {
     checkState(state != State.FAILED);
     switch (state) {
@@ -148,7 +147,6 @@ public abstract class AbstractIterator<T> extends UnmodifiableIterator<T> {
     return false;
   }
 
-  @Override
   public final T next() {
     if (!hasNext()) {
       throw new NoSuchElementException();

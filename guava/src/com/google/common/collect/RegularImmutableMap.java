@@ -19,8 +19,6 @@ package com.google.common.collect;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.collect.ImmutableSet.ArrayImmutableSet;
-import com.google.common.collect.ImmutableSet.TransformedImmutableSet;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -41,7 +39,6 @@ final class RegularImmutableMap<K, V> extends ImmutableMap<K, V> {
   private final transient LinkedEntry<K, V>[] table;
   // 'and' with an int to get a table index
   private final transient int mask;
-  private final transient int keySetHashCode;
 
   // TODO(gak): investigate avoiding the creation of ImmutableEntries since we
   // re-copy them anyway.
@@ -49,23 +46,21 @@ final class RegularImmutableMap<K, V> extends ImmutableMap<K, V> {
     int size = immutableEntries.length;
     entries = createEntryArray(size);
 
-    int tableSize = chooseTableSize(size);
+    int tableSize = Hashing.closedTableSize(size, MAX_LOAD_FACTOR);
     table = createEntryArray(tableSize);
     mask = tableSize - 1;
 
-    int keySetHashCodeMutable = 0;
     for (int entryIndex = 0; entryIndex < size; entryIndex++) {
       // each of our 6 callers carefully put only Entry<K, V>s into the array!
       @SuppressWarnings("unchecked")
       Entry<K, V> entry = (Entry<K, V>) immutableEntries[entryIndex];
       K key = entry.getKey();
       int keyHashCode = key.hashCode();
-      keySetHashCodeMutable += keyHashCode;
       int tableIndex = Hashing.smear(keyHashCode) & mask;
-      @Nullable LinkedEntry<K, V> existing = table[tableIndex];
+      @Nullable
+      LinkedEntry<K, V> existing = table[tableIndex];
       // prepend, not append, so the entries can be immutable
-      LinkedEntry<K, V> linkedEntry =
-          newLinkedEntry(key, entry.getValue(), existing);
+      LinkedEntry<K, V> linkedEntry = newLinkedEntry(key, entry.getValue(), existing);
       table[tableIndex] = linkedEntry;
       entries[entryIndex] = linkedEntry;
       while (existing != null) {
@@ -73,43 +68,44 @@ final class RegularImmutableMap<K, V> extends ImmutableMap<K, V> {
         existing = existing.next();
       }
     }
-    keySetHashCode = keySetHashCodeMutable;
   }
 
-  private static int chooseTableSize(int size) {
-    // least power of 2 greater than size
-    int tableSize = Integer.highestOneBit(size) << 1;
-    checkArgument(tableSize > 0, "table too large: %s", size);
-    return tableSize;
-  }
+  /**
+   * Closed addressing tends to perform well even with high load factors.
+   * Being conservative here ensures that the table is still likely to be
+   * relatively sparse (hence it misses fast) while saving space.
+   */
+  private static final double MAX_LOAD_FACTOR = 1.2;
 
   /**
    * Creates a {@link LinkedEntry} array to hold parameterized entries. The
    * result must never be upcast back to LinkedEntry[] (or Object[], etc.), or
    * allowed to escape the class.
    */
-  @SuppressWarnings("unchecked") // Safe as long as the javadocs are followed
+  @SuppressWarnings("unchecked")
+  // Safe as long as the javadocs are followed
   private LinkedEntry<K, V>[] createEntryArray(int size) {
     return new LinkedEntry[size];
   }
 
   private static <K, V> LinkedEntry<K, V> newLinkedEntry(K key, V value,
       @Nullable LinkedEntry<K, V> next) {
-    return (next == null)
-        ? new TerminalEntry<K, V>(key, value)
-        : new NonTerminalEntry<K, V>(key, value, next);
+    return (next == null) ? new TerminalEntry<K, V>(key, value) : new NonTerminalEntry<K, V>(key,
+        value, next);
   }
 
   private interface LinkedEntry<K, V> extends Entry<K, V> {
     /** Returns the next entry in the list or {@code null} if none exists. */
-    @Nullable LinkedEntry<K, V> next();
+    @Nullable
+    LinkedEntry<K, V> next();
   }
 
   /** {@code LinkedEntry} implementation that has a next value. */
   @Immutable
-  @SuppressWarnings("serial") // this class is never serialized
-  private static final class NonTerminalEntry<K, V>
-      extends ImmutableEntry<K, V> implements LinkedEntry<K, V> {
+  @SuppressWarnings("serial")
+  // this class is never serialized
+  private static final class NonTerminalEntry<K, V> extends ImmutableEntry<K, V> implements
+      LinkedEntry<K, V> {
     final LinkedEntry<K, V> next;
 
     NonTerminalEntry(K key, V value, LinkedEntry<K, V> next) {
@@ -117,7 +113,7 @@ final class RegularImmutableMap<K, V> extends ImmutableMap<K, V> {
       this.next = next;
     }
 
-    @Override public LinkedEntry<K, V> next() {
+    public LinkedEntry<K, V> next() {
       return next;
     }
   }
@@ -127,26 +123,27 @@ final class RegularImmutableMap<K, V> extends ImmutableMap<K, V> {
    * list.  I.e. no next entry
    */
   @Immutable
-  @SuppressWarnings("serial") // this class is never serialized
-  private static final class TerminalEntry<K, V> extends ImmutableEntry<K, V>
-      implements LinkedEntry<K, V> {
+  @SuppressWarnings("serial")
+  // this class is never serialized
+  private static final class TerminalEntry<K, V> extends ImmutableEntry<K, V> implements
+      LinkedEntry<K, V> {
     TerminalEntry(K key, V value) {
       super(key, value);
     }
 
-    @Nullable @Override public LinkedEntry<K, V> next() {
+    @Nullable
+    public LinkedEntry<K, V> next() {
       return null;
     }
   }
 
-  @Override public V get(@Nullable Object key) {
+  @Override
+  public V get(@Nullable Object key) {
     if (key == null) {
       return null;
     }
     int index = Hashing.smear(key.hashCode()) & mask;
-    for (LinkedEntry<K, V> entry = table[index];
-        entry != null;
-        entry = entry.next()) {
+    for (LinkedEntry<K, V> entry = table[index]; entry != null; entry = entry.next()) {
       K candidateKey = entry.getKey();
 
       /*
@@ -162,16 +159,17 @@ final class RegularImmutableMap<K, V> extends ImmutableMap<K, V> {
     return null;
   }
 
-  @Override
   public int size() {
     return entries.length;
   }
 
-  @Override public boolean isEmpty() {
+  @Override
+  public boolean isEmpty() {
     return false;
   }
 
-  @Override public boolean containsValue(@Nullable Object value) {
+  @Override
+  public boolean containsValue(@Nullable Object value) {
     if (value == null) {
       return false;
     }
@@ -183,108 +181,33 @@ final class RegularImmutableMap<K, V> extends ImmutableMap<K, V> {
     return false;
   }
 
-  @Override boolean isPartialView() {
+  @Override
+  boolean isPartialView() {
     return false;
   }
 
-  private transient ImmutableSet<Entry<K, V>> entrySet;
-
-  @Override public ImmutableSet<Entry<K, V>> entrySet() {
-    ImmutableSet<Entry<K, V>> es = entrySet;
-    return (es == null) ? (entrySet = new EntrySet<K, V>(this)) : es;
+  @Override
+  ImmutableSet<Entry<K, V>> createEntrySet() {
+    return new EntrySet();
   }
 
-  @SuppressWarnings("serial") // uses writeReplace(), not default serialization
-  private static class EntrySet<K, V> extends ArrayImmutableSet<Entry<K, V>> {
-    final transient RegularImmutableMap<K, V> map;
-
-    EntrySet(RegularImmutableMap<K, V> map) {
-      super(map.entries);
-      this.map = map;
-    }
-
-    @Override public boolean contains(Object target) {
-      if (target instanceof Entry) {
-        Entry<?, ?> entry = (Entry<?, ?>) target;
-        V mappedValue = map.get(entry.getKey());
-        return mappedValue != null && mappedValue.equals(entry.getValue());
-      }
-      return false;
-    }
-  }
-
-  private transient ImmutableSet<K> keySet;
-
-  @Override public ImmutableSet<K> keySet() {
-    ImmutableSet<K> ks = keySet;
-    return (ks == null) ? (keySet = new KeySet<K, V>(this)) : ks;
-  }
-
-  @SuppressWarnings("serial") // uses writeReplace(), not default serialization
-  private static class KeySet<K, V>
-      extends TransformedImmutableSet<Entry<K, V>, K> {
-    final RegularImmutableMap<K, V> map;
-
-    KeySet(RegularImmutableMap<K, V> map) {
-      super(map.entries, map.keySetHashCode);
-      this.map = map;
-    }
-
-    @Override K transform(Entry<K, V> element) {
-      return element.getKey();
-    }
-
-    @Override public boolean contains(Object target) {
-      return map.containsKey(target);
-    }
-
-    @Override boolean isPartialView() {
-      return true;
-    }
-  }
-
-  private transient ImmutableCollection<V> values;
-
-  @Override public ImmutableCollection<V> values() {
-    ImmutableCollection<V> v = values;
-    return (v == null) ? (values = new Values<V>(this)) : v;
-  }
-
-  @SuppressWarnings("serial") // uses writeReplace(), not default serialization
-  private static class Values<V> extends ImmutableCollection<V> {
-    final RegularImmutableMap<?, V> map;
-
-    Values(RegularImmutableMap<?, V> map) {
-      this.map = map;
+  @SuppressWarnings("serial")
+  // uses writeReplace(), not default serialization
+  private class EntrySet extends ImmutableMapEntrySet<K, V> {
+    @Override
+    ImmutableMap<K, V> map() {
+      return RegularImmutableMap.this;
     }
 
     @Override
-    public int size() {
-      return map.entries.length;
+    public UnmodifiableIterator<Entry<K, V>> iterator() {
+      return asList().iterator();
     }
 
-    @Override public UnmodifiableIterator<V> iterator() {
-      return new AbstractIndexedListIterator<V>(map.entries.length) {
-        @Override protected V get(int index) {
-          return map.entries[index].getValue();
-        }
-      };
+    @Override
+    ImmutableList<Entry<K, V>> createAsList() {
+      return new RegularImmutableAsList<Entry<K, V>>(this, entries);
     }
-
-    @Override public boolean contains(Object target) {
-      return map.containsValue(target);
-    }
-
-    @Override boolean isPartialView() {
-      return true;
-    }
-  }
-
-  @Override public String toString() {
-    StringBuilder result
-        = Collections2.newStringBuilderForCollection(size()).append('{');
-    Collections2.STANDARD_JOINER.appendTo(result, entries);
-    return result.append('}').toString();
   }
 
   // This class is never actually serialized directly, but we have to make the

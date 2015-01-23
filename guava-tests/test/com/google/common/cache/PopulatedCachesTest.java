@@ -17,11 +17,7 @@ package com.google.common.cache;
 import static com.google.common.cache.CacheTesting.checkEmpty;
 import static com.google.common.cache.CacheTesting.checkValidState;
 import static com.google.common.cache.TestingCacheLoaders.identityLoader;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.contrib.truth.Truth.ASSERT;
 
 import com.google.common.base.Function;
 import com.google.common.cache.CacheBuilderFactory.DurationSpec;
@@ -33,6 +29,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.testing.EqualsTester;
+import com.google.common.testing.FluentAsserts;
 
 import junit.framework.TestCase;
 
@@ -47,6 +44,7 @@ import java.util.Set;
  *
  * @author mike nonemacher
  */
+
 public class PopulatedCachesTest extends TestCase {
   // we use integers as keys; make sure the range covers some values that ARE cached by
   // Integer.valueOf(int), and some that are not cached. (127 is the highest cached value.)
@@ -195,11 +193,10 @@ public class PopulatedCachesTest extends TestCase {
       Set<Object> keys = cache.asMap().keySet();
       List<Entry<Object, Object>> warmed = warmUp(cache);
 
-      Object[] expectedArray = Maps.newHashMap(cache.asMap()).keySet().toArray(new Object[0]);
-      ASSERT.that(keys).hasContentsAnyOrder(expectedArray);
-      ASSERT.that(asList(keys.toArray())).hasContentsAnyOrder(expectedArray);
-      ASSERT.that(asList(keys.toArray(new Object[(int) cache.size()])))
-          .hasContentsAnyOrder(expectedArray);
+      Set<Object> expected = Maps.newHashMap(cache.asMap()).keySet();
+      FluentAsserts.assertThat(keys).has().allFrom(expected);
+      FluentAsserts.assertThat(keys.toArray()).has().allFrom(expected);
+      FluentAsserts.assertThat(keys.toArray(new Object[0])).has().allFrom(expected);
 
       new EqualsTester()
           .addEqualityGroup(cache.asMap().keySet(), keys)
@@ -223,11 +220,10 @@ public class PopulatedCachesTest extends TestCase {
       Collection<Object> values = cache.asMap().values();
       List<Entry<Object, Object>> warmed = warmUp(cache);
 
-      Object[] expectedArray = Maps.newHashMap(cache.asMap()).values().toArray(new Object[0]);
-      ASSERT.that(values).hasContentsAnyOrder(expectedArray);
-      ASSERT.that(asList(values.toArray())).hasContentsAnyOrder(expectedArray);
-      ASSERT.that(asList(values.toArray(new Object[(int) cache.size()])))
-          .hasContentsAnyOrder(expectedArray);
+      Collection<Object> expected = Maps.newHashMap(cache.asMap()).values();
+      FluentAsserts.assertThat(values).has().allFrom(expected);
+      FluentAsserts.assertThat(values.toArray()).has().allFrom(expected);
+      FluentAsserts.assertThat(values.toArray(new Object[0])).has().allFrom(expected);
 
       assertEquals(WARMUP_SIZE, values.size());
       for (int i = WARMUP_MIN; i < WARMUP_MAX; i++) {
@@ -243,16 +239,16 @@ public class PopulatedCachesTest extends TestCase {
   }
 
   @SuppressWarnings("unchecked") // generic array creation
+
   public void testEntrySet_populated() {
     for (LoadingCache<Object, Object> cache : caches()) {
       Set<Entry<Object, Object>> entries = cache.asMap().entrySet();
       List<Entry<Object, Object>> warmed = warmUp(cache, WARMUP_MIN, WARMUP_MAX);
 
-      Set<Entry<Object, Object>> entrySet = Maps.newHashMap(cache.asMap()).entrySet();
-      ASSERT.that(entries).is(entrySet);
-      ASSERT.that(entries.toArray()).hasContentsAnyOrder(entrySet.toArray());
-      ASSERT.that(entries.toArray(new Entry[0]))
-          .hasContentsAnyOrder(entrySet.toArray(new Entry[0]));
+      Set<?> expected = Maps.newHashMap(cache.asMap()).entrySet();
+      FluentAsserts.assertThat(entries).has().allFrom((Collection<Entry<Object, Object>>)expected);
+      FluentAsserts.assertThat(entries.toArray()).has().allFrom((Collection<Object>)expected);
+      FluentAsserts.assertThat(entries.toArray(new Entry[0])).has().allFrom((Collection<Entry>)expected);
 
       new EqualsTester()
           .addEqualityGroup(cache.asMap().entrySet(), entries)
@@ -301,7 +297,7 @@ public class PopulatedCachesTest extends TestCase {
         new Function<CacheBuilder<Object, Object>, LoadingCache<Object, Object>>() {
           @Override public LoadingCache<Object, Object> apply(
               CacheBuilder<Object, Object> builder) {
-            return builder.build(identityLoader());
+            return builder.recordStats().build(identityLoader());
           }
         });
   }
@@ -322,15 +318,15 @@ public class PopulatedCachesTest extends TestCase {
         .withExpireAfterWrites(ImmutableSet.of(
             // DurationSpec.of(500, MILLISECONDS),
             DurationSpec.of(1, SECONDS),
-            DurationSpec.of(1, DAYS)))
+            DurationSpec.of(24 * 60 * 60 * 1, SECONDS)))
         .withExpireAfterAccesses(ImmutableSet.of(
             // DurationSpec.of(500, MILLISECONDS),
             DurationSpec.of(1, SECONDS),
-            DurationSpec.of(1, DAYS)))
+            DurationSpec.of(24 * 60 * 60 * 1, SECONDS)))
         .withRefreshes(ImmutableSet.of(
             // DurationSpec.of(500, MILLISECONDS),
             DurationSpec.of(1, SECONDS),
-            DurationSpec.of(1, DAYS)));
+            DurationSpec.of(24 * 60 * 60 * 1, SECONDS)));
   }
 
   private List<Map.Entry<Object, Object>> warmUp(LoadingCache<Object, Object> cache) {

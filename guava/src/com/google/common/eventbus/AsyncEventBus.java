@@ -16,7 +16,10 @@
 
 package com.google.common.eventbus;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.annotations.Beta;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 
@@ -32,8 +35,7 @@ public class AsyncEventBus extends EventBus {
   private final Executor executor;
 
   /** the queue of events is shared across all threads */
-  private final ConcurrentLinkedQueue<EventWithHandler> eventsToDispatch =
-      new ConcurrentLinkedQueue<EventWithHandler>();
+  private final ConcurrentLinkedQueue<EventWithHandler> eventsToDispatch = new ConcurrentLinkedQueue<EventWithHandler>();
 
   /**
    * Creates a new AsyncEventBus that will use {@code executor} to dispatch
@@ -46,7 +48,7 @@ public class AsyncEventBus extends EventBus {
    */
   public AsyncEventBus(String identifier, Executor executor) {
     super(identifier);
-    this.executor = executor;
+    this.executor = checkNotNull(executor);
   }
 
   /**
@@ -58,11 +60,11 @@ public class AsyncEventBus extends EventBus {
    *        been posted to this event bus.
    */
   public AsyncEventBus(Executor executor) {
-    this.executor = executor;
+    this.executor = checkNotNull(executor);
   }
 
   @Override
-  protected void enqueueEvent(Object event, EventHandler handler) {
+  void enqueueEvent(Object event, EventHandler handler) {
     eventsToDispatch.offer(new EventWithHandler(event, handler));
   }
 
@@ -71,6 +73,8 @@ public class AsyncEventBus extends EventBus {
    * the posting thread.
    */
   @Override
+  @SuppressWarnings("deprecation")
+  // only deprecated for external subclasses
   protected void dispatchQueuedEvents() {
     while (true) {
       EventWithHandler eventWithHandler = eventsToDispatch.poll();
@@ -85,15 +89,16 @@ public class AsyncEventBus extends EventBus {
   /**
    * Calls the {@link #executor} to dispatch {@code event} to {@code handler}.
    */
-  @Override
-  protected void dispatch(final Object event, final EventHandler handler) {
-    executor.execute(new Runnable() {
-          @Override
-          @SuppressWarnings("synthetic-access")
-          public void run() {
-            AsyncEventBus.super.dispatch(event, handler);
-          }
-        });
-  }
 
+  @Override
+  void dispatch(final Object event, final EventHandler handler) {
+    checkNotNull(event);
+    checkNotNull(handler);
+    executor.execute(new Runnable() {
+
+      public void run() {
+        AsyncEventBus.super.dispatch(event, handler);
+      }
+    });
+  }
 }

@@ -17,16 +17,16 @@
 package com.google.common.collect;
 
 import static java.util.Arrays.asList;
-import static org.junit.contrib.truth.Truth.ASSERT;
+import static org.truth0.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.testing.NullPointerTester;
 
-import junit.framework.TestCase;
-
 import java.util.Collection;
 import java.util.Collections;
+
+import junit.framework.TestCase;
 
 /**
  * Common tests for a {@code Collection}.
@@ -203,7 +203,7 @@ public abstract class AbstractCollectionTest extends TestCase {
   }
 
   @GwtIncompatible("NullPointerTester")
-  public void testNullPointerExceptions() throws Exception {
+  public void testNullPointerExceptions() {
     NullPointerTester tester = new NullPointerTester();
     tester.testAllPublicInstanceMethods(c);
   }
@@ -221,6 +221,6 @@ public abstract class AbstractCollectionTest extends TestCase {
   }
 
   protected void assertContents(String... expected) {
-    ASSERT.that(c).hasContentsAnyOrder(expected);
+    ASSERT.<String, Collection<String>>that(c).has().allFrom(asList(expected));
   }
 }

@@ -21,18 +21,19 @@ import com.google.common.collect.ImmutableMultimap.Builder;
 import com.google.common.collect.testing.SampleElements;
 import com.google.common.collect.testing.SampleElements.Unhashables;
 import com.google.common.collect.testing.UnhashableObject;
-
-import junit.framework.TestCase;
+import com.google.common.testing.EqualsTester;
 
 import java.util.Arrays;
 import java.util.Map.Entry;
+
+import junit.framework.TestCase;
 
 /**
  * Tests for {@link ImmutableMultimap}.
  *
  * @author Jared Levy
  */
-@GwtCompatible
+@GwtCompatible(emulated = true)
 public class ImmutableMultimapTest extends TestCase {
 
   public void testBuilder_withImmutableEntry() {
@@ -113,5 +114,15 @@ public class ImmutableMultimapTest extends TestCase {
     assertTrue(multimap.get(0).contains(unhashables.e0));
     assertTrue(multimap.get(0).contains(unhashables.e1));
     assertTrue(multimap.get(2).contains("hey you"));
+  }
+
+  public void testEquals() {
+    new EqualsTester()
+        .addEqualityGroup(ImmutableMultimap.of(), ImmutableMultimap.of())
+        .addEqualityGroup(ImmutableMultimap.of(1, "a"), ImmutableMultimap.of(1, "a"))
+        .addEqualityGroup(
+            ImmutableMultimap.of(1, "a", 2, "b"),
+            ImmutableMultimap.of(2, "b", 1, "a"))
+        .testEquals();
   }
 }

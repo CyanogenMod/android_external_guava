@@ -16,9 +16,9 @@
 
 package com.google.common.util.concurrent;
 
-import junit.framework.TestCase;
-
 import java.util.concurrent.Callable;
+
+import junit.framework.TestCase;
 
 /**
  * Unit tests for {@link Callables}.

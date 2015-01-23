@@ -40,6 +40,10 @@ import javax.annotation.CheckForNull;
  * Static utility methods pertaining to {@code int} primitives, that are not
  * already found in either {@link Integer} or {@link Arrays}.
  *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
+ * primitive utilities</a>.
+ *
  * @author Kevin Bourrillion
  * @since 1.0
  */
@@ -148,8 +152,7 @@ public final class Ints {
   }
 
   // TODO(kevinb): consider making this public
-  private static int indexOf(
-      int[] array, int target, int start, int end) {
+  private static int indexOf(int[] array, int target, int start, int end) {
     for (int i = start; i < end; i++) {
       if (array[i] == target) {
         return i;
@@ -176,8 +179,7 @@ public final class Ints {
       return 0;
     }
 
-    outer:
-    for (int i = 0; i < array.length - target.length + 1; i++) {
+    outer: for (int i = 0; i < array.length - target.length + 1; i++) {
       for (int j = 0; j < target.length; j++) {
         if (array[i + j] != target[j]) {
           continue outer;
@@ -202,8 +204,7 @@ public final class Ints {
   }
 
   // TODO(kevinb): consider making this public
-  private static int lastIndexOf(
-      int[] array, int target, int start, int end) {
+  private static int lastIndexOf(int[] array, int target, int start, int end) {
     for (int i = end - 1; i >= start; i--) {
       if (array[i] == target) {
         return i;
@@ -286,11 +287,8 @@ public final class Ints {
    */
   @GwtIncompatible("doesn't work")
   public static byte[] toByteArray(int value) {
-    return new byte[] {
-        (byte) (value >> 24),
-        (byte) (value >> 16),
-        (byte) (value >> 8),
-        (byte) value};
+    return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8),
+        (byte) value };
   }
 
   /**
@@ -307,8 +305,7 @@ public final class Ints {
    */
   @GwtIncompatible("doesn't work")
   public static int fromByteArray(byte[] bytes) {
-    checkArgument(bytes.length >= BYTES,
-        "array too small: %s < %s", bytes.length, BYTES);
+    checkArgument(bytes.length >= BYTES, "array too small: %s < %s", bytes.length, BYTES);
     return fromBytes(bytes[0], bytes[1], bytes[2], bytes[3]);
   }
 
@@ -340,13 +337,10 @@ public final class Ints {
    * @return an array containing the values of {@code array}, with guaranteed
    *     minimum length {@code minLength}
    */
-  public static int[] ensureCapacity(
-      int[] array, int minLength, int padding) {
+  public static int[] ensureCapacity(int[] array, int minLength, int padding) {
     checkArgument(minLength >= 0, "Invalid minLength: %s", minLength);
     checkArgument(padding >= 0, "Invalid padding: %s", padding);
-    return (array.length < minLength)
-        ? copyOf(array, minLength + padding)
-        : array;
+    return (array.length < minLength) ? copyOf(array, minLength + padding) : array;
   }
 
   // Arrays.copyOf() requires Java 6
@@ -402,7 +396,6 @@ public final class Ints {
   private enum LexicographicalComparator implements Comparator<int[]> {
     INSTANCE;
 
-    @Override
     public int compare(int[] left, int[] right) {
       int minLength = Math.min(left.length, right.length);
       for (int i = 0; i < minLength; i++) {
@@ -416,20 +409,21 @@ public final class Ints {
   }
 
   /**
-   * Copies a collection of {@code Integer} instances into a new array of
-   * primitive {@code int} values.
+   * Returns an array containing each value of {@code collection}, converted to
+   * a {@code int} value in the manner of {@link Number#intValue}.
    *
    * <p>Elements are copied from the argument collection as if by {@code
    * collection.toArray()}.  Calling this method is as thread-safe as calling
    * that method.
    *
-   * @param collection a collection of {@code Integer} objects
+   * @param collection a collection of {@code Number} instances
    * @return an array containing the same values as {@code collection}, in the
    *     same order, converted to primitives
    * @throws NullPointerException if {@code collection} or any of its elements
    *     is null
+   * @since 1.0 (parameter was {@code Collection<Integer>} before 12.0)
    */
-  public static int[] toArray(Collection<Integer> collection) {
+  public static int[] toArray(Collection<? extends Number> collection) {
     if (collection instanceof IntArrayAsList) {
       return ((IntArrayAsList) collection).toIntArray();
     }
@@ -439,7 +433,7 @@ public final class Ints {
     int[] array = new int[len];
     for (int i = 0; i < len; i++) {
       // checkNotNull for GWT (do not optimize)
-      array[i] = (Integer) checkNotNull(boxedArray[i]);
+      array[i] = ((Number) checkNotNull(boxedArray[i])).intValue();
     }
     return array;
   }
@@ -466,8 +460,8 @@ public final class Ints {
   }
 
   @GwtCompatible
-  private static class IntArrayAsList extends AbstractList<Integer>
-      implements RandomAccess, Serializable {
+  private static class IntArrayAsList extends AbstractList<Integer> implements RandomAccess,
+      Serializable {
     final int[] array;
     final int start;
     final int end;
@@ -482,26 +476,30 @@ public final class Ints {
       this.end = end;
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
       return end - start;
     }
 
-    @Override public boolean isEmpty() {
+    @Override
+    public boolean isEmpty() {
       return false;
     }
 
-    @Override public Integer get(int index) {
+    @Override
+    public Integer get(int index) {
       checkElementIndex(index, size());
       return array[start + index];
     }
 
-    @Override public boolean contains(Object target) {
+    @Override
+    public boolean contains(Object target) {
       // Overridden to prevent a ton of boxing
-      return (target instanceof Integer)
-          && Ints.indexOf(array, (Integer) target, start, end) != -1;
+      return (target instanceof Integer) && Ints.indexOf(array, (Integer) target, start, end) != -1;
     }
 
-    @Override public int indexOf(Object target) {
+    @Override
+    public int indexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Integer) {
         int i = Ints.indexOf(array, (Integer) target, start, end);
@@ -512,7 +510,8 @@ public final class Ints {
       return -1;
     }
 
-    @Override public int lastIndexOf(Object target) {
+    @Override
+    public int lastIndexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Integer) {
         int i = Ints.lastIndexOf(array, (Integer) target, start, end);
@@ -523,14 +522,17 @@ public final class Ints {
       return -1;
     }
 
-    @Override public Integer set(int index, Integer element) {
+    @Override
+    public Integer set(int index, Integer element) {
       checkElementIndex(index, size());
       int oldValue = array[start + index];
-      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
+      // checkNotNull for GWT (do not optimize)
+      array[start + index] = checkNotNull(element);
       return oldValue;
     }
 
-    @Override public List<Integer> subList(int fromIndex, int toIndex) {
+    @Override
+    public List<Integer> subList(int fromIndex, int toIndex) {
       int size = size();
       checkPositionIndexes(fromIndex, toIndex, size);
       if (fromIndex == toIndex) {
@@ -539,7 +541,8 @@ public final class Ints {
       return new IntArrayAsList(array, start + fromIndex, start + toIndex);
     }
 
-    @Override public boolean equals(Object object) {
+    @Override
+    public boolean equals(Object object) {
       if (object == this) {
         return true;
       }
@@ -559,7 +562,8 @@ public final class Ints {
       return super.equals(object);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       int result = 1;
       for (int i = start; i < end; i++) {
         result = 31 * result + Ints.hashCode(array[i]);
@@ -567,7 +571,8 @@ public final class Ints {
       return result;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       StringBuilder builder = new StringBuilder(size() * 5);
       builder.append('[').append(array[start]);
       for (int i = start + 1; i < end; i++) {
@@ -577,7 +582,7 @@ public final class Ints {
     }
 
     int[] toIntArray() {
-      // Arrays.copyOfRange() requires Java 6
+      // Arrays.copyOfRange() is not available under GWT
       int size = size();
       int[] result = new int[size];
       System.arraycopy(array, start, result, 0, size);

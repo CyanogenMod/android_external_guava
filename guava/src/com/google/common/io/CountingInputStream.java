@@ -22,6 +22,8 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.annotation.Nullable;
+
 /**
  * An {@link InputStream} that counts the number of bytes read.
  *
@@ -39,7 +41,7 @@ public final class CountingInputStream extends FilterInputStream {
    *
    * @param in the input stream to be wrapped
    */
-  public CountingInputStream(InputStream in) {
+  public CountingInputStream(@Nullable InputStream in) {
     super(in);
   }
 
@@ -48,7 +50,8 @@ public final class CountingInputStream extends FilterInputStream {
     return count;
   }
 
-  @Override public int read() throws IOException {
+  @Override
+  public int read() throws IOException {
     int result = in.read();
     if (result != -1) {
       count++;
@@ -56,7 +59,8 @@ public final class CountingInputStream extends FilterInputStream {
     return result;
   }
 
-  @Override public int read(byte[] b, int off, int len) throws IOException {
+  @Override
+  public int read(byte[] b, int off, int len) throws IOException {
     int result = in.read(b, off, len);
     if (result != -1) {
       count += result;
@@ -64,19 +68,22 @@ public final class CountingInputStream extends FilterInputStream {
     return result;
   }
 
-  @Override public long skip(long n) throws IOException {
+  @Override
+  public long skip(long n) throws IOException {
     long result = in.skip(n);
     count += result;
     return result;
   }
 
-  @Override public synchronized void mark(int readlimit) {
+  @Override
+  public synchronized void mark(int readlimit) {
     in.mark(readlimit);
     mark = count;
     // it's okay to mark even if mark isn't supported, as reset won't work
   }
 
-  @Override public synchronized void reset() throws IOException {
+  @Override
+  public synchronized void reset() throws IOException {
     if (!in.markSupported()) {
       throw new IOException("Mark not supported");
     }

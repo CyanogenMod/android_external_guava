@@ -37,6 +37,10 @@ import java.util.RandomAccess;
  * Static utility methods pertaining to {@code boolean} primitives, that are not
  * already found in either {@link Boolean} or {@link Arrays}.
  *
+ * <p>See the Guava User Guide article on <a href=
+ * "http://code.google.com/p/guava-libraries/wiki/PrimitivesExplained">
+ * primitive utilities</a>.
+ *
  * @author Kevin Bourrillion
  * @since 1.0
  */
@@ -110,8 +114,7 @@ public final class Booleans {
   }
 
   // TODO(kevinb): consider making this public
-  private static int indexOf(
-      boolean[] array, boolean target, int start, int end) {
+  private static int indexOf(boolean[] array, boolean target, int start, int end) {
     for (int i = start; i < end; i++) {
       if (array[i] == target) {
         return i;
@@ -138,8 +141,7 @@ public final class Booleans {
       return 0;
     }
 
-    outer:
-    for (int i = 0; i < array.length - target.length + 1; i++) {
+    outer: for (int i = 0; i < array.length - target.length + 1; i++) {
       for (int j = 0; j < target.length; j++) {
         if (array[i + j] != target[j]) {
           continue outer;
@@ -164,8 +166,7 @@ public final class Booleans {
   }
 
   // TODO(kevinb): consider making this public
-  private static int lastIndexOf(
-      boolean[] array, boolean target, int start, int end) {
+  private static int lastIndexOf(boolean[] array, boolean target, int start, int end) {
     for (int i = end - 1; i >= start; i--) {
       if (array[i] == target) {
         return i;
@@ -213,13 +214,10 @@ public final class Booleans {
    * @return an array containing the values of {@code array}, with guaranteed
    *     minimum length {@code minLength}
    */
-  public static boolean[] ensureCapacity(
-      boolean[] array, int minLength, int padding) {
+  public static boolean[] ensureCapacity(boolean[] array, int minLength, int padding) {
     checkArgument(minLength >= 0, "Invalid minLength: %s", minLength);
     checkArgument(padding >= 0, "Invalid padding: %s", padding);
-    return (array.length < minLength)
-        ? copyOf(array, minLength + padding)
-        : array;
+    return (array.length < minLength) ? copyOf(array, minLength + padding) : array;
   }
 
   // Arrays.copyOf() requires Java 6
@@ -276,7 +274,6 @@ public final class Booleans {
   private enum LexicographicalComparator implements Comparator<boolean[]> {
     INSTANCE;
 
-    @Override
     public int compare(boolean[] left, boolean[] right) {
       int minLength = Math.min(left.length, right.length);
       for (int i = 0; i < minLength; i++) {
@@ -343,8 +340,8 @@ public final class Booleans {
   }
 
   @GwtCompatible
-  private static class BooleanArrayAsList extends AbstractList<Boolean>
-      implements RandomAccess, Serializable {
+  private static class BooleanArrayAsList extends AbstractList<Boolean> implements RandomAccess,
+      Serializable {
     final boolean[] array;
     final int start;
     final int end;
@@ -359,26 +356,31 @@ public final class Booleans {
       this.end = end;
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
       return end - start;
     }
 
-    @Override public boolean isEmpty() {
+    @Override
+    public boolean isEmpty() {
       return false;
     }
 
-    @Override public Boolean get(int index) {
+    @Override
+    public Boolean get(int index) {
       checkElementIndex(index, size());
       return array[start + index];
     }
 
-    @Override public boolean contains(Object target) {
+    @Override
+    public boolean contains(Object target) {
       // Overridden to prevent a ton of boxing
       return (target instanceof Boolean)
           && Booleans.indexOf(array, (Boolean) target, start, end) != -1;
     }
 
-    @Override public int indexOf(Object target) {
+    @Override
+    public int indexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Boolean) {
         int i = Booleans.indexOf(array, (Boolean) target, start, end);
@@ -389,7 +391,8 @@ public final class Booleans {
       return -1;
     }
 
-    @Override public int lastIndexOf(Object target) {
+    @Override
+    public int lastIndexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Boolean) {
         int i = Booleans.lastIndexOf(array, (Boolean) target, start, end);
@@ -400,14 +403,17 @@ public final class Booleans {
       return -1;
     }
 
-    @Override public Boolean set(int index, Boolean element) {
+    @Override
+    public Boolean set(int index, Boolean element) {
       checkElementIndex(index, size());
       boolean oldValue = array[start + index];
-      array[start + index] = checkNotNull(element);  // checkNotNull for GWT (do not optimize)
+      // checkNotNull for GWT (do not optimize)
+      array[start + index] = checkNotNull(element);
       return oldValue;
     }
 
-    @Override public List<Boolean> subList(int fromIndex, int toIndex) {
+    @Override
+    public List<Boolean> subList(int fromIndex, int toIndex) {
       int size = size();
       checkPositionIndexes(fromIndex, toIndex, size);
       if (fromIndex == toIndex) {
@@ -416,7 +422,8 @@ public final class Booleans {
       return new BooleanArrayAsList(array, start + fromIndex, start + toIndex);
     }
 
-    @Override public boolean equals(Object object) {
+    @Override
+    public boolean equals(Object object) {
       if (object == this) {
         return true;
       }
@@ -436,7 +443,8 @@ public final class Booleans {
       return super.equals(object);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       int result = 1;
       for (int i = start; i < end; i++) {
         result = 31 * result + Booleans.hashCode(array[i]);
@@ -444,7 +452,8 @@ public final class Booleans {
       return result;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       StringBuilder builder = new StringBuilder(size() * 7);
       builder.append(array[start] ? "[true" : "[false");
       for (int i = start + 1; i < end; i++) {
@@ -454,7 +463,7 @@ public final class Booleans {
     }
 
     boolean[] toBooleanArray() {
-      // Arrays.copyOfRange() requires Java 6
+      // Arrays.copyOfRange() is not available under GWT
       int size = size();
       boolean[] result = new boolean[size];
       System.arraycopy(array, start, result, 0, size);

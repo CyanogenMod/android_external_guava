@@ -31,8 +31,7 @@ import java.util.NoSuchElementException;
  * @author Jared Levy
  */
 @GwtCompatible
-abstract class AbstractIndexedListIterator<E>
-    extends UnmodifiableListIterator<E> {
+abstract class AbstractIndexedListIterator<E> extends UnmodifiableListIterator<E> {
   private final int size;
   private int position;
 
@@ -71,12 +70,10 @@ abstract class AbstractIndexedListIterator<E>
     this.position = position;
   }
 
-  @Override
   public final boolean hasNext() {
     return position < size;
   }
 
-  @Override
   public final E next() {
     if (!hasNext()) {
       throw new NoSuchElementException();
@@ -84,17 +81,14 @@ abstract class AbstractIndexedListIterator<E>
     return get(position++);
   }
 
-  @Override
   public final int nextIndex() {
     return position;
   }
 
-  @Override
   public final boolean hasPrevious() {
     return position > 0;
   }
 
-  @Override
   public final E previous() {
     if (!hasPrevious()) {
       throw new NoSuchElementException();
@@ -102,7 +96,6 @@ abstract class AbstractIndexedListIterator<E>
     return get(--position);
   }
 
-  @Override
   public final int previousIndex() {
     return position - 1;
   }
