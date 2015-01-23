@@ -28,6 +28,9 @@ import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.MapFeature;
 
+import junit.framework.Test;
+import junit.framework.TestSuite;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,9 +38,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
 /**
  * Unit test for {@link ForwardingMap}.
@@ -132,8 +132,9 @@ public class ForwardingMapTest extends ForwardingTestCase {
 
     }).named("ForwardingMap[LinkedHashMap] with standard implementations")
         .withFeatures(CollectionSize.ANY, MapFeature.ALLOWS_NULL_VALUES,
-            MapFeature.ALLOWS_NULL_KEYS, MapFeature.GENERAL_PURPOSE,
-            CollectionFeature.KNOWN_ORDER)
+            MapFeature.ALLOWS_NULL_KEYS, MapFeature.ALLOWS_ANY_NULL_QUERIES,
+            MapFeature.GENERAL_PURPOSE,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE, CollectionFeature.KNOWN_ORDER)
         .createTestSuite());
     suite.addTest(MapTestSuiteBuilder.using(new TestStringMapGenerator() {
 
@@ -149,7 +150,8 @@ public class ForwardingMapTest extends ForwardingTestCase {
     }).named("ForwardingMap[ImmutableMap] with standard implementations")
         .withFeatures(
             CollectionSize.ANY, MapFeature.REJECTS_DUPLICATES_AT_CREATION,
-            MapFeature.ALLOWS_NULL_QUERIES, CollectionFeature.KNOWN_ORDER)
+            MapFeature.ALLOWS_ANY_NULL_QUERIES,
+            CollectionFeature.KNOWN_ORDER)
         .createTestSuite());
 
     return suite;

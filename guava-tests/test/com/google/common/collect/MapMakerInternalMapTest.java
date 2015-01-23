@@ -35,6 +35,8 @@ import com.google.common.collect.MapMakerInternalMap.Strength;
 import com.google.common.collect.MapMakerInternalMap.ValueReference;
 import com.google.common.testing.NullPointerTester;
 
+import junit.framework.TestCase;
+
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.Iterator;
@@ -46,8 +48,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-
-import junit.framework.TestCase;
 
 /**
  * @author Charles Fry

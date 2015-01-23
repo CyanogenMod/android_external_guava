@@ -50,7 +50,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
   /**
    * @since 11.0
    */
-
+  @Override
   public V get(K key, Callable<? extends V> valueLoader) throws ExecutionException {
     throw new UnsupportedOperationException();
   }
@@ -64,7 +64,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
    *
    * @since 11.0
    */
-
+  @Override
   public ImmutableMap<K, V> getAllPresent(Iterable<?> keys) {
     Map<K, V> result = Maps.newLinkedHashMap();
     for (Object key : keys) {
@@ -80,7 +80,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
   /**
    * @since 11.0
    */
-
+  @Override
   public void put(K key, V value) {
     throw new UnsupportedOperationException();
   }
@@ -88,19 +88,22 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
   /**
    * @since 12.0
    */
-
+  @Override
   public void putAll(Map<? extends K, ? extends V> m) {
     for (Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
       put(entry.getKey(), entry.getValue());
     }
   }
 
+  @Override
   public void cleanUp() {}
 
+  @Override
   public long size() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void invalidate(Object key) {
     throw new UnsupportedOperationException();
   }
@@ -108,21 +111,24 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
   /**
    * @since 11.0
    */
-
+  @Override
   public void invalidateAll(Iterable<?> keys) {
     for (Object key : keys) {
       invalidate(key);
     }
   }
 
+  @Override
   public void invalidateAll() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public CacheStats stats() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public ConcurrentMap<K, V> asMap() {
     throw new UnsupportedOperationException();
   }
@@ -141,7 +147,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
      * @param count the number of hits to record
      * @since 11.0
      */
-    public void recordHits(int count);
+    void recordHits(int count);
 
     /**
      * Records cache misses. This should be called when a cache request returns a value that was
@@ -154,7 +160,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
      * @param count the number of misses to record
      * @since 11.0
      */
-    public void recordMisses(int count);
+    void recordMisses(int count);
 
     /**
      * Records the successful load of a new entry. This should be called when a cache request
@@ -164,7 +170,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
      * @param loadTime the number of nanoseconds the cache spent computing or retrieving the new
      *     value
      */
-    public void recordLoadSuccess(long loadTime);
+    void recordLoadSuccess(long loadTime);
 
     /**
      * Records the failed load of a new entry. This should be called when a cache request causes
@@ -174,20 +180,20 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
      * @param loadTime the number of nanoseconds the cache spent computing or retrieving the new
      *     value prior to an exception being thrown
      */
-    public void recordLoadException(long loadTime);
+    void recordLoadException(long loadTime);
 
     /**
      * Records the eviction of an entry from the cache. This should only been called when an entry
      * is evicted due to the cache's eviction strategy, and not as a result of manual {@linkplain
      * Cache#invalidate invalidations}.
      */
-    public void recordEviction();
+    void recordEviction();
 
     /**
      * Returns a snapshot of this counter's values. Note that this may be an inconsistent view, as
      * it may be interleaved with update operations.
      */
-    public CacheStats snapshot();
+    CacheStats snapshot();
   }
 
   /**
@@ -212,7 +218,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
     /**
      * @since 11.0
      */
-
+    @Override
     public void recordHits(int count) {
       hitCount.add(count);
     }
@@ -220,28 +226,37 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
     /**
      * @since 11.0
      */
-
+    @Override
     public void recordMisses(int count) {
       missCount.add(count);
     }
 
+    @Override
     public void recordLoadSuccess(long loadTime) {
       loadSuccessCount.increment();
       totalLoadTime.add(loadTime);
     }
 
+    @Override
     public void recordLoadException(long loadTime) {
       loadExceptionCount.increment();
       totalLoadTime.add(loadTime);
     }
 
+    @Override
     public void recordEviction() {
       evictionCount.increment();
     }
 
+    @Override
     public CacheStats snapshot() {
-      return new CacheStats(hitCount.sum(), missCount.sum(), loadSuccessCount.sum(),
-          loadExceptionCount.sum(), totalLoadTime.sum(), evictionCount.sum());
+      return new CacheStats(
+          hitCount.sum(),
+          missCount.sum(),
+          loadSuccessCount.sum(),
+          loadExceptionCount.sum(),
+          totalLoadTime.sum(),
+          evictionCount.sum());
     }
 
     /**

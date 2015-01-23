@@ -14,39 +14,49 @@
 
 package com.google.common.hash;
 
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
 /**
  * An abstract hasher, implementing {@link #putBoolean(boolean)}, {@link #putDouble(double)},
- * {@link #putFloat(float)}, {@link #putString(CharSequence)}, and
+ * {@link #putFloat(float)}, {@link #putUnencodedChars(CharSequence)}, and
  * {@link #putString(CharSequence, Charset)} as prescribed by {@link Hasher}.
  *
  * @author Dimitris Andreou
  */
 abstract class AbstractHasher implements Hasher {
-  public final Hasher putBoolean(boolean b) {
+  @Override public final Hasher putBoolean(boolean b) {
     return putByte(b ? (byte) 1 : (byte) 0);
   }
 
-  public final Hasher putDouble(double d) {
+  @Override public final Hasher putDouble(double d) {
     return putLong(Double.doubleToRawLongBits(d));
   }
 
-  public final Hasher putFloat(float f) {
+  @Override public final Hasher putFloat(float f) {
     return putInt(Float.floatToRawIntBits(f));
   }
 
-  public Hasher putString(CharSequence charSequence) {
+  /**
+   * @deprecated Use {@link AbstractHasher#putUnencodedChars} instead.
+   */
+  @Deprecated
+  @Override public Hasher putString(CharSequence charSequence) {
+    return putUnencodedChars(charSequence);
+  }
+
+  @Override public Hasher putUnencodedChars(CharSequence charSequence) {
     for (int i = 0, len = charSequence.length(); i < len; i++) {
       putChar(charSequence.charAt(i));
     }
     return this;
   }
 
-  public Hasher putString(CharSequence charSequence, Charset charset) {
-    ByteBuffer bytes = charset.encode(CharBuffer.wrap(charSequence));
-    return putObject(bytes, Funnels.byteBufferFunnel());
+  @Override public Hasher putString(CharSequence charSequence, Charset charset) {
+    try {
+      return putBytes(charSequence.toString().getBytes(charset.name()));
+    } catch (UnsupportedEncodingException e) {
+      throw new AssertionError(e);
+    }
   }
 }

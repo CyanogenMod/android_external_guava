@@ -21,11 +21,8 @@ import static org.truth0.Truth.ASSERT;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.base.Supplier;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
-
-import org.truth0.subjects.CollectionSubject;
 
 /**
  * Test cases for {@link Tables#newCustomTable}.
@@ -54,17 +51,11 @@ public class NewCustomTableTest extends AbstractTableTest {
 
   public void testRowKeySetOrdering() {
     table = create("foo", 3, 'a', "bar", 1, 'b', "foo", 2, 'c');
-    assertThat(table.rowKeySet()).has().allOf("foo", "bar").inOrder();
+    ASSERT.that(table.rowKeySet()).has().exactly("foo", "bar").inOrder();
   }
 
   public void testRowOrdering() {
     table = create("foo", 3, 'a', "bar", 1, 'b', "foo", 2, 'c');
-    assertThat(table.row("foo").keySet()).has().allOf(2, 3).inOrder();
-  }
-
-  // Hack for JDK5 type inference.
-  private static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> assertThat(
-      Collection<T> collection) {
-    return ASSERT.<T, Collection<T>>that(collection);
+    ASSERT.that(table.row("foo").keySet()).has().exactly(2, 3).inOrder();
   }
 }

@@ -42,30 +42,35 @@ import java.util.Queue;
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible
-public abstract class ForwardingQueue<E> extends ForwardingCollection<E> implements Queue<E> {
+public abstract class ForwardingQueue<E> extends ForwardingCollection<E>
+    implements Queue<E> {
 
   /** Constructor for use by subclasses. */
   protected ForwardingQueue() {}
 
-  @Override
-  protected abstract Queue<E> delegate();
+  @Override protected abstract Queue<E> delegate();
 
+  @Override
   public boolean offer(E o) {
     return delegate().offer(o);
   }
 
+  @Override
   public E poll() {
     return delegate().poll();
   }
 
+  @Override
   public E remove() {
     return delegate().remove();
   }
 
+  @Override
   public E peek() {
     return delegate().peek();
   }
 
+  @Override
   public E element() {
     return delegate().element();
   }

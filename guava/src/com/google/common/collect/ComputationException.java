@@ -34,6 +34,5 @@ public class ComputationException extends RuntimeException {
   public ComputationException(@Nullable Throwable cause) {
     super(cause);
   }
-
   private static final long serialVersionUID = 0;
 }

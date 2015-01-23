@@ -58,7 +58,7 @@ public final class EnumMultiset<E extends Enum<E>> extends AbstractMapBasedMulti
     Iterables.addAll(multiset, elements);
     return multiset;
   }
-
+  
   /**
    * Returns a new {@code EnumMultiset} instance containing the given elements.  Unlike
    * {@link EnumMultiset#create(Iterable)}, this method does not produce an exception on an empty
@@ -95,8 +95,7 @@ public final class EnumMultiset<E extends Enum<E>> extends AbstractMapBasedMulti
   @GwtIncompatible("java.io.ObjectInputStream")
   private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
     stream.defaultReadObject();
-    @SuppressWarnings("unchecked")
-    // reading data stored by writeObject
+    @SuppressWarnings("unchecked") // reading data stored by writeObject
     Class<E> localType = (Class<E>) stream.readObject();
     type = localType;
     setBackingMap(WellBehavedMap.wrap(new EnumMap<E, Count>(type)));

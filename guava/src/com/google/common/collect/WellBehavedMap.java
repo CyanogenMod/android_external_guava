@@ -52,13 +52,11 @@ final class WellBehavedMap<K, V> extends ForwardingMap<K, V> {
     return new WellBehavedMap<K, V>(delegate);
   }
 
-  @Override
-  protected Map<K, V> delegate() {
+  @Override protected Map<K, V> delegate() {
     return delegate;
   }
 
-  @Override
-  public Set<Entry<K, V>> entrySet() {
+  @Override public Set<Entry<K, V>> entrySet() {
     Set<Entry<K, V>> es = entrySet;
     if (es != null) {
       return es;
@@ -67,7 +65,6 @@ final class WellBehavedMap<K, V> extends ForwardingMap<K, V> {
   }
 
   private final class EntrySet extends Maps.EntrySet<K, V> {
-
     @Override
     Map<K, V> map() {
       return WellBehavedMap.this;
@@ -76,11 +73,9 @@ final class WellBehavedMap<K, V> extends ForwardingMap<K, V> {
     @Override
     public Iterator<Entry<K, V>> iterator() {
       return new TransformedIterator<K, Entry<K, V>>(keySet().iterator()) {
-
         @Override
         Entry<K, V> transform(final K key) {
           return new AbstractMapEntry<K, V>() {
-
             @Override
             public K getKey() {
               return key;

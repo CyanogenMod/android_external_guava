@@ -16,9 +16,9 @@
 
 package com.google.common.util.concurrent;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 
 import java.lang.reflect.Constructor;
 import java.util.concurrent.BlockingQueue;
@@ -28,7 +28,7 @@ import java.util.concurrent.BlockingQueue;
  * 
  * @author Justin T. Sampson
  */
-public class MonitorBenchmark extends SimpleBenchmark {
+public class MonitorBenchmark {
   
   @Param({"10", "100", "1000"}) int capacity;
   @Param({"Array", "Priority"}) String queueType;
@@ -37,9 +37,9 @@ public class MonitorBenchmark extends SimpleBenchmark {
   private BlockingQueue<String> queue;
   private String[] strings;
 
-  @Override
+  @BeforeExperiment
   @SuppressWarnings("unchecked")
-  protected void setUp() throws Exception {
+  void setUp() throws Exception {
     String prefix =
         (useMonitor ? "com.google.common.util.concurrent.MonitorBased" : "java.util.concurrent.");
     String className = prefix + queueType + "BlockingQueue";
@@ -52,7 +52,7 @@ public class MonitorBenchmark extends SimpleBenchmark {
     }
   }
 
-  public void timeAddsAndRemoves(int reps) {
+  @Benchmark void addsAndRemoves(int reps) {
     int capacity = this.capacity;
     BlockingQueue<String> queue = this.queue;
     String[] strings = this.strings;
@@ -65,9 +65,4 @@ public class MonitorBenchmark extends SimpleBenchmark {
       }
     }
   }
-
-  public static void main(String[] args) {
-    Runner.main(MonitorBenchmark.class, args);
-  }
-
 }

@@ -42,13 +42,15 @@ public final class UncaughtExceptionHandlers {
    *   Thread.currentThread().setUncaughtExceptionHandler(UncaughtExceptionHandlers.systemExit());
    *   ...
    * </pre>
+   *
+   * <p>The returned handler logs any exception at severity {@code SEVERE} and then shuts down the
+   * process with an exit status of 1, indicating abnormal termination.
    */
   public static UncaughtExceptionHandler systemExit() {
     return new Exiter(Runtime.getRuntime());
   }
 
-  @VisibleForTesting
-  static final class Exiter implements UncaughtExceptionHandler {
+  @VisibleForTesting static final class Exiter implements UncaughtExceptionHandler {
     private static final Logger logger = Logger.getLogger(Exiter.class.getName());
 
     private final Runtime runtime;
@@ -57,10 +59,18 @@ public final class UncaughtExceptionHandlers {
       this.runtime = runtime;
     }
 
-    public void uncaughtException(Thread t, Throwable e) {
-      // cannot use FormattingLogger due to a dependency loop
-      logger.log(SEVERE, String.format("Caught an exception in %s.  Shutting down.", t), e);
-      runtime.exit(1);
+    @Override public void uncaughtException(Thread t, Throwable e) {
+      try {
+        // cannot use FormattingLogger due to a dependency loop
+        logger.log(SEVERE, String.format("Caught an exception in %s.  Shutting down.", t), e);
+      } catch (Throwable errorInLogging) {
+        // If logging fails, e.g. due to missing memory, at least try to log the
+        // message and the cause for the failed logging.
+        System.err.println(e.getMessage());
+        System.err.println(errorInLogging.getMessage());
+      } finally {
+        runtime.exit(1);
+      }
     }
   }
 }

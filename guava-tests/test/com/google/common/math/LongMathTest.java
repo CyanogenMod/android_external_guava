@@ -34,11 +34,11 @@ import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.testing.NullPointerTester;
 
+import junit.framework.TestCase;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-
-import junit.framework.TestCase;
 
 /**
  * Tests for LongMath.
@@ -135,6 +135,19 @@ public class LongMathTest extends TestCase {
       // 2 * k is the smallest value for which we don't replace k with (n-k).
       fail("Expected ArithmeticException");
     } catch (ArithmeticException expected) {}
+  }
+
+  public void testLessThanBranchFree() {
+    for (long x : ALL_LONG_CANDIDATES) {
+      for (long y : ALL_LONG_CANDIDATES) {
+        BigInteger difference = BigInteger.valueOf(x).subtract(BigInteger.valueOf(y));
+        if (fitsInLong(difference)) {
+          int expected = (x < y) ? 1 : 0;
+          int actual = LongMath.lessThanBranchFree(x, y);
+          assertEquals(expected, actual);
+        }
+      }
+    }
   }
 
   // Throws an ArithmeticException if "the simple implementation" of binomial coefficients overflows
@@ -285,11 +298,11 @@ public class LongMathTest extends TestCase {
   @GwtIncompatible("TODO")
   public void testSqrtExactMatchesFloorOrThrows() {
     for (long x : POSITIVE_LONG_CANDIDATES) {
-      long logFloor = LongMath.sqrt(x, FLOOR);
+      long sqrtFloor = LongMath.sqrt(x, FLOOR);
       // We only expect an exception if x was not a perfect square.
-      boolean isPerfectSquare = (logFloor * logFloor == x);
+      boolean isPerfectSquare = (sqrtFloor * sqrtFloor == x);
       try {
-        assertEquals(logFloor, LongMath.sqrt(x, UNNECESSARY));
+        assertEquals(sqrtFloor, LongMath.sqrt(x, UNNECESSARY));
         assertTrue(isPerfectSquare);
       } catch (ArithmeticException e) {
         assertFalse(isPerfectSquare);
@@ -585,6 +598,20 @@ public class LongMathTest extends TestCase {
         fail("Expected IllegalArgumentException");
       } catch (IllegalArgumentException expected) {}
     }
+  }
+
+  @GwtIncompatible("far too slow")
+  public void testSqrtOfPerfectSquareAsDoubleIsPerfect() {
+    // This takes just over a minute on my machine.
+    for (long n = 0; n <= LongMath.FLOOR_SQRT_MAX_LONG; n++) {
+      long actual = (long) Math.sqrt(n * n);
+      assertTrue(actual == n);
+    }
+  }
+
+  public void testSqrtOfLongIsAtMostFloorSqrtMaxLong() {
+    long sqrtMaxLong = (long) Math.sqrt(Long.MAX_VALUE);
+    assertTrue(sqrtMaxLong <= LongMath.FLOOR_SQRT_MAX_LONG);
   }
 
   @GwtIncompatible("java.math.BigInteger")

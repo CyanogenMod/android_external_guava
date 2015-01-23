@@ -19,7 +19,7 @@ package com.google.common.collect.testing.testers;
 import static com.google.common.collect.testing.features.CollectionSize.SEVERAL;
 import static com.google.common.collect.testing.features.CollectionSize.ZERO;
 import static com.google.common.collect.testing.features.MapFeature.ALLOWS_NULL_KEYS;
-import static com.google.common.collect.testing.features.MapFeature.ALLOWS_NULL_QUERIES;
+import static com.google.common.collect.testing.features.MapFeature.ALLOWS_NULL_KEY_QUERIES;
 import static com.google.common.collect.testing.features.MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION;
 import static com.google.common.collect.testing.features.MapFeature.SUPPORTS_REMOVE;
 
@@ -37,8 +37,6 @@ import java.util.Map.Entry;
  * A generic JUnit test which tests {@code remove} operations on a map. Can't be
  * invoked directly; please see
  * {@link com.google.common.collect.testing.MapTestSuiteBuilder}.
- *
- * <p>This class is GWT compatible.
  *
  * @author George van den Driessche
  * @author Chris Povirk
@@ -146,7 +144,7 @@ public class MapRemoveTester<K, V> extends AbstractMapTester<K, V> {
 
   @MapFeature.Require(
       value = SUPPORTS_REMOVE,
-      absent = ALLOWS_NULL_QUERIES)
+      absent = ALLOWS_NULL_KEY_QUERIES)
   public void testRemove_nullQueriesNotSupported() {
     try {
       assertNull("remove(null) should return null or throw "
@@ -157,7 +155,7 @@ public class MapRemoveTester<K, V> extends AbstractMapTester<K, V> {
     expectUnchanged();
   }
 
-  @MapFeature.Require({SUPPORTS_REMOVE, ALLOWS_NULL_QUERIES})
+  @MapFeature.Require({SUPPORTS_REMOVE, ALLOWS_NULL_KEY_QUERIES})
   public void testRemove_nullSupportedMissing() {
     assertNull("remove(null) should return null", getMap().remove(null));
     expectUnchanged();

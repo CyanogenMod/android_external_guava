@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
  *    . . .
  *   return joiner.join("Harry", null, "Ron", "Hermione");}</pre>
  *
- * This returns the string {@code "Harry; Ron; Hermione"}. Note that all input elements are
+ * <p>This returns the string {@code "Harry; Ron; Hermione"}. Note that all input elements are
  * converted to strings using {@link Object#toString()} before being appended.
  *
  * <p>If neither {@link #skipNulls()} nor {@link #useForNull(String)} is specified, the joining
@@ -55,9 +55,9 @@ import javax.annotation.Nullable;
  *   Joiner joiner = Joiner.on(',');
  *   joiner.skipNulls(); // does nothing!
  *   return joiner.join("wrong", null, "wrong");}</pre>
- *
+ *   
  * <p>See the Guava User Guide article on <a href=
- * "http://code.google.com/p/guava-libraries/wiki/StringsExplained#Joiner">{@code Joiner}</a>.
+ * "http://code.google.com/p/guava-libraries/wiki/StringsExplained#Joiner">{@code Joiner}</a>. 
  *
  * @author Kevin Bourrillion
  * @since 2.0 (imported from Google Collections Library)
@@ -86,21 +86,6 @@ public class Joiner {
 
   private Joiner(Joiner prototype) {
     this.separator = prototype.separator;
-  }
-
-  /**
-   * <b>Deprecated.</b>
-   *
-   * @since 11.0
-   * @deprecated use {@link #appendTo(Appendable, Iterator)} by casting {@code parts} to
-   *     {@code Iterator<?>}, or better yet, by implementing only {@code Iterator} and not
-   *     {@code Iterable}. <b>This method is scheduled for deletion in June 2013.</b>
-   */
-  @Beta
-  @Deprecated
-  public final <A extends Appendable, I extends Object & Iterable<?> & Iterator<?>> A appendTo(
-      A appendable, I parts) throws IOException {
-    return appendTo(appendable, (Iterator<?>) parts);
   }
 
   /**
@@ -140,24 +125,10 @@ public class Joiner {
   /**
    * Appends to {@code appendable} the string representation of each of the remaining arguments.
    */
-  public final <A extends Appendable> A appendTo(A appendable, @Nullable Object first,
-      @Nullable Object second, Object... rest) throws IOException {
+  public final <A extends Appendable> A appendTo(
+      A appendable, @Nullable Object first, @Nullable Object second, Object... rest)
+          throws IOException {
     return appendTo(appendable, iterable(first, second, rest));
-  }
-
-  /**
-   * <b>Deprecated.</b>
-   *
-   * @since 11.0
-   * @deprecated use {@link #appendTo(StringBuilder, Iterator)} by casting {@code parts} to
-   *     {@code Iterator<?>}, or better yet, by implementing only {@code Iterator} and not
-   *     {@code Iterable}. <b>This method is scheduled for deletion in June 2013.</b>
-   */
-  @Beta
-  @Deprecated
-  public final <I extends Object & Iterable<?> & Iterator<?>> StringBuilder appendTo(
-      StringBuilder builder, I parts) {
-    return appendTo(builder, (Iterator<?>) parts);
   }
 
   /**
@@ -199,23 +170,9 @@ public class Joiner {
    * Identical to {@link #appendTo(Appendable, Object, Object, Object...)}, except that it does not
    * throw {@link IOException}.
    */
-  public final StringBuilder appendTo(StringBuilder builder, @Nullable Object first,
-      @Nullable Object second, Object... rest) {
+  public final StringBuilder appendTo(
+      StringBuilder builder, @Nullable Object first, @Nullable Object second, Object... rest) {
     return appendTo(builder, iterable(first, second, rest));
-  }
-
-  /**
-   * <b>Deprecated.</b>
-   *
-   * @since 11.0
-   * @deprecated use {@link #join(Iterator)} by casting {@code parts} to
-   *     {@code Iterator<?>}, or better yet, by implementing only {@code Iterator} and not
-   *     {@code Iterable}. <b>This method is scheduled for deletion in June 2013.</b>
-   */
-  @Beta
-  @Deprecated
-  public final <I extends Object & Iterable<?> & Iterator<?>> String join(I parts) {
-    return join((Iterator<?>) parts);
   }
 
   /**
@@ -260,19 +217,15 @@ public class Joiner {
   public Joiner useForNull(final String nullText) {
     checkNotNull(nullText);
     return new Joiner(this) {
-      @Override
-      CharSequence toString(@Nullable Object part) {
+      @Override CharSequence toString(@Nullable Object part) {
         return (part == null) ? nullText : Joiner.this.toString(part);
       }
 
-      @Override
-      public Joiner useForNull(String nullText) {
-        checkNotNull(nullText); // weird: just to satisfy NullPointerTester.
+      @Override public Joiner useForNull(String nullText) {
         throw new UnsupportedOperationException("already specified useForNull");
       }
 
-      @Override
-      public Joiner skipNulls() {
+      @Override public Joiner skipNulls() {
         throw new UnsupportedOperationException("already specified useForNull");
       }
     };
@@ -285,8 +238,8 @@ public class Joiner {
   @CheckReturnValue
   public Joiner skipNulls() {
     return new Joiner(this) {
-      @Override
-      public <A extends Appendable> A appendTo(A appendable, Iterator<?> parts) throws IOException {
+      @Override public <A extends Appendable> A appendTo(A appendable, Iterator<?> parts)
+          throws IOException {
         checkNotNull(appendable, "appendable");
         checkNotNull(parts, "parts");
         while (parts.hasNext()) {
@@ -306,15 +259,11 @@ public class Joiner {
         return appendable;
       }
 
-      @Override
-      public Joiner useForNull(String nullText) {
-        checkNotNull(nullText); // weird: just to satisfy NullPointerTester.
+      @Override public Joiner useForNull(String nullText) {
         throw new UnsupportedOperationException("already specified skipNulls");
       }
 
-      @Override
-      public MapJoiner withKeyValueSeparator(String kvs) {
-        checkNotNull(kvs); // weird: just to satisfy NullPointerTester.
+      @Override public MapJoiner withKeyValueSeparator(String kvs) {
         throw new UnsupportedOperationException("can't use .skipNulls() with maps");
       }
     };
@@ -347,7 +296,7 @@ public class Joiner {
    *
    * @since 2.0 (imported from Google Collections Library)
    */
-  public final static class MapJoiner {
+  public static final class MapJoiner {
     private final Joiner joiner;
     private final String keyValueSeparator;
 
@@ -379,23 +328,6 @@ public class Joiner {
      */
     public String join(Map<?, ?> map) {
       return join(map.entrySet());
-    }
-
-    /**
-     * <b>Deprecated.</b>
-     *
-     * @since 11.0
-     * @deprecated use {@link #appendTo(Appendable, Iterator)} by casting {@code entries} to
-     *     {@code Iterator<? extends Entry<?, ?>>}, or better yet, by implementing only
-     *     {@code Iterator} and not {@code Iterable}. <b>This method is scheduled for deletion
-     *     in June 2013.</b>
-     */
-    @Beta
-    @Deprecated
-    public <A extends Appendable, I extends Object & Iterable<? extends Entry<?, ?>> & Iterator<? extends Entry<?, ?>>> A appendTo(
-        A appendable, I entries) throws IOException {
-      Iterator<? extends Entry<?, ?>> iterator = entries;
-      return appendTo(appendable, iterator);
     }
 
     /**
@@ -437,23 +369,6 @@ public class Joiner {
     }
 
     /**
-     * <b>Deprecated.</b>
-     *
-     * @since 11.0
-     * @deprecated use {@link #appendTo(StringBuilder, Iterator)} by casting {@code entries} to
-     *     {@code Iterator<? extends Entry<?, ?>>}, or better yet, by implementing only
-     *     {@code Iterator} and not {@code Iterable}. <b>This method is scheduled for deletion
-     *     in June 2013.</b>
-     */
-    @Beta
-    @Deprecated
-    public <I extends Object & Iterable<? extends Entry<?, ?>> & Iterator<? extends Entry<?, ?>>> StringBuilder appendTo(
-        StringBuilder builder, I entries) throws IOException {
-      Iterator<? extends Entry<?, ?>> iterator = entries;
-      return appendTo(builder, iterator);
-    }
-
-    /**
      * Appends the string representation of each entry in {@code entries}, using the previously
      * configured separator and key-value separator, to {@code builder}. Identical to {@link
      * #appendTo(Appendable, Iterable)}, except that it does not throw {@link IOException}.
@@ -480,23 +395,6 @@ public class Joiner {
         throw new AssertionError(impossible);
       }
       return builder;
-    }
-
-    /**
-     * <b>Deprecated.</b>
-     *
-     * @since 11.0
-     * @deprecated use {@link #join(Iterator)} by casting {@code entries} to
-     *     {@code Iterator<? extends Entry<?, ?>>}, or better yet, by implementing only
-     *     {@code Iterator} and not {@code Iterable}. <b>This method is scheduled for deletion
-     *     in June 2013.</b>
-     */
-    @Beta
-    @Deprecated
-    public <I extends Object & Iterable<? extends Entry<?, ?>> & Iterator<? extends Entry<?, ?>>> String join(
-        I entries) throws IOException {
-      Iterator<? extends Entry<?, ?>> iterator = entries;
-      return join(iterator);
     }
 
     /**
@@ -532,21 +430,19 @@ public class Joiner {
   }
 
   CharSequence toString(Object part) {
-    checkNotNull(part); // checkNotNull for GWT (do not optimize).
+    checkNotNull(part);  // checkNotNull for GWT (do not optimize).
     return (part instanceof CharSequence) ? (CharSequence) part : part.toString();
   }
 
-  private static Iterable<Object> iterable(final Object first, final Object second,
-      final Object[] rest) {
+  private static Iterable<Object> iterable(
+      final Object first, final Object second, final Object[] rest) {
     checkNotNull(rest);
     return new AbstractList<Object>() {
-      @Override
-      public int size() {
+      @Override public int size() {
         return rest.length + 2;
       }
 
-      @Override
-      public Object get(int index) {
+      @Override public Object get(int index) {
         switch (index) {
           case 0:
             return first;

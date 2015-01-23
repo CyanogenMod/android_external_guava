@@ -16,11 +16,12 @@
 
 package com.google.common.collect;
 
+import static org.truth0.Truth.ASSERT;
+
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.base.Objects;
 import com.google.common.testing.EqualsTester;
-import com.google.common.testing.FluentAsserts;
 
 /**
  * Tests {@link SingletonImmutableTable}.
@@ -70,7 +71,7 @@ public class SingletonImmutableTableTest extends AbstractImmutableTableTest {
   public void testEqualsObject() {
     new EqualsTester()
         .addEqualityGroup(testTable, HashBasedTable.create(testTable))
-        .addEqualityGroup(EmptyImmutableTable.INSTANCE, HashBasedTable.create())
+        .addEqualityGroup(ImmutableTable.of(), HashBasedTable.create())
         .addEqualityGroup(HashBasedTable.create(ImmutableTable.of('A', 2, "")))
         .testEquals();
   }
@@ -125,7 +126,7 @@ public class SingletonImmutableTableTest extends AbstractImmutableTableTest {
   }
 
   public void testValues() {
-    FluentAsserts.assertThat(testTable.values()).has().item("blah");
+    ASSERT.that(testTable.values()).has().item("blah");
   }
 
   @Override Iterable<ImmutableTable<Character, Integer, String>> getTestInstances() {

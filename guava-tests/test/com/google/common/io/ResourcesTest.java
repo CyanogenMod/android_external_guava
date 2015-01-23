@@ -17,21 +17,24 @@
 package com.google.common.io;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
+import static org.truth0.Truth.ASSERT;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
-import com.google.common.testing.FluentAsserts;
 import com.google.common.testing.NullPointerTester;
+
+import junit.framework.TestSuite;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
-
-import junit.framework.TestSuite;
 
 /**
  * Unit test for {@link Resources}.
@@ -50,17 +53,10 @@ public class ResourcesTest extends IoTestCase {
     return suite;
   }
 
-  public void testUrlSupplier() throws IOException {
-    byte[] data = ByteStreams.toByteArray(
-        Resources.newInputStreamSupplier(classfile(Resources.class)));
-    assertEquals(0xCAFEBABE,
-        new DataInputStream(new ByteArrayInputStream(data)).readInt());
-  }
-
   public void testToString() throws IOException {
     URL resource = getClass().getResource("testdata/i18n.txt");
     assertEquals(I18N, Resources.toString(resource, Charsets.UTF_8));
-    FluentAsserts.assertThat(Resources.toString(resource, Charsets.US_ASCII))
+    ASSERT.that(Resources.toString(resource, Charsets.US_ASCII))
         .isNotEqualTo(I18N);
   }
 
@@ -135,6 +131,56 @@ public class ResourcesTest extends IoTestCase {
 
   public void testGetResource_relativePath() {
     assertNotNull(Resources.getResource(getClass(), "testdata/i18n.txt"));
+  }
+
+  public void testGetResource_contextClassLoader() throws IOException {
+    // Check that we can find a resource if it is visible to the context class
+    // loader, even if it is not visible to the loader of the Resources class.
+
+    File tempFile = createTempFile();
+    PrintWriter writer = new PrintWriter(tempFile, "UTF-8");
+    writer.println("rud a chur ar an méar fhada");
+    writer.close();
+
+    // First check that we can't find it without setting the context loader.
+    // This is a sanity check that the test doesn't spuriously pass because
+    // the resource is visible to the system class loader.
+    try {
+      Resources.getResource(tempFile.getName());
+      fail("Should get IllegalArgumentException");
+    } catch (IllegalArgumentException expected) {
+    }
+
+    // Now set the context loader to one that should find the resource.
+    URL baseUrl = tempFile.getParentFile().toURI().toURL();
+    URLClassLoader loader = new URLClassLoader(new URL[] {baseUrl});
+    ClassLoader oldContextLoader =
+        Thread.currentThread().getContextClassLoader();
+    try {
+      Thread.currentThread().setContextClassLoader(loader);
+      URL url = Resources.getResource(tempFile.getName());
+      String text = Resources.toString(url, Charsets.UTF_8);
+      assertEquals("rud a chur ar an méar fhada\n", text);
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldContextLoader);
+    }
+  }
+
+  public void testGetResource_contextClassLoaderNull() {
+    ClassLoader oldContextLoader =
+        Thread.currentThread().getContextClassLoader();
+    try {
+      Thread.currentThread().setContextClassLoader(null);
+      assertNotNull(
+          Resources.getResource("com/google/common/io/testdata/i18n.txt"));
+      try {
+        Resources.getResource("no such resource");
+        fail("Should get IllegalArgumentException");
+      } catch (IllegalArgumentException expected) {
+      }
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldContextLoader);
+    }
   }
 
   public void testNulls() {

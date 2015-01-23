@@ -31,6 +31,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
@@ -42,8 +43,8 @@ import javax.annotation.Nullable;
  * <p>In addition to convenience methods, {@link TypeToken#method} and {@link
  * TypeToken#constructor} will resolve the type parameters of the method or constructor in the
  * context of the owner type, which may be a subtype of the declaring class. For example:
- * <pre>   {@code
  *
+ * <pre>   {@code
  *   Method getMethod = List.class.getMethod("get", int.class);
  *   Invokable<List<String>, ?> invokable = new TypeToken<List<String>>() {}.method(getMethod);
  *   assertEquals(TypeToken.of(String.class), invokable.getReturnType()); // Not Object.class!
@@ -96,8 +97,8 @@ public abstract class Invokable<T, R> extends Element implements GenericDeclarat
    */
   // All subclasses are owned by us and we'll make sure to get the R type right.
   @SuppressWarnings("unchecked")
-  public final R invoke(@Nullable T receiver, Object... args) throws InvocationTargetException,
-      IllegalAccessException {
+  public final R invoke(@Nullable T receiver, Object... args)
+      throws InvocationTargetException, IllegalAccessException {
     return (R) invokeInternal(receiver, checkNotNull(args));
   }
 
@@ -118,7 +119,8 @@ public abstract class Invokable<T, R> extends Element implements GenericDeclarat
     Annotation[][] annotations = getParameterAnnotations();
     ImmutableList.Builder<Parameter> builder = ImmutableList.builder();
     for (int i = 0; i < parameterTypes.length; i++) {
-      builder.add(new Parameter(this, i, TypeToken.of(parameterTypes[i]), annotations[i]));
+      builder.add(new Parameter(
+          this, i, TypeToken.of(parameterTypes[i]), annotations[i]));
     }
     return builder.build();
   }
@@ -127,10 +129,10 @@ public abstract class Invokable<T, R> extends Element implements GenericDeclarat
   public final ImmutableList<TypeToken<? extends Throwable>> getExceptionTypes() {
     ImmutableList.Builder<TypeToken<? extends Throwable>> builder = ImmutableList.builder();
     for (Type type : getGenericExceptionTypes()) {
-      // getGenericExceptionTypes() will never return a type that's not exception
+       // getGenericExceptionTypes() will never return a type that's not exception
       @SuppressWarnings("unchecked")
-      TypeToken<? extends Throwable> exceptionType = (TypeToken<? extends Throwable>) TypeToken
-          .of(type);
+      TypeToken<? extends Throwable> exceptionType = (TypeToken<? extends Throwable>)
+          TypeToken.of(type);
       builder.add(exceptionType);
     }
     return builder.build();
@@ -140,8 +142,7 @@ public abstract class Invokable<T, R> extends Element implements GenericDeclarat
    * Explicitly specifies the return type of this {@code Invokable}. For example:
    * <pre>   {@code
    *   Method factoryMethod = Person.class.getMethod("create");
-   *   Invokable<?, Person> factory = Invokable.of(getNameMethod).returning(Person.class);
-   * }</pre>
+   *   Invokable<?, Person> factory = Invokable.of(getNameMethod).returning(Person.class);}</pre>
    */
   public final <R1 extends R> Invokable<T, R1> returning(Class<R1> returnType) {
     return returning(TypeToken.of(returnType));
@@ -150,26 +151,23 @@ public abstract class Invokable<T, R> extends Element implements GenericDeclarat
   /** Explicitly specifies the return type of this {@code Invokable}. */
   public final <R1 extends R> Invokable<T, R1> returning(TypeToken<R1> returnType) {
     if (!returnType.isAssignableFrom(getReturnType())) {
-      throw new IllegalArgumentException("Invokable is known to return " + getReturnType()
-          + ", not " + returnType);
+      throw new IllegalArgumentException(
+          "Invokable is known to return " + getReturnType() + ", not " + returnType);
     }
-    @SuppressWarnings("unchecked")
-    // guarded by previous check
+    @SuppressWarnings("unchecked") // guarded by previous check
     Invokable<T, R1> specialized = (Invokable<T, R1>) this;
     return specialized;
   }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  // The declaring class is T's raw class, or one of its supertypes.
-  public final Class<? super T> getDeclaringClass() {
+  @SuppressWarnings("unchecked") // The declaring class is T's raw class, or one of its supertypes.
+  @Override public final Class<? super T> getDeclaringClass() {
     return (Class<? super T>) super.getDeclaringClass();
   }
 
   /** Returns the type of {@code T}. */
   // Overridden in TypeToken#method() and TypeToken#constructor()
   @SuppressWarnings("unchecked") // The declaring class is T.
-  public TypeToken<T> getOwnerType() {
+  @Override public TypeToken<T> getOwnerType() {
     return (TypeToken<T>) TypeToken.of(getDeclaringClass());
   }
 
@@ -184,43 +182,38 @@ public abstract class Invokable<T, R> extends Element implements GenericDeclarat
   abstract Annotation[][] getParameterAnnotations();
 
   abstract Type getGenericReturnType();
-
+  
   static class MethodInvokable<T> extends Invokable<T, Object> {
 
-    private final Method method;
+    final Method method;
 
     MethodInvokable(Method method) {
       super(method);
       this.method = method;
     }
 
-    @Override
-    final Object invokeInternal(@Nullable Object receiver, Object[] args)
+    @Override final Object invokeInternal(@Nullable Object receiver, Object[] args)
         throws InvocationTargetException, IllegalAccessException {
       return method.invoke(receiver, args);
     }
 
-    @Override
-    Type getGenericReturnType() {
+    @Override Type getGenericReturnType() {
       return method.getGenericReturnType();
     }
 
-    @Override
-    Type[] getGenericParameterTypes() {
+    @Override Type[] getGenericParameterTypes() {
       return method.getGenericParameterTypes();
     }
 
-    @Override
-    Type[] getGenericExceptionTypes() {
+    @Override Type[] getGenericExceptionTypes() {
       return method.getGenericExceptionTypes();
     }
 
-    @Override
-    final Annotation[][] getParameterAnnotations() {
+    @Override final Annotation[][] getParameterAnnotations() {
       return method.getParameterAnnotations();
     }
 
-    public final TypeVariable<?>[] getTypeParameters() {
+    @Override public final TypeVariable<?>[] getTypeParameters() {
       return method.getTypeParameters();
     }
 
@@ -236,15 +229,14 @@ public abstract class Invokable<T, R> extends Element implements GenericDeclarat
 
   static class ConstructorInvokable<T> extends Invokable<T, T> {
 
-    private final Constructor<?> constructor;
+    final Constructor<?> constructor;
 
     ConstructorInvokable(Constructor<?> constructor) {
       super(constructor);
       this.constructor = constructor;
     }
 
-    @Override
-    final Object invokeInternal(@Nullable Object receiver, Object[] args)
+    @Override final Object invokeInternal(@Nullable Object receiver, Object[] args)
         throws InvocationTargetException, IllegalAccessException {
       try {
         return constructor.newInstance(args);
@@ -253,48 +245,95 @@ public abstract class Invokable<T, R> extends Element implements GenericDeclarat
       }
     }
 
-    @Override
-    Type getGenericReturnType() {
-      return constructor.getDeclaringClass();
+    /** If the class is parameterized, such as ArrayList, this returns ArrayList<E>. */
+    @Override Type getGenericReturnType() {
+      Class<?> declaringClass = getDeclaringClass();
+      TypeVariable<?>[] typeParams = declaringClass.getTypeParameters();
+      if (typeParams.length > 0) {
+        return Types.newParameterizedType(declaringClass, typeParams);
+      } else {
+        return declaringClass;
+      }
     }
 
-    @Override
-    Type[] getGenericParameterTypes() {
+    @Override Type[] getGenericParameterTypes() {
       Type[] types = constructor.getGenericParameterTypes();
-      Class<?> declaringClass = constructor.getDeclaringClass();
-      if (!Modifier.isStatic(declaringClass.getModifiers())
-          && declaringClass.getEnclosingClass() != null) {
-        if (types.length == constructor.getParameterTypes().length) {
+      if (types.length > 0 && mayNeedHiddenThis()) {
+        Class<?>[] rawParamTypes = constructor.getParameterTypes();
+        if (types.length == rawParamTypes.length
+            && rawParamTypes[0] == getDeclaringClass().getEnclosingClass()) {
           // first parameter is the hidden 'this'
-          Type[] result = new Type[types.length - 1];
-          System.arraycopy(types, 1, result, 0, types.length - 1);
-          return result;
+          return copyOfRange(types, 1, types.length);
         }
       }
       return types;
     }
 
-    @Override
-    Type[] getGenericExceptionTypes() {
+    private static Type[] copyOfRange(Type[] array, int start, int end) {
+      int length = end - start;
+      Type[] newArray = new Type[length];
+      System.arraycopy(array, start, newArray, 0, length);
+      return newArray;
+    }
+
+    @Override Type[] getGenericExceptionTypes() {
       return constructor.getGenericExceptionTypes();
     }
 
-    @Override
-    final Annotation[][] getParameterAnnotations() {
+    @Override final Annotation[][] getParameterAnnotations() {
       return constructor.getParameterAnnotations();
     }
 
-    public final TypeVariable<?>[] getTypeParameters() {
-      return constructor.getTypeParameters();
+    /**
+     * {@inheritDoc}
+     *
+     * {@code [<E>]} will be returned for ArrayList's constructor. When both the class and the
+     * constructor have type parameters, the class parameters are prepended before those of the
+     * constructor's. This is an arbitrary rule since no existing language spec mandates one way or
+     * the other. From the declaration syntax, the class type parameter appears first, but the
+     * call syntax may show up in opposite order such as {@code new <A>Foo<B>()}.
+     */
+    @Override public final TypeVariable<?>[] getTypeParameters() {
+      TypeVariable<?>[] declaredByClass = getDeclaringClass().getTypeParameters();
+      TypeVariable<?>[] declaredByConstructor = constructor.getTypeParameters();
+      TypeVariable<?>[] result =
+          new TypeVariable<?>[declaredByClass.length + declaredByConstructor.length];
+      System.arraycopy(declaredByClass, 0, result, 0, declaredByClass.length);
+      System.arraycopy(
+          declaredByConstructor, 0,
+          result, declaredByClass.length,
+          declaredByConstructor.length);
+      return result;
     }
 
-    @Override
-    public final boolean isOverridable() {
+    @Override public final boolean isOverridable() {
       return false;
     }
 
     @Override public final boolean isVarArgs() {
       return constructor.isVarArgs();
+    }
+
+    private boolean mayNeedHiddenThis() {
+      Class<?> declaringClass = constructor.getDeclaringClass();
+      if (declaringClass.getEnclosingConstructor() != null) {
+        // Enclosed in a constructor, needs hidden this
+        return true;
+      }
+      Method enclosingMethod = declaringClass.getEnclosingMethod();
+      if (enclosingMethod != null) {
+        // Enclosed in a method, if it's not static, must need hidden this.
+        return !Modifier.isStatic(enclosingMethod.getModifiers());
+      } else {
+        // Strictly, this doesn't necessarily indicate a hidden 'this' in the case of
+        // static initializer. But there seems no way to tell in that case. :(
+        // This may cause issues when an anonymous class is created inside a static initializer,
+        // and the class's constructor's first parameter happens to be the enclosing class.
+        // In such case, we may mistakenly think that the class is within a non-static context
+        // and the first parameter is the hidden 'this'.
+        return declaringClass.getEnclosingClass() != null
+            && !Modifier.isStatic(declaringClass.getModifiers());
+      }
     }
   }
 }

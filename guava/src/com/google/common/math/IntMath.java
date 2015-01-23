@@ -62,6 +62,18 @@ public final class IntMath {
   public static boolean isPowerOfTwo(int x) {
     return x > 0 & (x & (x - 1)) == 0;
   }
+  
+  /**
+   * Returns 1 if {@code x < y} as unsigned integers, and 0 otherwise. Assumes that x - y fits into
+   * a signed int. The implementation is branch-free, and benchmarks suggest it is measurably (if
+   * narrowly) faster than the straightforward ternary expression.
+   */
+  @VisibleForTesting
+  static int lessThanBranchFree(int x, int y) {
+    // The double negation is optimized away by normal Java, but is necessary for GWT
+    // to make sure bit twiddling works as expected.
+    return ~~(x - y) >>> (Integer.SIZE - 1);
+  }
 
   /**
    * Returns the base-2 logarithm of {@code x}, rounded according to the specified rounding mode.
@@ -92,9 +104,9 @@ public final class IntMath {
         // Since sqrt(2) is irrational, log2(x) - logFloor cannot be exactly 0.5
         int leadingZeros = Integer.numberOfLeadingZeros(x);
         int cmp = MAX_POWER_OF_SQRT2_UNSIGNED >>> leadingZeros;
-        // floor(2^(logFloor + 0.5))
+          // floor(2^(logFloor + 0.5))
         int logFloor = (Integer.SIZE - 1) - leadingZeros;
-        return (x <= cmp) ? logFloor : logFloor + 1;
+        return logFloor + lessThanBranchFree(cmp, x);
 
       default:
         throw new AssertionError();
@@ -102,8 +114,7 @@ public final class IntMath {
   }
 
   /** The biggest half power of two that can fit in an unsigned int. */
-  @VisibleForTesting
-  static final int MAX_POWER_OF_SQRT2_UNSIGNED = 0xB504F333;
+  @VisibleForTesting static final int MAX_POWER_OF_SQRT2_UNSIGNED = 0xB504F333;
 
   /**
    * Returns the base-10 logarithm of {@code x}, rounded according to the specified rounding mode.
@@ -127,12 +138,12 @@ public final class IntMath {
         return logFloor;
       case CEILING:
       case UP:
-        return (x == floorPow) ? logFloor : logFloor + 1;
+        return logFloor + lessThanBranchFree(floorPow, x);
       case HALF_DOWN:
       case HALF_UP:
       case HALF_EVEN:
         // sqrt(10) is irrational, so log10(x) - logFloor is never exactly 0.5
-        return (x <= halfPowersOf10[logFloor]) ? logFloor : logFloor + 1;
+        return logFloor + lessThanBranchFree(halfPowersOf10[logFloor], x);
       default:
         throw new AssertionError();
     }
@@ -147,29 +158,23 @@ public final class IntMath {
      * is 6, then 64 <= x < 128, so floor(log10(x)) is either 1 or 2.
      */
     int y = maxLog10ForLeadingZeros[Integer.numberOfLeadingZeros(x)];
-    // y is the higher of the two possible values of floor(log10(x))
-
-    int sgn = (x - powersOf10[y]) >>> (Integer.SIZE - 1);
     /*
-     * sgn is the sign bit of x - 10^y; it is 1 if x < 10^y, and 0 otherwise. If x < 10^y, then we
-     * want the lower of the two possible values, or y - 1, otherwise, we want y.
+     * y is the higher of the two possible values of floor(log10(x)). If x < 10^y, then we want the
+     * lower of the two possible values, or y - 1, otherwise, we want y.
      */
-    return y - sgn;
+    return y - lessThanBranchFree(x, powersOf10[y]);
   }
 
   // maxLog10ForLeadingZeros[i] == floor(log10(2^(Long.SIZE - i)))
-  @VisibleForTesting
-  static final byte[] maxLog10ForLeadingZeros = { 9, 9, 9, 8, 8, 8, 7, 7, 7, 6, 6, 6, 6, 5, 5, 5,
-      4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0 };
+  @VisibleForTesting static final byte[] maxLog10ForLeadingZeros = {9, 9, 9, 8, 8, 8,
+    7, 7, 7, 6, 6, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0};
 
-  @VisibleForTesting
-  static final int[] powersOf10 = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
-      1000000000 };
+  @VisibleForTesting static final int[] powersOf10 = {1, 10, 100, 1000, 10000,
+    100000, 1000000, 10000000, 100000000, 1000000000};
 
   // halfPowersOf10[i] = largest int less than 10^(i + 0.5)
-  @VisibleForTesting
-  static final int[] halfPowersOf10 = { 3, 31, 316, 3162, 31622, 316227, 3162277, 31622776,
-      316227766, Integer.MAX_VALUE };
+  @VisibleForTesting static final int[] halfPowersOf10 =
+      {3, 31, 316, 3162, 31622, 316227, 3162277, 31622776, 316227766, Integer.MAX_VALUE};
 
   /**
    * Returns {@code b} to the {@code k}th power. Even if the result overflows, it will be equal to
@@ -234,17 +239,23 @@ public final class IntMath {
         return sqrtFloor;
       case CEILING:
       case UP:
-        return (sqrtFloor * sqrtFloor == x) ? sqrtFloor : sqrtFloor + 1;
+        return sqrtFloor + lessThanBranchFree(sqrtFloor * sqrtFloor, x);
       case HALF_DOWN:
       case HALF_UP:
       case HALF_EVEN:
         int halfSquare = sqrtFloor * sqrtFloor + sqrtFloor;
         /*
-         * We wish to test whether or not x <= (sqrtFloor + 0.5)^2 = halfSquare + 0.25.
-         * Since both x and halfSquare are integers, this is equivalent to testing whether or not
-         * x <= halfSquare.  (We have to deal with overflow, though.)
+         * We wish to test whether or not x <= (sqrtFloor + 0.5)^2 = halfSquare + 0.25. Since both
+         * x and halfSquare are integers, this is equivalent to testing whether or not x <=
+         * halfSquare. (We have to deal with overflow, though.)
+         * 
+         * If we treat halfSquare as an unsigned int, we know that
+         *            sqrtFloor^2 <= x < (sqrtFloor + 1)^2
+         * halfSquare - sqrtFloor <= x < halfSquare + sqrtFloor + 1
+         * so |x - halfSquare| <= sqrtFloor.  Therefore, it's safe to treat x - halfSquare as a
+         * signed int, so lessThanBranchFree is safe for use.
          */
-        return (x <= halfSquare | halfSquare < 0) ? sqrtFloor : sqrtFloor + 1;
+        return sqrtFloor + lessThanBranchFree(halfSquare, x);
       default:
         throw new AssertionError();
     }
@@ -321,8 +332,8 @@ public final class IntMath {
   }
 
   /**
-   * Returns {@code x mod m}. This differs from {@code x % m} in that it always returns a
-   * non-negative result.
+   * Returns {@code x mod m}, a non-negative value less than {@code m}.
+   * This differs from {@code x % m}, which might be negative.
    *
    * <p>For example:<pre> {@code
    *
@@ -333,6 +344,8 @@ public final class IntMath {
    * mod(8, 4) == 0}</pre>
    *
    * @throws ArithmeticException if {@code m <= 0}
+   * @see <a href="http://docs.oracle.com/javase/specs/jls/se7/html/jls-15.html#jls-15.17.3">
+   *      Remainder Operator</a>
    */
   public static int mod(int x, int m) {
     if (m <= 0) {
@@ -472,8 +485,7 @@ public final class IntMath {
     }
   }
 
-  @VisibleForTesting
-  static final int FLOOR_SQRT_MAX_INT = 46340;
+  @VisibleForTesting static final int FLOOR_SQRT_MAX_INT = 46340;
 
   /**
    * Returns {@code n!}, that is, the product of the first {@code n} positive
@@ -487,11 +499,20 @@ public final class IntMath {
     return (n < factorials.length) ? factorials[n] : Integer.MAX_VALUE;
   }
 
-  private static final int[] factorials = { 1, 1, 1 * 2, 1 * 2 * 3, 1 * 2 * 3 * 4,
-      1 * 2 * 3 * 4 * 5, 1 * 2 * 3 * 4 * 5 * 6, 1 * 2 * 3 * 4 * 5 * 6 * 7,
-      1 * 2 * 3 * 4 * 5 * 6 * 7 * 8, 1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9,
-      1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * 10, 1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * 10 * 11,
-      1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * 10 * 11 * 12 };
+  private static final int[] factorials = {
+      1,
+      1,
+      1 * 2,
+      1 * 2 * 3,
+      1 * 2 * 3 * 4,
+      1 * 2 * 3 * 4 * 5,
+      1 * 2 * 3 * 4 * 5 * 6,
+      1 * 2 * 3 * 4 * 5 * 6 * 7,
+      1 * 2 * 3 * 4 * 5 * 6 * 7 * 8,
+      1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9,
+      1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * 10,
+      1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * 10 * 11,
+      1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * 10 * 11 * 12};
 
   /**
    * Returns {@code n} choose {@code k}, also known as the binomial coefficient of {@code n} and
@@ -526,9 +547,25 @@ public final class IntMath {
   }
 
   // binomial(biggestBinomials[k], k) fits in an int, but not binomial(biggestBinomials[k]+1,k).
-  @VisibleForTesting
-  static int[] biggestBinomials = { Integer.MAX_VALUE, Integer.MAX_VALUE, 65536, 2345, 477, 193,
-      110, 75, 58, 49, 43, 39, 37, 35, 34, 34, 33 };
+  @VisibleForTesting static int[] biggestBinomials = {
+    Integer.MAX_VALUE,
+    Integer.MAX_VALUE,
+    65536,
+    2345,
+    477,
+    193,
+    110,
+    75,
+    58,
+    49,
+    43,
+    39,
+    37,
+    35,
+    34,
+    34,
+    33
+  };
 
   /**
    * Returns the arithmetic mean of {@code x} and {@code y}, rounded towards

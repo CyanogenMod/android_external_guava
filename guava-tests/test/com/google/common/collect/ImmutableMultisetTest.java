@@ -36,18 +36,16 @@ import com.google.common.testing.EqualsTester;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-import org.truth0.subjects.CollectionSubject;
 
 /**
  * Tests for {@link ImmutableMultiset}.
@@ -454,7 +452,7 @@ public class ImmutableMultisetTest extends TestCase {
   public void testSerialization_multiple() {
     Collection<String> c = ImmutableMultiset.of("a", "b", "a");
     Collection<String> copy = SerializableTester.reserializeAndAssert(c);
-    assertThat(copy).has().allOf("a", "a", "b").inOrder();
+    ASSERT.that(copy).has().exactly("a", "a", "b").inOrder();
   }
 
   @GwtIncompatible("SerializableTester")
@@ -462,7 +460,7 @@ public class ImmutableMultisetTest extends TestCase {
     Multiset<String> c = ImmutableMultiset.of("a", "b", "a");
     Collection<String> copy =
         LenientSerializableTester.reserializeAndAssertLenient(c.elementSet());
-    assertThat(copy).has().allOf("a", "b").inOrder();
+    ASSERT.that(copy).has().exactly("a", "b").inOrder();
   }
 
   @GwtIncompatible("SerializableTester")
@@ -475,13 +473,13 @@ public class ImmutableMultisetTest extends TestCase {
     Collection<String> c = ImmutableMultiset.of("a", "b", "a");
     assertEquals(c, ImmutableMultiset.of("a", "b", "a"));
     assertEquals(c, ImmutableMultiset.of("a", "a", "b"));
-    assertThat(c).isNotEqualTo(ImmutableMultiset.of("a", "b"));
-    assertThat(c).isNotEqualTo(ImmutableMultiset.of("a", "b", "c", "d"));
+    ASSERT.that(c).isNotEqualTo(ImmutableMultiset.of("a", "b"));
+    ASSERT.that(c).isNotEqualTo(ImmutableMultiset.of("a", "b", "c", "d"));
   }
 
   public void testIterationOrder() {
     Collection<String> c = ImmutableMultiset.of("a", "b", "a");
-    assertThat(c).has().allOf("a", "a", "b").inOrder();
+    ASSERT.that(c).has().exactly("a", "a", "b").inOrder();
   }
 
   public void testMultisetWrites() {
@@ -512,11 +510,5 @@ public class ImmutableMultisetTest extends TestCase {
         .addEqualityGroup(ImmutableMultiset.of(1, 1), ImmutableMultiset.of(1, 1))
         .addEqualityGroup(ImmutableMultiset.of(1, 2, 1), ImmutableMultiset.of(2, 1, 1))
         .testEquals();
-  }
-
-  // Hack for JDK5 type inference.
-  private static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> assertThat(
-      Collection<T> collection) {
-    return ASSERT.<T, Collection<T>>that(collection);
   }
 }

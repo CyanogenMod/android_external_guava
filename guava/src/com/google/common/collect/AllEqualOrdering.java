@@ -47,8 +47,8 @@ final class AllEqualOrdering extends Ordering<Object> implements Serializable {
     return ImmutableList.copyOf(iterable);
   }
 
-  @Override
   @SuppressWarnings("unchecked")
+  @Override
   public <S> Ordering<S> reverse() {
     return (Ordering<S>) this;
   }

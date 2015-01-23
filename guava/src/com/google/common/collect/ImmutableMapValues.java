@@ -22,6 +22,8 @@ import com.google.common.annotations.GwtIncompatible;
 import java.io.Serializable;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 /**
  * {@code values()} implementation for {@link ImmutableMap}.
  *
@@ -36,6 +38,7 @@ final class ImmutableMapValues<K, V> extends ImmutableCollection<V> {
     this.map = map;
   }
 
+  @Override
   public int size() {
     return map.size();
   }
@@ -46,8 +49,8 @@ final class ImmutableMapValues<K, V> extends ImmutableCollection<V> {
   }
 
   @Override
-  public boolean contains(Object object) {
-    return map.containsValue(object);
+  public boolean contains(@Nullable Object object) {
+    return object != null && Iterators.contains(iterator(), object);
   }
 
   @Override
@@ -59,7 +62,7 @@ final class ImmutableMapValues<K, V> extends ImmutableCollection<V> {
   ImmutableList<V> createAsList() {
     final ImmutableList<Entry<K, V>> entryList = map.entrySet().asList();
     return new ImmutableAsList<V>() {
-
+      @Override
       public V get(int index) {
         return entryList.get(index).getValue();
       }
@@ -79,15 +82,12 @@ final class ImmutableMapValues<K, V> extends ImmutableCollection<V> {
   @GwtIncompatible("serialization")
   private static class SerializedForm<V> implements Serializable {
     final ImmutableMap<?, V> map;
-
     SerializedForm(ImmutableMap<?, V> map) {
       this.map = map;
     }
-
     Object readResolve() {
       return map.values();
     }
-
     private static final long serialVersionUID = 0;
   }
 }

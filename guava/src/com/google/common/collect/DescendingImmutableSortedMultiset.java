@@ -21,8 +21,7 @@ import javax.annotation.Nullable;
  *
  * @author Louis Wasserman
  */
-@SuppressWarnings("serial")
-// uses writeReplace, not default serialization
+@SuppressWarnings("serial") // uses writeReplace, not default serialization
 final class DescendingImmutableSortedMultiset<E> extends ImmutableSortedMultiset<E> {
   private final transient ImmutableSortedMultiset<E> forward;
 
@@ -30,18 +29,22 @@ final class DescendingImmutableSortedMultiset<E> extends ImmutableSortedMultiset
     this.forward = forward;
   }
 
+  @Override
   public int count(@Nullable Object element) {
     return forward.count(element);
   }
 
+  @Override
   public Entry<E> firstEntry() {
     return forward.lastEntry();
   }
 
+  @Override
   public Entry<E> lastEntry() {
     return forward.firstEntry();
   }
 
+  @Override
   public int size() {
     return forward.size();
   }
@@ -52,24 +55,8 @@ final class DescendingImmutableSortedMultiset<E> extends ImmutableSortedMultiset
   }
 
   @Override
-  ImmutableSet<Entry<E>> createEntrySet() {
-    final ImmutableSet<Entry<E>> forwardEntrySet = forward.entrySet();
-    return new EntrySet() {
-
-      public int size() {
-        return forwardEntrySet.size();
-      }
-
-      @Override
-      public UnmodifiableIterator<Entry<E>> iterator() {
-        return asList().iterator();
-      }
-
-      @Override
-      ImmutableList<Entry<E>> createAsList() {
-        return forwardEntrySet.asList().reverse();
-      }
-    };
+  Entry<E> getEntry(int index) {
+    return forward.entrySet().asList().reverse().get(index);
   }
 
   @Override

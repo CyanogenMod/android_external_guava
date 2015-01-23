@@ -16,8 +16,12 @@
 
 package com.google.common.io;
 
+import static com.google.common.io.SourceSinkFactory.CharSourceFactory;
+
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.SourceSinkFactory.CharSourceFactory;
+import com.google.common.collect.Lists;
+
+import junit.framework.TestSuite;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,8 +30,6 @@ import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
-
-import junit.framework.TestSuite;
 
 /**
  * A generator of {@code TestSuite} instances for testing {@code CharSource} implementations.
@@ -134,6 +136,52 @@ public class CharSourceTester extends SourceSinkTester<CharSource, String, CharS
 
   public void testReadLines_toList() throws IOException {
     assertExpectedLines(source.readLines());
+  }
+
+  public void testIsEmpty() throws IOException {
+    assertEquals(expected.length() == 0, source.isEmpty());
+  }
+
+  public void testReadLines_withProcessor() throws IOException {
+    List<String> list = source.readLines(new LineProcessor<List<String>>() {
+      List<String> list = Lists.newArrayList();
+
+      @Override
+      public boolean processLine(String line) throws IOException {
+        list.add(line);
+        return true;
+      }
+
+      @Override
+      public List<String> getResult() {
+        return list;
+      }
+    });
+
+    assertExpectedLines(list);
+  }
+
+  public void testReadLines_withProcessor_stopsOnFalse() throws IOException {
+    List<String> list = source.readLines(new LineProcessor<List<String>>() {
+      List<String> list = Lists.newArrayList();
+
+      @Override
+      public boolean processLine(String line) throws IOException {
+        list.add(line);
+        return false;
+      }
+
+      @Override
+      public List<String> getResult() {
+        return list;
+      }
+    });
+
+    if (expectedLines.isEmpty()) {
+      assertTrue(list.isEmpty());
+    } else {
+      assertEquals(expectedLines.subList(0, 1), list);
+    }
   }
 
   private void assertExpectedString(String string) {

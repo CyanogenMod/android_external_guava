@@ -21,9 +21,9 @@ import com.google.common.testing.EqualsTester;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
-import java.math.BigInteger;
-
 import junit.framework.TestCase;
+
+import java.math.BigInteger;
 
 /**
  * Tests for {@code UnsignedInteger}.
@@ -200,7 +200,8 @@ public class UnsignedIntegerTest extends TestCase {
   public void testDivideByZeroThrows() {
     for (int a : TEST_INTS) {
       try {
-        UnsignedInteger.fromIntBits(a).divide(UnsignedInteger.ZERO);
+        UnsignedInteger ignored =
+            UnsignedInteger.fromIntBits(a).dividedBy(UnsignedInteger.ZERO);
         fail("Expected ArithmeticException");
       } catch (ArithmeticException expected) {}
     }

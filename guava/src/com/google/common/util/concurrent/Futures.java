@@ -32,13 +32,18 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Queues;
+import com.google.common.collect.Sets;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -85,10 +90,13 @@ public final class Futures {
     return new MappingCheckedFuture<V, X>(checkNotNull(future), mapper);
   }
 
-  private abstract static class ImmediateFuture<V> implements ListenableFuture<V> {
+  private abstract static class ImmediateFuture<V>
+      implements ListenableFuture<V> {
 
-    private static final Logger log = Logger.getLogger(ImmediateFuture.class.getName());
+    private static final Logger log =
+        Logger.getLogger(ImmediateFuture.class.getName());
 
+    @Override
     public void addListener(Runnable listener, Executor executor) {
       checkNotNull(listener, "Runnable was null.");
       checkNotNull(executor, "Executor was null.");
@@ -97,26 +105,31 @@ public final class Futures {
       } catch (RuntimeException e) {
         // ListenableFuture's contract is that it will not throw unchecked
         // exceptions, so log the bad runnable and/or executor and swallow it.
-        log.log(Level.SEVERE, "RuntimeException while executing runnable " + listener
-            + " with executor " + executor, e);
+        log.log(Level.SEVERE, "RuntimeException while executing runnable "
+            + listener + " with executor " + executor, e);
       }
     }
 
+    @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
       return false;
     }
 
+    @Override
     public abstract V get() throws ExecutionException;
 
+    @Override
     public V get(long timeout, TimeUnit unit) throws ExecutionException {
       checkNotNull(unit);
       return get();
     }
 
+    @Override
     public boolean isCancelled() {
       return false;
     }
 
+    @Override
     public boolean isDone() {
       return true;
     }
@@ -124,8 +137,7 @@ public final class Futures {
 
   private static class ImmediateSuccessfulFuture<V> extends ImmediateFuture<V> {
 
-    @Nullable
-    private final V value;
+    @Nullable private final V value;
 
     ImmediateSuccessfulFuture(@Nullable V value) {
       this.value = value;
@@ -137,11 +149,10 @@ public final class Futures {
     }
   }
 
-  private static class ImmediateSuccessfulCheckedFuture<V, X extends Exception> extends
-      ImmediateFuture<V> implements CheckedFuture<V, X> {
+  private static class ImmediateSuccessfulCheckedFuture<V, X extends Exception>
+      extends ImmediateFuture<V> implements CheckedFuture<V, X> {
 
-    @Nullable
-    private final V value;
+    @Nullable private final V value;
 
     ImmediateSuccessfulCheckedFuture(@Nullable V value) {
       this.value = value;
@@ -152,10 +163,12 @@ public final class Futures {
       return value;
     }
 
+    @Override
     public V checkedGet() {
       return value;
     }
 
+    @Override
     public V checkedGet(long timeout, TimeUnit unit) {
       checkNotNull(unit);
       return value;
@@ -191,12 +204,13 @@ public final class Futures {
 
     @Override
     public V get() {
-      throw AbstractFuture.cancellationExceptionWithCause("Task was cancelled.", thrown);
+      throw AbstractFuture.cancellationExceptionWithCause(
+          "Task was cancelled.", thrown);
     }
   }
 
-  private static class ImmediateFailedCheckedFuture<V, X extends Exception> extends
-      ImmediateFuture<V> implements CheckedFuture<V, X> {
+  private static class ImmediateFailedCheckedFuture<V, X extends Exception>
+      extends ImmediateFuture<V> implements CheckedFuture<V, X> {
 
     private final X thrown;
 
@@ -209,10 +223,12 @@ public final class Futures {
       throw new ExecutionException(thrown);
     }
 
+    @Override
     public V checkedGet() throws X {
       throw thrown;
     }
 
+    @Override
     public V checkedGet(long timeout, TimeUnit unit) throws X {
       checkNotNull(unit);
       throw thrown;
@@ -251,7 +267,8 @@ public final class Futures {
    * throw the provided {@code Throwable} wrapped in an {@code
    * ExecutionException}.
    */
-  public static <V> ListenableFuture<V> immediateFailedFuture(Throwable throwable) {
+  public static <V> ListenableFuture<V> immediateFailedFuture(
+      Throwable throwable) {
     checkNotNull(throwable);
     return new ImmediateFailedFuture<V>(throwable);
   }
@@ -306,10 +323,9 @@ public final class Futures {
    *           // exception happens.
    *           return immediateFuture(0);
    *         }
-   *       });
-   * }</pre>
+   *       });}</pre>
    *
-   * The fallback can also choose to propagate the original exception when
+   * <p>The fallback can also choose to propagate the original exception when
    * desired:
    *
    * <pre>   {@code
@@ -325,10 +341,9 @@ public final class Futures {
    *           }
    *           return immediateFailedFuture(t);
    *         }
-   *       });
-   * }</pre>
+   *       });}</pre>
    *
-   * Note: If the derived {@code Future} is slow or heavyweight to create
+   * <p>Note: If the derived {@code Future} is slow or heavyweight to create
    * (whether the {@code Future} itself is slow or heavyweight to complete is
    * irrelevant), consider {@linkplain #withFallback(ListenableFuture,
    * FutureFallback, Executor) supplying an executor}. If you do not supply an
@@ -346,10 +361,10 @@ public final class Futures {
    * an RPC network thread.
    * </ul>
    *
-   * Also note that, regardless of which thread executes {@code
-   * fallback.create}, all other registered but unexecuted listeners are
-   * prevented from running during its execution, even if those listeners are
-   * to run in other executors.
+   * <p>Also note that, regardless of which thread executes the {@code
+   * sameThreadExecutor} {@code fallback.create}, all other registered but
+   * unexecuted listeners are prevented from running during its execution, even
+   * if those listeners are to run in other executors.
    *
    * @param input the primary input {@code Future}
    * @param fallback the {@link FutureFallback} implementation to be called if
@@ -386,10 +401,9 @@ public final class Futures {
    *           // exception happens.
    *           return immediateFuture(0);
    *         }
-   *       }, sameThreadExecutor());
-   * }</pre>
+   *       }, sameThreadExecutor());}</pre>
    *
-   * The fallback can also choose to propagate the original exception when
+   * <p>The fallback can also choose to propagate the original exception when
    * desired:
    *
    * <pre>   {@code
@@ -405,10 +419,9 @@ public final class Futures {
    *           }
    *           return immediateFailedFuture(t);
    *         }
-   *       }, sameThreadExecutor());
-   * }</pre>
+   *       }, sameThreadExecutor());}</pre>
    *
-   * When the execution of {@code fallback.create} is fast and lightweight
+   * <p>When the execution of {@code fallback.create} is fast and lightweight
    * (though the {@code Future} it returns need not meet these criteria),
    * consider {@linkplain #withFallback(ListenableFuture, FutureFallback)
    * omitting the executor} or explicitly specifying {@code
@@ -437,15 +450,17 @@ public final class Futures {
 
     private volatile ListenableFuture<? extends V> running;
 
-    FallbackFuture(ListenableFuture<? extends V> input, final FutureFallback<? extends V> fallback,
+    FallbackFuture(ListenableFuture<? extends V> input,
+        final FutureFallback<? extends V> fallback,
         final Executor executor) {
       running = input;
       addCallback(running, new FutureCallback<V>() {
-
+        @Override
         public void onSuccess(V value) {
           set(value);
         }
 
+        @Override
         public void onFailure(Throwable t) {
           if (isCancelled()) {
             return;
@@ -457,11 +472,12 @@ public final class Futures {
               return;
             }
             addCallback(running, new FutureCallback<V>() {
-
+              @Override
               public void onSuccess(V value) {
                 set(value);
               }
 
+              @Override
               public void onFailure(Throwable t) {
                 if (running.isCancelled()) {
                   cancel(false);
@@ -470,10 +486,8 @@ public final class Futures {
                 }
               }
             }, sameThreadExecutor());
-          } catch (Exception e) {
+          } catch (Throwable e) {
             setException(e);
-          } catch (Error e) {
-            setException(e); // note: rethrows
           }
         }
       }, executor);
@@ -505,10 +519,9 @@ public final class Futures {
    *         }
    *       };
    *   ListenableFuture<QueryResult> queryFuture =
-   *       transform(rowKeyFuture, queryFunction);
-   * }</pre>
+   *       transform(rowKeyFuture, queryFunction);}</pre>
    *
-   * Note: If the derived {@code Future} is slow or heavyweight to create
+   * <p>Note: If the derived {@code Future} is slow or heavyweight to create
    * (whether the {@code Future} itself is slow or heavyweight to complete is
    * irrelevant), consider {@linkplain #transform(ListenableFuture,
    * AsyncFunction, Executor) supplying an executor}. If you do not supply an
@@ -526,10 +539,10 @@ public final class Futures {
    * RPC network thread.
    * </ul>
    *
-   * Also note that, regardless of which thread executes {@code
-   * function.apply}, all other registered but unexecuted listeners are
-   * prevented from running during its execution, even if those listeners are
-   * to run in other executors.
+   * <p>Also note that, regardless of which thread executes the {@code
+   * sameThreadExecutor} {@code function.apply}, all other registered but
+   * unexecuted listeners are prevented from running during its execution, even
+   * if those listeners are to run in other executors.
    *
    * <p>The returned {@code Future} attempts to keep its cancellation state in
    * sync with that of the input future and that of the future returned by the
@@ -566,8 +579,7 @@ public final class Futures {
    *         }
    *       };
    *   ListenableFuture<QueryResult> queryFuture =
-   *       transform(rowKeyFuture, queryFunction, executor);
-   * }</pre>
+   *       transform(rowKeyFuture, queryFunction, executor);}</pre>
    *
    * <p>The returned {@code Future} attempts to keep its cancellation state in
    * sync with that of the input future and that of the future returned by the
@@ -591,8 +603,10 @@ public final class Futures {
    * @since 11.0
    */
   public static <I, O> ListenableFuture<O> transform(ListenableFuture<I> input,
-      AsyncFunction<? super I, ? extends O> function, Executor executor) {
-    ChainingListenableFuture<I, O> output = new ChainingListenableFuture<I, O>(function, input);
+      AsyncFunction<? super I, ? extends O> function,
+      Executor executor) {
+    ChainingListenableFuture<I, O> output =
+        new ChainingListenableFuture<I, O>(function, input);
     input.addListener(output, executor);
     return output;
   }
@@ -611,10 +625,9 @@ public final class Futures {
    *         }
    *       };
    *   ListenableFuture<List<Row>> rowsFuture =
-   *       transform(queryFuture, rowsFunction);
-   * }</pre>
+   *       transform(queryFuture, rowsFunction);}</pre>
    *
-   * Note: If the transformation is slow or heavyweight, consider {@linkplain
+   * <p>Note: If the transformation is slow or heavyweight, consider {@linkplain
    * #transform(ListenableFuture, Function, Executor) supplying an executor}.
    * If you do not supply an executor, {@code transform} will use {@link
    * MoreExecutors#sameThreadExecutor sameThreadExecutor}, which carries some
@@ -630,10 +643,10 @@ public final class Futures {
    * RPC network thread.
    * </ul>
    *
-   * Also note that, regardless of which thread executes {@code
-   * function.apply}, all other registered but unexecuted listeners are
-   * prevented from running during its execution, even if those listeners are
-   * to run in other executors.
+   * <p>Also note that, regardless of which thread executes the {@code
+   * sameThreadExecutor} {@code function.apply}, all other registered but
+   * unexecuted listeners are prevented from running during its execution, even
+   * if those listeners are to run in other executors.
    *
    * <p>The returned {@code Future} attempts to keep its cancellation state in
    * sync with that of the input future. That is, if the returned {@code Future}
@@ -670,8 +683,7 @@ public final class Futures {
    *         }
    *       };
    *   ListenableFuture<List<Row>> rowsFuture =
-   *       transform(queryFuture, rowsFunction, executor);
-   * }</pre>
+   *       transform(queryFuture, rowsFunction, executor);}</pre>
    *
    * <p>The returned {@code Future} attempts to keep its cancellation state in
    * sync with that of the input future. That is, if the returned {@code Future}
@@ -697,12 +709,13 @@ public final class Futures {
   public static <I, O> ListenableFuture<O> transform(ListenableFuture<I> input,
       final Function<? super I, ? extends O> function, Executor executor) {
     checkNotNull(function);
-    AsyncFunction<I, O> wrapperFunction = new AsyncFunction<I, O>() {
-      public ListenableFuture<O> apply(I input) {
-        O output = function.apply(input);
-        return immediateFuture(output);
-      }
-    };
+    AsyncFunction<I, O> wrapperFunction
+        = new AsyncFunction<I, O>() {
+            @Override public ListenableFuture<O> apply(I input) {
+              O output = function.apply(input);
+              return immediateFuture(output);
+            }
+        };
     return transform(input, wrapperFunction, executor);
   }
 
@@ -729,31 +742,35 @@ public final class Futures {
    * @return A future that returns the result of the transformation.
    * @since 10.0
    */
-  @Beta
   public static <I, O> Future<O> lazyTransform(final Future<I> input,
       final Function<? super I, ? extends O> function) {
     checkNotNull(input);
     checkNotNull(function);
     return new Future<O>() {
 
+      @Override
       public boolean cancel(boolean mayInterruptIfRunning) {
         return input.cancel(mayInterruptIfRunning);
       }
 
+      @Override
       public boolean isCancelled() {
         return input.isCancelled();
       }
 
+      @Override
       public boolean isDone() {
         return input.isDone();
       }
 
+      @Override
       public O get() throws InterruptedException, ExecutionException {
         return applyTransformation(input.get());
       }
 
-      public O get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException,
-          TimeoutException {
+      @Override
+      public O get(long timeout, TimeUnit unit)
+          throws InterruptedException, ExecutionException, TimeoutException {
         return applyTransformation(input.get(timeout, unit));
       }
 
@@ -773,18 +790,30 @@ public final class Futures {
    * Once the passed-in {@code ListenableFuture} is complete, it calls the
    * passed-in {@code Function} to generate the result.
    *
-   * <p>If the function throws any checked exceptions, they should be wrapped
-   * in a {@code UndeclaredThrowableException} so that this class can get
-   * access to the cause.
+   * <p>For historical reasons, this class has a special case in its exception
+   * handling: If the given {@code AsyncFunction} throws an {@code
+   * UndeclaredThrowableException}, {@code ChainingListenableFuture} unwraps it
+   * and uses its <i>cause</i> as the output future's exception, rather than
+   * using the {@code UndeclaredThrowableException} itself as it would for other
+   * exception types. The reason for this is that {@code Futures.transform} used
+   * to require a {@code Function}, whose {@code apply} method is not allowed to
+   * throw checked exceptions. Nowadays, {@code Futures.transform} has an
+   * overload that accepts an {@code AsyncFunction}, whose {@code apply} method
+   * <i>is</i> allowed to throw checked exception. Users who wish to throw
+   * checked exceptions should use that overload instead, and <a
+   * href="http://code.google.com/p/guava-libraries/issues/detail?id=1548">we
+   * should remove the {@code UndeclaredThrowableException} special case</a>.
    */
-  private static class ChainingListenableFuture<I, O> extends AbstractFuture<O> implements Runnable {
+  private static class ChainingListenableFuture<I, O>
+      extends AbstractFuture<O> implements Runnable {
 
     private AsyncFunction<? super I, ? extends O> function;
     private ListenableFuture<? extends I> inputFuture;
     private volatile ListenableFuture<? extends O> outputFuture;
     private final CountDownLatch outputCreated = new CountDownLatch(1);
 
-    private ChainingListenableFuture(AsyncFunction<? super I, ? extends O> function,
+    private ChainingListenableFuture(
+        AsyncFunction<? super I, ? extends O> function,
         ListenableFuture<? extends I> inputFuture) {
       this.function = checkNotNull(function);
       this.inputFuture = checkNotNull(inputFuture);
@@ -806,12 +835,14 @@ public final class Futures {
       return false;
     }
 
-    private void cancel(@Nullable Future<?> future, boolean mayInterruptIfRunning) {
+    private void cancel(@Nullable Future<?> future,
+        boolean mayInterruptIfRunning) {
       if (future != null) {
         future.cancel(mayInterruptIfRunning);
       }
     }
 
+    @Override
     public void run() {
       try {
         I sourceResult;
@@ -829,46 +860,41 @@ public final class Futures {
           return;
         }
 
-        final ListenableFuture<? extends O> outputFuture = this.outputFuture = function
-            .apply(sourceResult);
+        final ListenableFuture<? extends O> outputFuture = this.outputFuture =
+            Preconditions.checkNotNull(function.apply(sourceResult),
+                "AsyncFunction may not return null.");
         if (isCancelled()) {
           outputFuture.cancel(wasInterrupted());
           this.outputFuture = null;
           return;
         }
         outputFuture.addListener(new Runnable() {
-
-          public void run() {
-            try {
-              // Here it would have been nice to have had an
-              // UninterruptibleListenableFuture, but we don't want to start a
-              // combinatorial explosion of interfaces, so we have to make do.
-              set(getUninterruptibly(outputFuture));
-            } catch (CancellationException e) {
-              // Cancel this future and return.
-              // At this point, inputFuture and outputFuture are done, so the
-              // value of mayInterruptIfRunning is irrelevant.
-              cancel(false);
-              return;
-            } catch (ExecutionException e) {
-              // Set the cause of the exception as this future's exception
-              setException(e.getCause());
-            } finally {
-              // Don't pin inputs beyond completion
-              ChainingListenableFuture.this.outputFuture = null;
+            @Override
+            public void run() {
+              try {
+                set(getUninterruptibly(outputFuture));
+              } catch (CancellationException e) {
+                // Cancel this future and return.
+                // At this point, inputFuture and outputFuture are done, so the
+                // value of mayInterruptIfRunning is irrelevant.
+                cancel(false);
+                return;
+              } catch (ExecutionException e) {
+                // Set the cause of the exception as this future's exception
+                setException(e.getCause());
+              } finally {
+                // Don't pin inputs beyond completion
+                ChainingListenableFuture.this.outputFuture = null;
+              }
             }
-          }
-        }, MoreExecutors.sameThreadExecutor());
+          }, MoreExecutors.sameThreadExecutor());
       } catch (UndeclaredThrowableException e) {
         // Set the cause of the exception as this future's exception
         setException(e.getCause());
-      } catch (Exception e) {
+      } catch (Throwable t) {
         // This exception is irrelevant in this thread, but useful for the
         // client
-        setException(e);
-      } catch (Error e) {
-        // Propagate errors up ASAP - our superclass will rethrow the error
-        setException(e);
+        setException(t);
       } finally {
         // Don't pin inputs beyond completion
         function = null;
@@ -886,22 +912,21 @@ public final class Futures {
    *
    * <pre>   {@code
    *   SettableFuture<ListenableFuture<String>> nested = SettableFuture.create();
-   *   ListenableFuture<String> dereferenced = dereference(nested);
-   * }</pre>
+   *   ListenableFuture<String> dereferenced = dereference(nested);}</pre>
    *
    * <p>This call has the same cancellation and execution semantics as {@link
    * #transform(ListenableFuture, AsyncFunction)}, in that the returned {@code
    * Future} attempts to keep its cancellation state in sync with both the
    * input {@code Future} and the nested {@code Future}.  The transformation
-   * is very lightweight and therefore takes place in the thread that called
-   * {@code dereference}.
+   * is very lightweight and therefore takes place in the same thread (either
+   * the thread that called {@code dereference}, or the thread in which the
+   * dereferenced future completes).
    *
    * @param nested The nested future to transform.
    * @return A future that holds result of the inner future.
    * @since 13.0
    */
-  @Beta
-  @SuppressWarnings({ "rawtypes", "unchecked" })
+  @SuppressWarnings({"rawtypes", "unchecked"})
   public static <V> ListenableFuture<V> dereference(
       ListenableFuture<? extends ListenableFuture<? extends V>> nested) {
     return Futures.transform((ListenableFuture) nested, (AsyncFunction) DEREFERENCER);
@@ -910,11 +935,12 @@ public final class Futures {
   /**
    * Helper {@code Function} for {@link #dereference}.
    */
-  private static final AsyncFunction<ListenableFuture<Object>, Object> DEREFERENCER = new AsyncFunction<ListenableFuture<Object>, Object>() {
-    public ListenableFuture<Object> apply(ListenableFuture<Object> input) {
-      return input;
-    }
-  };
+  private static final AsyncFunction<ListenableFuture<Object>, Object> DEREFERENCER =
+      new AsyncFunction<ListenableFuture<Object>, Object>() {
+        @Override public ListenableFuture<Object> apply(ListenableFuture<Object> input) {
+          return input;
+        }
+      };
 
   /**
    * Creates a new {@code ListenableFuture} whose value is a list containing the
@@ -933,8 +959,10 @@ public final class Futures {
    * @since 10.0
    */
   @Beta
-  public static <V> ListenableFuture<List<V>> allAsList(ListenableFuture<? extends V>... futures) {
-    return listFuture(ImmutableList.copyOf(futures), true, MoreExecutors.sameThreadExecutor());
+  public static <V> ListenableFuture<List<V>> allAsList(
+      ListenableFuture<? extends V>... futures) {
+    return listFuture(ImmutableList.copyOf(futures), true,
+        MoreExecutors.sameThreadExecutor());
   }
 
   /**
@@ -956,7 +984,46 @@ public final class Futures {
   @Beta
   public static <V> ListenableFuture<List<V>> allAsList(
       Iterable<? extends ListenableFuture<? extends V>> futures) {
-    return listFuture(ImmutableList.copyOf(futures), true, MoreExecutors.sameThreadExecutor());
+    return listFuture(ImmutableList.copyOf(futures), true,
+        MoreExecutors.sameThreadExecutor());
+  }
+
+  /**
+   * Creates a new {@code ListenableFuture} whose result is set from the
+   * supplied future when it completes.  Cancelling the supplied future
+   * will also cancel the returned future, but cancelling the returned
+   * future will have no effect on the supplied future.
+   *
+   * @since 15.0
+   */
+  public static <V> ListenableFuture<V> nonCancellationPropagating(
+      ListenableFuture<V> future) {
+    return new NonCancellationPropagatingFuture<V>(future);
+  }
+
+  /**
+   * A wrapped future that does not propagate cancellation to its delegate.
+   */
+  private static class NonCancellationPropagatingFuture<V>
+      extends AbstractFuture<V> {
+    NonCancellationPropagatingFuture(final ListenableFuture<V> delegate) {
+      checkNotNull(delegate);
+      addCallback(delegate, new FutureCallback<V>() {
+        @Override
+        public void onSuccess(V result) {
+          set(result);
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          if (delegate.isCancelled()) {
+            cancel(false);
+          } else {
+            setException(t);
+          }
+        }
+      }, sameThreadExecutor());
+    }
   }
 
   /**
@@ -977,7 +1044,8 @@ public final class Futures {
   @Beta
   public static <V> ListenableFuture<List<V>> successfulAsList(
       ListenableFuture<? extends V>... futures) {
-    return listFuture(ImmutableList.copyOf(futures), false, MoreExecutors.sameThreadExecutor());
+    return listFuture(ImmutableList.copyOf(futures), false,
+        MoreExecutors.sameThreadExecutor());
   }
 
   /**
@@ -998,7 +1066,54 @@ public final class Futures {
   @Beta
   public static <V> ListenableFuture<List<V>> successfulAsList(
       Iterable<? extends ListenableFuture<? extends V>> futures) {
-    return listFuture(ImmutableList.copyOf(futures), false, MoreExecutors.sameThreadExecutor());
+    return listFuture(ImmutableList.copyOf(futures), false,
+        MoreExecutors.sameThreadExecutor());
+  }
+
+  /**
+   * Returns a list of delegate futures that correspond to the futures received in the order
+   * that they complete. Delegate futures return the same value or throw the same exception
+   * as the corresponding input future returns/throws.
+   *
+   * <p>Cancelling a delegate future has no effect on any input future, since the delegate future
+   * does not correspond to a specific input future until the appropriate number of input
+   * futures have completed. At that point, it is too late to cancel the input future.
+   * The input future's result, which cannot be stored into the cancelled delegate future,
+   * is ignored.
+   *
+   * @since 17.0
+   */
+  @Beta
+  public static <T> ImmutableList<ListenableFuture<T>> inCompletionOrder(
+      Iterable<? extends ListenableFuture<? extends T>> futures) {
+    // A CLQ may be overkill here.  We could save some pointers/memory by synchronizing on an
+    // ArrayDeque
+    final ConcurrentLinkedQueue<AsyncSettableFuture<T>> delegates =
+        Queues.newConcurrentLinkedQueue();
+    ImmutableList.Builder<ListenableFuture<T>> listBuilder = ImmutableList.builder();
+    // Using SerializingExecutor here will ensure that each CompletionOrderListener executes
+    // atomically and therefore that each returned future is guaranteed to be in completion order.
+    // N.B. there are some cases where the use of this executor could have possibly surprising
+    // effects when input futures finish at approximately the same time _and_ the output futures
+    // have sameThreadExecutor listeners. In this situation, the listeners may end up running on a
+    // different thread than if they were attached to the corresponding input future.  We believe
+    // this to be a negligible cost since:
+    // 1. Using the sameThreadExecutor implies that your callback is safe to run on any thread.
+    // 2. This would likely only be noticeable if you were doing something expensive or blocking on
+    //    a sameThreadExecutor listener on one of the output futures which is an antipattern anyway.
+    SerializingExecutor executor = new SerializingExecutor(MoreExecutors.sameThreadExecutor());
+    for (final ListenableFuture<? extends T> future : futures) {
+      AsyncSettableFuture<T> delegate = AsyncSettableFuture.create();
+      // Must make sure to add the delegate to the queue first in case the future is already done
+      delegates.add(delegate);
+      future.addListener(new Runnable() {
+        @Override public void run() {
+          delegates.remove().setFuture(future);
+        }
+      }, executor);
+      listBuilder.add(delegate);
+    }
+    return listBuilder.build();
   }
 
   /**
@@ -1022,7 +1137,7 @@ public final class Futures {
    *       }
    *     });}</pre>
    *
-   * Note: If the callback is slow or heavyweight, consider {@linkplain
+   * <p>Note: If the callback is slow or heavyweight, consider {@linkplain
    * #addCallback(ListenableFuture, FutureCallback, Executor) supplying an
    * executor}. If you do not supply an executor, {@code addCallback} will use
    * {@link MoreExecutors#sameThreadExecutor sameThreadExecutor}, which carries
@@ -1038,10 +1153,10 @@ public final class Futures {
    * network thread.
    * </ul>
    *
-   * Also note that, regardless of which thread executes the callback, all
-   * other registered but unexecuted listeners are prevented from running
-   * during its execution, even if those listeners are to run in other
-   * executors.
+   * <p>Also note that, regardless of which thread executes the {@code
+   * sameThreadExecutor} callback, all other registered but unexecuted listeners
+   * are prevented from running during its execution, even if those listeners
+   * are to run in other executors.
    *
    * <p>For a more general interface to attach a completion listener to a
    * {@code Future}, see {@link ListenableFuture#addListener addListener}.
@@ -1050,7 +1165,8 @@ public final class Futures {
    * @param callback The callback to invoke when {@code future} is completed.
    * @since 10.0
    */
-  public static <V> void addCallback(ListenableFuture<V> future, FutureCallback<? super V> callback) {
+  public static <V> void addCallback(ListenableFuture<V> future,
+      FutureCallback<? super V> callback) {
     addCallback(future, callback, MoreExecutors.sameThreadExecutor());
   }
 
@@ -1067,7 +1183,7 @@ public final class Futures {
    * Example: <pre> {@code
    * ListenableFuture<QueryResult> future = ...;
    * Executor e = ...
-   * addCallback(future, e,
+   * addCallback(future,
    *     new FutureCallback<QueryResult> {
    *       public void onSuccess(QueryResult result) {
    *         storeInCache(result);
@@ -1075,9 +1191,9 @@ public final class Futures {
    *       public void onFailure(Throwable t) {
    *         reportError(t);
    *       }
-   *     });}</pre>
+   *     }, e);}</pre>
    *
-   * When the callback is fast and lightweight, consider {@linkplain
+   * <p>When the callback is fast and lightweight, consider {@linkplain
    * #addCallback(ListenableFuture, FutureCallback) omitting the executor} or
    * explicitly specifying {@code sameThreadExecutor}. However, be aware of the
    * caveats documented in the link above.
@@ -1095,7 +1211,7 @@ public final class Futures {
       final FutureCallback<? super V> callback, Executor executor) {
     Preconditions.checkNotNull(callback);
     Runnable callbackListener = new Runnable() {
-
+      @Override
       public void run() {
         final V value;
         try {
@@ -1139,7 +1255,7 @@ public final class Futures {
    *     discouraged from throwing such exceptions).
    * </ul>
    *
-   * The overall principle is to continue to treat every checked exception as a
+   * <p>The overall principle is to continue to treat every checked exception as a
    * checked exception, every unchecked exception as an unchecked exception, and
    * every error as an error. In addition, the cause of any {@code
    * ExecutionException} is wrapped in order to ensure that the new stack trace
@@ -1165,11 +1281,12 @@ public final class Futures {
    *         RuntimeException} or does not have a suitable constructor
    * @since 10.0
    */
-  @Beta
-  public static <V, X extends Exception> V get(Future<V> future, Class<X> exceptionClass) throws X {
+  public static <V, X extends Exception> V get(
+      Future<V> future, Class<X> exceptionClass) throws X {
     checkNotNull(future);
     checkArgument(!RuntimeException.class.isAssignableFrom(exceptionClass),
-        "Futures.get exception type (%s) must not be a RuntimeException", exceptionClass);
+        "Futures.get exception type (%s) must not be a RuntimeException",
+        exceptionClass);
     try {
       return future.get();
     } catch (InterruptedException e) {
@@ -1203,7 +1320,7 @@ public final class Futures {
    *     discouraged from throwing such exceptions).
    * </ul>
    *
-   * The overall principle is to continue to treat every checked exception as a
+   * <p>The overall principle is to continue to treat every checked exception as a
    * checked exception, every unchecked exception as an unchecked exception, and
    * every error as an error. In addition, the cause of any {@code
    * ExecutionException} is wrapped in order to ensure that the new stack trace
@@ -1229,13 +1346,14 @@ public final class Futures {
    *         RuntimeException} or does not have a suitable constructor
    * @since 10.0
    */
-  @Beta
-  public static <V, X extends Exception> V get(Future<V> future, long timeout, TimeUnit unit,
-      Class<X> exceptionClass) throws X {
+  public static <V, X extends Exception> V get(
+      Future<V> future, long timeout, TimeUnit unit, Class<X> exceptionClass)
+      throws X {
     checkNotNull(future);
     checkNotNull(unit);
     checkArgument(!RuntimeException.class.isAssignableFrom(exceptionClass),
-        "Futures.get exception type (%s) must not be a RuntimeException", exceptionClass);
+        "Futures.get exception type (%s) must not be a RuntimeException",
+        exceptionClass);
     try {
       return future.get(timeout, unit);
     } catch (InterruptedException e) {
@@ -1249,8 +1367,8 @@ public final class Futures {
     }
   }
 
-  private static <X extends Exception> void wrapAndThrowExceptionOrError(Throwable cause,
-      Class<X> exceptionClass) throws X {
+  private static <X extends Exception> void wrapAndThrowExceptionOrError(
+      Throwable cause, Class<X> exceptionClass) throws X {
     if (cause instanceof Error) {
       throw new ExecutionError((Error) cause);
     }
@@ -1280,7 +1398,7 @@ public final class Futures {
    *     discouraged from throwing such exceptions).
    * </ul>
    *
-   * The overall principle is to eliminate all checked exceptions: to loop to
+   * <p>The overall principle is to eliminate all checked exceptions: to loop to
    * avoid {@code InterruptedException}, to pass through {@code
    * CancellationException}, and to wrap any exception from the underlying
    * computation in an {@code UncheckedExecutionException} or {@code
@@ -1297,7 +1415,6 @@ public final class Futures {
    *         CancellationException}
    * @since 10.0
    */
-  @Beta
   public static <V> V getUnchecked(Future<V> future) {
     checkNotNull(future);
     try {
@@ -1337,13 +1454,14 @@ public final class Futures {
    * If you think you would use this method, let us know.
    */
 
-  private static <X extends Exception> X newWithCause(Class<X> exceptionClass, Throwable cause) {
+  private static <X extends Exception> X newWithCause(
+      Class<X> exceptionClass, Throwable cause) {
     // getConstructors() guarantees this as long as we don't modify the array.
     @SuppressWarnings("unchecked")
-    List<Constructor<X>> constructors = (List) Arrays.asList(exceptionClass.getConstructors());
+    List<Constructor<X>> constructors =
+        (List) Arrays.asList(exceptionClass.getConstructors());
     for (Constructor<X> constructor : preferringStrings(constructors)) {
-      @Nullable
-      X instance = newFromConstructor(constructor, cause);
+      @Nullable X instance = newFromConstructor(constructor, cause);
       if (instance != null) {
         if (instance.getCause() == null) {
           instance.initCause(cause);
@@ -1351,24 +1469,25 @@ public final class Futures {
         return instance;
       }
     }
-    throw new IllegalArgumentException("No appropriate constructor for exception of type "
-        + exceptionClass + " in response to chained exception", cause);
+    throw new IllegalArgumentException(
+        "No appropriate constructor for exception of type " + exceptionClass
+            + " in response to chained exception", cause);
   }
 
-  private static <X extends Exception> List<Constructor<X>> preferringStrings(
-      List<Constructor<X>> constructors) {
+  private static <X extends Exception> List<Constructor<X>>
+      preferringStrings(List<Constructor<X>> constructors) {
     return WITH_STRING_PARAM_FIRST.sortedCopy(constructors);
   }
 
-  private static final Ordering<Constructor<?>> WITH_STRING_PARAM_FIRST = Ordering.natural()
-      .onResultOf(new Function<Constructor<?>, Boolean>() {
-        public Boolean apply(Constructor<?> input) {
+  private static final Ordering<Constructor<?>> WITH_STRING_PARAM_FIRST =
+      Ordering.natural().onResultOf(new Function<Constructor<?>, Boolean>() {
+        @Override public Boolean apply(Constructor<?> input) {
           return asList(input.getParameterTypes()).contains(String.class);
         }
       }).reverse();
 
-  @Nullable
-  private static <X> X newFromConstructor(Constructor<X> constructor, Throwable cause) {
+  @Nullable private static <X> X newFromConstructor(
+      Constructor<X> constructor, Throwable cause) {
     Class<?>[] paramTypes = constructor.getParameterTypes();
     Object[] params = new Object[paramTypes.length];
     for (int i = 0; i < paramTypes.length; i++) {
@@ -1399,14 +1518,21 @@ public final class Futures {
   }
 
   private static class CombinedFuture<V, C> extends AbstractFuture<C> {
+    private static final Logger logger =
+        Logger.getLogger(CombinedFuture.class.getName());
+
     ImmutableCollection<? extends ListenableFuture<? extends V>> futures;
     final boolean allMustSucceed;
     final AtomicInteger remaining;
     FutureCombiner<V, C> combiner;
     List<Optional<V>> values;
+    final Object seenExceptionsLock = new Object();
+    Set<Throwable> seenExceptions;
 
-    CombinedFuture(ImmutableCollection<? extends ListenableFuture<? extends V>> futures,
-        boolean allMustSucceed, Executor listenerExecutor, FutureCombiner<V, C> combiner) {
+    CombinedFuture(
+        ImmutableCollection<? extends ListenableFuture<? extends V>> futures,
+        boolean allMustSucceed, Executor listenerExecutor,
+        FutureCombiner<V, C> combiner) {
       this.futures = futures;
       this.allMustSucceed = allMustSucceed;
       this.remaining = new AtomicInteger(futures.size());
@@ -1421,7 +1547,7 @@ public final class Futures {
     protected void init(final Executor listenerExecutor) {
       // First, schedule cleanup to execute when the Future is done.
       addListener(new Runnable() {
-
+        @Override
         public void run() {
           // Cancel all the component futures.
           if (CombinedFuture.this.isCancelled()) {
@@ -1430,11 +1556,11 @@ public final class Futures {
             }
           }
 
-          // By now the values array has either been set as the Future's value,
-          // or (in case of failure) is no longer useful.
+          // Let go of the memory held by other futures
           CombinedFuture.this.futures = null;
 
-          // Let go of the memory held by other futures
+          // By now the values array has either been set as the Future's value,
+          // or (in case of failure) is no longer useful.
           CombinedFuture.this.values = null;
 
           // The combiner may also hold state, so free that as well
@@ -1446,7 +1572,7 @@ public final class Futures {
 
       // Corner case: List is empty.
       if (futures.isEmpty()) {
-        set(combiner.combine(ImmutableList.<Optional<V>> of()));
+        set(combiner.combine(ImmutableList.<Optional<V>>of()));
         return;
       }
 
@@ -1467,7 +1593,7 @@ public final class Futures {
       for (final ListenableFuture<? extends V> listenable : futures) {
         final int index = i++;
         listenable.addListener(new Runnable() {
-
+          @Override
           public void run() {
             setOneValue(index, listenable);
           }
@@ -1476,50 +1602,77 @@ public final class Futures {
     }
 
     /**
+     * Fails this future with the given Throwable if {@link #allMustSucceed} is
+     * true. Also, logs the throwable if it is an {@link Error} or if
+     * {@link #allMustSucceed} is {@code true}, the throwable did not cause
+     * this future to fail, and it is the first time we've seen that particular Throwable.
+     */
+    private void setExceptionAndMaybeLog(Throwable throwable) {
+      boolean visibleFromOutputFuture = false;
+      boolean firstTimeSeeingThisException = true;
+      if (allMustSucceed) {
+        // As soon as the first one fails, throw the exception up.
+        // The result of all other inputs is then ignored.
+        visibleFromOutputFuture = super.setException(throwable);
+
+        synchronized (seenExceptionsLock) {
+          if (seenExceptions == null) {
+            seenExceptions = Sets.newHashSet();
+          }
+          firstTimeSeeingThisException = seenExceptions.add(throwable);
+        }
+      }
+
+      if (throwable instanceof Error
+          || (allMustSucceed && !visibleFromOutputFuture && firstTimeSeeingThisException)) {
+        logger.log(Level.SEVERE, "input future failed.", throwable);
+      }
+    }
+
+    /**
      * Sets the value at the given index to that of the given future.
      */
     private void setOneValue(int index, Future<? extends V> future) {
       List<Optional<V>> localValues = values;
+      // TODO(user): This check appears to be redundant since values is
+      // assigned null only after the future completes.  However, values
+      // is not volatile so it may be possible for us to observe the changes
+      // to these two values in a different order... which I think is why
+      // we need to check both.  Clear up this craziness either by making
+      // values volatile or proving that it doesn't need to be for some other
+      // reason.
       if (isDone() || localValues == null) {
         // Some other future failed or has been cancelled, causing this one to
         // also be cancelled or have an exception set. This should only happen
-        // if allMustSucceed is true or if the output itself has been cancelled.
+        // if allMustSucceed is true or if the output itself has been
+        // cancelled.
         checkState(allMustSucceed || isCancelled(),
             "Future was done before all dependencies completed");
-        return;
       }
 
       try {
-        checkState(future.isDone(), "Tried to set value from future which is not done");
+        checkState(future.isDone(),
+            "Tried to set value from future which is not done");
         V returnValue = getUninterruptibly(future);
-        localValues.set(index, Optional.fromNullable(returnValue));
+        if (localValues != null) {
+          localValues.set(index, Optional.fromNullable(returnValue));
+        }
       } catch (CancellationException e) {
         if (allMustSucceed) {
           // Set ourselves as cancelled. Let the input futures keep running
           // as some of them may be used elsewhere.
-          // (Currently we don't override interruptTask, so
-          // mayInterruptIfRunning==false isn't technically necessary.)
           cancel(false);
         }
       } catch (ExecutionException e) {
-        if (allMustSucceed) {
-          // As soon as the first one fails, throw the exception up.
-          // The result of all other inputs is then ignored.
-          setException(e.getCause());
-        }
-      } catch (RuntimeException e) {
-        if (allMustSucceed) {
-          setException(e);
-        }
-      } catch (Error e) {
-        // Propagate errors up ASAP - our superclass will rethrow the error
-        setException(e);
+        setExceptionAndMaybeLog(e.getCause());
+      } catch (Throwable t) {
+        setExceptionAndMaybeLog(t);
       } finally {
         int newRemaining = remaining.decrementAndGet();
         checkState(newRemaining >= 0, "Less than 0 remaining futures");
         if (newRemaining == 0) {
           FutureCombiner<V, C> localCombiner = combiner;
-          if (localCombiner != null) {
+          if (localCombiner != null && localValues != null) {
             set(localCombiner.combine(localValues));
           } else {
             checkState(isDone());
@@ -1532,18 +1685,18 @@ public final class Futures {
 
   /** Used for {@link #allAsList} and {@link #successfulAsList}. */
   private static <V> ListenableFuture<List<V>> listFuture(
-      ImmutableList<ListenableFuture<? extends V>> futures, boolean allMustSucceed,
-      Executor listenerExecutor) {
-    return new CombinedFuture<V, List<V>>(futures, allMustSucceed, listenerExecutor,
+      ImmutableList<ListenableFuture<? extends V>> futures,
+      boolean allMustSucceed, Executor listenerExecutor) {
+    return new CombinedFuture<V, List<V>>(
+        futures, allMustSucceed, listenerExecutor,
         new FutureCombiner<V, List<V>>() {
-
+          @Override
           public List<V> combine(List<Optional<V>> values) {
             List<V> result = Lists.newArrayList();
             for (Optional<V> element : values) {
               result.add(element != null ? element.orNull() : null);
             }
-            // TODO(user): This should ultimately return an unmodifiableList
-            return result;
+            return Collections.unmodifiableList(result);
           }
         });
   }
@@ -1557,7 +1710,8 @@ public final class Futures {
 
     final Function<Exception, X> mapper;
 
-    MappingCheckedFuture(ListenableFuture<V> delegate, Function<Exception, X> mapper) {
+    MappingCheckedFuture(ListenableFuture<V> delegate,
+        Function<Exception, X> mapper) {
       super(delegate);
 
       this.mapper = checkNotNull(mapper);

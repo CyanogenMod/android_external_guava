@@ -17,6 +17,7 @@
 package com.google.common.base;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
+import static com.google.common.collect.Lists.newArrayList;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
@@ -26,6 +27,9 @@ import com.google.common.testing.EqualsTester;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
+import junit.framework.AssertionFailedError;
+import junit.framework.TestCase;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,8 +38,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import junit.framework.TestCase;
 
 /**
  * Unit test for {@link Predicates}.
@@ -50,8 +52,8 @@ public class PredicatesTest extends TestCase {
       new Predicate<Integer>() {
     @Override
     public boolean apply(Integer i) {
-      fail("This predicate should never have been evaluated");
-      return false;
+      throw new AssertionFailedError(
+          "This predicate should never have been evaluated");
     }
   };
 
@@ -178,12 +180,12 @@ public class PredicatesTest extends TestCase {
    * Tests for all the different flavors of Predicates.and().
    */
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_applyNoArgs() {
     assertEvalsToTrue(Predicates.and());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_equalityNoArgs() {
     new EqualsTester()
         .addEqualityGroup(Predicates.and(), Predicates.and())
@@ -193,17 +195,17 @@ public class PredicatesTest extends TestCase {
   }
 
   @GwtIncompatible("SerializableTester")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_serializationNoArgs() {
     checkSerialization(Predicates.and());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_applyOneArg() {
     assertEvalsLikeOdd(Predicates.and(isOdd()));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_equalityOneArg() {
     Object[] notEqualObjects = {Predicates.and(NEVER_REACHED, FALSE)};
     new EqualsTester()
@@ -217,7 +219,7 @@ public class PredicatesTest extends TestCase {
   }
 
   @GwtIncompatible("SerializableTester")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_serializationOneArg() {
     checkSerialization(Predicates.and(isOdd()));
   }
@@ -228,7 +230,7 @@ public class PredicatesTest extends TestCase {
     assertEvalsToFalse(Predicates.and(FALSE, NEVER_REACHED));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_equalityBinary() {
     new EqualsTester()
         .addEqualityGroup(
@@ -245,7 +247,7 @@ public class PredicatesTest extends TestCase {
     checkSerialization(Predicates.and(TRUE, isOdd()));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_applyTernary() {
     assertEvalsLikeOdd(Predicates.and(isOdd(), TRUE, TRUE));
     assertEvalsLikeOdd(Predicates.and(TRUE, isOdd(), TRUE));
@@ -253,7 +255,7 @@ public class PredicatesTest extends TestCase {
     assertEvalsToFalse(Predicates.and(TRUE, FALSE, NEVER_REACHED));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_equalityTernary() {
     new EqualsTester()
         .addEqualityGroup(
@@ -266,12 +268,12 @@ public class PredicatesTest extends TestCase {
   }
 
   @GwtIncompatible("SerializableTester")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_serializationTernary() {
     checkSerialization(Predicates.and(TRUE, isOdd(), FALSE));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_applyIterable() {
     Collection<Predicate<Integer>> empty = Arrays.asList();
     assertEvalsToTrue(Predicates.and(empty));
@@ -280,7 +282,7 @@ public class PredicatesTest extends TestCase {
     assertEvalsToFalse(Predicates.and(Arrays.asList(FALSE, NEVER_REACHED)));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_equalityIterable() {
     new EqualsTester()
         .addEqualityGroup(
@@ -293,12 +295,12 @@ public class PredicatesTest extends TestCase {
   }
 
   @GwtIncompatible("SerializableTester")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_serializationIterable() {
     checkSerialization(Predicates.and(Arrays.asList(TRUE, FALSE)));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testAnd_arrayDefensivelyCopied() {
     Predicate[] array = {Predicates.alwaysFalse()};
     Predicate<Object> predicate = Predicates.and(array);
@@ -307,21 +309,19 @@ public class PredicatesTest extends TestCase {
     assertFalse(predicate.apply(1));
   }
 
-  @SuppressWarnings("unchecked")
   public void testAnd_listDefensivelyCopied() {
-    List list = new ArrayList<Predicate>();
+    List<Predicate<Object>> list = newArrayList();
     Predicate<Object> predicate = Predicates.and(list);
     assertTrue(predicate.apply(1));
     list.add(Predicates.alwaysFalse());
     assertTrue(predicate.apply(1));
   }
 
-  @SuppressWarnings("unchecked")
   public void testAnd_iterableDefensivelyCopied() {
-    final List list = new ArrayList<Predicate>();
-    Iterable iterable = new Iterable<Predicate>() {
+    final List<Predicate<Object>> list = newArrayList();
+    Iterable<Predicate<Object>> iterable = new Iterable<Predicate<Object>>() {
       @Override
-      public Iterator<Predicate> iterator() {
+      public Iterator<Predicate<Object>> iterator() {
         return list.iterator();
       }
     };
@@ -335,12 +335,12 @@ public class PredicatesTest extends TestCase {
    * Tests for all the different flavors of Predicates.or().
    */
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_applyNoArgs() {
     assertEvalsToFalse(Predicates.or());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_equalityNoArgs() {
     new EqualsTester()
         .addEqualityGroup(Predicates.or(), Predicates.or())
@@ -350,18 +350,18 @@ public class PredicatesTest extends TestCase {
   }
 
   @GwtIncompatible("SerializableTester")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_serializationNoArgs() {
     checkSerialization(Predicates.or());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_applyOneArg() {
     assertEvalsToTrue(Predicates.or(TRUE));
     assertEvalsToFalse(Predicates.or(FALSE));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_equalityOneArg() {
     new EqualsTester()
         .addEqualityGroup(
@@ -374,7 +374,7 @@ public class PredicatesTest extends TestCase {
   }
 
   @GwtIncompatible("SerializableTester")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_serializationOneArg() {
     checkSerialization(Predicates.or(isOdd()));
   }
@@ -389,7 +389,7 @@ public class PredicatesTest extends TestCase {
     assertEvalsToTrue(trueOrAnything);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_equalityBinary() {
     new EqualsTester()
         .addEqualityGroup(
@@ -406,7 +406,7 @@ public class PredicatesTest extends TestCase {
     checkSerialization(Predicates.or(isOdd(), TRUE));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_applyTernary() {
     assertEvalsLikeOdd(Predicates.or(isOdd(), FALSE, FALSE));
     assertEvalsLikeOdd(Predicates.or(FALSE, isOdd(), FALSE));
@@ -414,7 +414,7 @@ public class PredicatesTest extends TestCase {
     assertEvalsToTrue(Predicates.or(FALSE, TRUE, NEVER_REACHED));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_equalityTernary() {
     new EqualsTester()
         .addEqualityGroup(
@@ -427,12 +427,12 @@ public class PredicatesTest extends TestCase {
   }
 
   @GwtIncompatible("SerializableTester")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_serializationTernary() {
     checkSerialization(Predicates.or(FALSE, isOdd(), TRUE));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_applyIterable() {
     Predicate<Integer> vacuouslyFalse =
         Predicates.or(Collections.<Predicate<Integer>>emptyList());
@@ -448,7 +448,7 @@ public class PredicatesTest extends TestCase {
     assertEvalsToTrue(trueAndFalse);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_equalityIterable() {
     new EqualsTester()
         .addEqualityGroup(
@@ -461,14 +461,14 @@ public class PredicatesTest extends TestCase {
   }
 
   @GwtIncompatible("SerializableTester")
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_serializationIterable() {
     Predicate<Integer> pre = Predicates.or(Arrays.asList(TRUE, FALSE));
     Predicate<Integer> post = SerializableTester.reserializeAndAssert(pre);
     assertEquals(pre.apply(0), post.apply(0));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked") // varargs
   public void testOr_arrayDefensivelyCopied() {
     Predicate[] array = {Predicates.alwaysFalse()};
     Predicate<Object> predicate = Predicates.or(array);
@@ -477,21 +477,19 @@ public class PredicatesTest extends TestCase {
     assertFalse(predicate.apply(1));
   }
 
-  @SuppressWarnings("unchecked")
   public void testOr_listDefensivelyCopied() {
-    List list = new ArrayList<Predicate>();
+    List<Predicate<Object>> list = newArrayList();
     Predicate<Object> predicate = Predicates.or(list);
     assertFalse(predicate.apply(1));
     list.add(Predicates.alwaysTrue());
     assertFalse(predicate.apply(1));
   }
 
-  @SuppressWarnings("unchecked")
   public void testOr_iterableDefensivelyCopied() {
-    final List list = new ArrayList<Predicate>();
-    Iterable iterable = new Iterable<Predicate>() {
+    final List<Predicate<Object>> list = newArrayList();
+    Iterable<Predicate<Object>> iterable = new Iterable<Predicate<Object>>() {
       @Override
-      public Iterator<Predicate> iterator() {
+      public Iterator<Predicate<Object>> iterator() {
         return list.iterator();
       }
     };
@@ -608,7 +606,7 @@ public class PredicatesTest extends TestCase {
     try {
       isInteger.apply(null);
       fail();
-    } catch(NullPointerException expected) {}
+    } catch (NullPointerException expected) {}
   }
 
   @GwtIncompatible("Predicates.assignableFrom")
@@ -753,7 +751,7 @@ public class PredicatesTest extends TestCase {
   /*
    * Tests that compilation will work when applying explicit types.
    */
-  @SuppressWarnings("unused")
+  @SuppressWarnings("unused") // compilation test
   public void testIn_compilesWithExplicitSupertype() {
     Collection<Number> nums = ImmutableSet.of();
     Predicate<Number> p1 = Predicates.in(nums);
@@ -889,8 +887,7 @@ public class PredicatesTest extends TestCase {
 
   public void assertEqualHashCode(
       Predicate<? super Integer> expected, Predicate<? super Integer> actual) {
-    assertEquals(actual.toString() + " should hash like " + expected.toString(),
-        expected.hashCode(), actual.hashCode());
+    assertEquals(actual + " should hash like " + expected, expected.hashCode(), actual.hashCode());
   }
 
   public void testHashCodeForBooleanOperations() {

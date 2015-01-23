@@ -20,12 +20,11 @@ import com.google.common.annotations.GwtCompatible;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
  * A container class for the five sample elements we need for testing.
- *
- * <p>This class is GWT compatible.
  *
  * @author Kevin Bourrillion
  */
@@ -48,7 +47,11 @@ public class SampleElements<E> implements Iterable<E> {
 
   @Override
   public Iterator<E> iterator() {
-    return Arrays.asList(e0, e1, e2, e3, e4).iterator();
+    return asList().iterator();
+  }
+  
+  public List<E> asList() {
+    return Arrays.asList(e0, e1, e2, e3, e4);
   }
 
   public static class Strings extends SampleElements<String> {

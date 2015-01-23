@@ -16,8 +16,7 @@
 
 package com.google.common.base;
 
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
+import com.google.caliper.Benchmark;
 import com.google.common.base.Stopwatch;
 
 import java.util.concurrent.TimeUnit;
@@ -29,18 +28,18 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Kevin Bourrillion
  */
-public class StopwatchBenchmark extends SimpleBenchmark {
-  public long timeStopwatch(int reps) {
+public class StopwatchBenchmark {
+  @Benchmark long stopwatch(int reps) {
     long total = 0;
     for (int i = 0; i < reps; i++) {
-      Stopwatch s = new Stopwatch().start();
+      Stopwatch s = Stopwatch.createStarted();
       // here is where you would do something
       total += s.elapsed(TimeUnit.NANOSECONDS);
     }
     return total;
   }
 
-  public long timeManual(int reps) {
+  @Benchmark long manual(int reps) {
     long total = 0;
     for (int i = 0; i < reps; i++) {
       long start = System.nanoTime();
@@ -48,9 +47,5 @@ public class StopwatchBenchmark extends SimpleBenchmark {
       total += (System.nanoTime() - start);
     }
     return total;
-  }
-
-  public static void main(String[] args) {
-    Runner.main(StopwatchBenchmark.class, args);
   }
 }

@@ -19,14 +19,15 @@ package com.google.common.util.concurrent;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 
 import com.google.common.testing.NullPointerTester;
+import com.google.common.util.concurrent.ExecutionList;
+
+import junit.framework.TestCase;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import junit.framework.TestCase;
 
 /**
  * Unit tests for {@link ExecutionList}.
@@ -105,6 +106,22 @@ public class ExecutionListTest extends TestCase {
     assertTrue(countDownLatch.await(1L, TimeUnit.SECONDS));
   }
 
+  public void testOrdering() throws Exception {
+    final AtomicInteger integer = new AtomicInteger();
+    for (int i = 0; i < 10; i++) {
+      final int expectedCount = i;
+      list.add(
+          new Runnable() {
+            @Override public void run() {
+              integer.compareAndSet(expectedCount, expectedCount + 1);
+            }
+          },
+          MoreExecutors.sameThreadExecutor());
+    }
+    list.execute();
+    assertEquals(10, integer.get());
+  }
+
   private class MockRunnable implements Runnable {
     CountDownLatch countDownLatch;
 
@@ -131,8 +148,5 @@ public class ExecutionListTest extends TestCase {
     @Override public void run() {
       throw new RuntimeException();
     }
-  };
-  private static final Runnable DO_NOTHING = new Runnable() {
-    @Override public void run() {}
   };
 }

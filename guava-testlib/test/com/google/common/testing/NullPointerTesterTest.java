@@ -16,9 +16,11 @@
 
 package com.google.common.testing;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.truth0.Truth.ASSERT;
 
+import com.google.common.base.Converter;
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -130,6 +132,42 @@ public class NullPointerTesterTest extends TestCase {
     "oneArgThrowsOtherThanNpe",
     "oneArgShouldThrowNpeButDoesnt",
   };
+
+  private static class ThrowsIae {
+    public static void christenPoodle(String name) {
+      checkArgument(name != null);
+    }
+  }
+
+  private static class ThrowsNpe {
+    public static void christenPoodle(String name) {
+      checkNotNull(name);
+    }
+  }
+
+  private static class ThrowsUoe {
+    public static void christenPoodle(String name) {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private static class ThrowsSomethingElse {
+    public static void christenPoodle(String name) {
+      throw new RuntimeException();
+    }
+  }
+
+  public void testDontAcceptIae() {
+    NullPointerTester tester = new NullPointerTester();
+    tester.testAllPublicStaticMethods(ThrowsNpe.class);
+    tester.testAllPublicStaticMethods(ThrowsUoe.class);
+    try {
+      tester.testAllPublicStaticMethods(ThrowsIae.class);
+    } catch (AssertionFailedError expected) {
+      return;
+    }
+    fail();
+  }
 
   public void testStaticOneArgMethodsThatShouldPass() throws Exception {
     for (String methodName : STATIC_ONE_ARG_METHODS_SHOULD_PASS) {
@@ -1099,7 +1137,7 @@ public class NullPointerTesterTest extends TestCase {
     }
   }
 
-  public void tesGenericInterfaceReturnedByGenericMethod() {
+  public void testGenericInterfaceReturnedByGenericMethod() {
     new GenericInterface2DefaultValueChecker().check();
   }
 
@@ -1146,6 +1184,30 @@ public class NullPointerTesterTest extends TestCase {
 
   public void testDefaultValueResolvedForPackagePrivateMethod() {
     new DefaultValueForPackagePrivateMethodResolvedToStringChecker().check();
+  }
+
+  private static class ConverterDefaultValueChecker
+      extends DefaultValueChecker {
+
+    @SuppressWarnings("unused") // called by NullPointerTester
+    public void checkArray(Converter<String, Integer> c, String s) {
+      calledWith(c, s);
+    }
+
+    void check() {
+      runTester();
+      @SuppressWarnings("unchecked") // We are checking it anyway
+      Converter<String, Integer> defaultConverter = (Converter<String, Integer>)
+          getDefaultParameterValue(0);
+      assertEquals(Integer.valueOf(0), defaultConverter.convert("anything"));
+      assertEquals("", defaultConverter.reverse().convert(123));
+      assertNull(defaultConverter.convert(null));
+      assertNull(defaultConverter.reverse().convert(null));
+    }
+  }
+
+  public void testConverterDefaultValue() {
+    new ConverterDefaultValueChecker().check();
   }
 
   private static class VisibilityMethods {
@@ -1210,12 +1272,4 @@ public class NullPointerTesterTest extends TestCase {
       ASSERT.that(expected.getMessage()).contains("inner class");
     }
   }
-
-  /*
-   *
-   * TODO(kevinb): This is only a very small start.
-   * Must come back and finish.
-   *
-   */
-
 }

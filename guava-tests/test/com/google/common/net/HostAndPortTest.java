@@ -16,6 +16,7 @@
 
 package com.google.common.net;
 
+import com.google.common.annotations.GwtCompatible;
 import com.google.common.testing.SerializableTester;
 
 import junit.framework.TestCase;
@@ -25,6 +26,7 @@ import junit.framework.TestCase;
  *
  * @author Paul Marks
  */
+@GwtCompatible
 public class HostAndPortTest extends TestCase {
 
   public void testFromStringWellFormed() {
@@ -158,6 +160,28 @@ public class HostAndPortTest extends TestCase {
 
     try {
       HostAndPort.fromParts("gmail.com", -1);
+      fail("Expected IllegalArgumentException");
+    } catch (IllegalArgumentException expected) {
+    }
+  }
+
+  public void testFromHost() {
+    HostAndPort hp = HostAndPort.fromHost("gmail.com");
+    assertEquals("gmail.com", hp.getHostText());
+    assertFalse(hp.hasPort());
+
+    hp = HostAndPort.fromHost("[::1]");
+    assertEquals("::1", hp.getHostText());
+    assertFalse(hp.hasPort());
+
+    try {
+      HostAndPort.fromHost("gmail.com:80");
+      fail("Expected IllegalArgumentException");
+    } catch (IllegalArgumentException expected) {
+    }
+
+    try {
+      HostAndPort.fromHost("[gmail.com]");
       fail("Expected IllegalArgumentException");
     } catch (IllegalArgumentException expected) {
     }

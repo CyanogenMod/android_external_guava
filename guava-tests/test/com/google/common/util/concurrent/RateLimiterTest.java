@@ -20,12 +20,12 @@ import com.google.common.collect.Lists;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.NullPointerTester.Visibility;
 
+import junit.framework.TestCase;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
-import junit.framework.TestCase;
 
 /**
  * Tests for RateLimiter.
@@ -33,6 +33,8 @@ import junit.framework.TestCase;
  * @author Dimitris Andreou
  */
 public class RateLimiterTest extends TestCase {
+  private static final double EPSILON = 1e-8;
+
   /**
    * The ticker gathers events and presents them as strings.
    * R0.6 means a delay of 0.6 seconds caused by the (R)ateLimiter
@@ -76,6 +78,15 @@ public class RateLimiterTest extends TestCase {
     ticker.sleepMillis(200);    // U0.20, we are ready for the next request...
     limiter.acquire();          // R0.00, ...which is granted immediately
     limiter.acquire();          // R0.20
+    assertEvents("R0.00", "U0.20", "R0.00", "R0.20");
+  }
+
+  public void testSimpleAcquireReturnValues() {
+    RateLimiter limiter = RateLimiter.create(ticker, 5.0);
+    assertEquals(0.0, limiter.acquire(), EPSILON);  // R0.00
+    ticker.sleepMillis(200);                        // U0.20, we are ready for the next request...
+    assertEquals(0.0, limiter.acquire(), EPSILON);  // R0.00, ...which is granted immediately
+    assertEquals(0.2, limiter.acquire(), EPSILON);  // R0.20
     assertEvents("R0.00", "U0.20", "R0.00", "R0.20");
   }
 
@@ -153,7 +164,7 @@ public class RateLimiterTest extends TestCase {
   }
 
   public void testBursty() {
-    RateLimiter limiter = RateLimiter.createBursty(ticker, 1.0, 10);
+    RateLimiter limiter = RateLimiter.createWithCapacity(ticker, 1.0, 10, TimeUnit.SECONDS);
     ticker.sleepMillis(10000); // reach full capacity
     limiter.acquire(11); // all these are served in a burst (10 + 1 by borrowing from the future)
     limiter.acquire(1); // out of capacity, we have to wait
@@ -321,7 +332,7 @@ public class RateLimiterTest extends TestCase {
   }
 
   private void assertEvents(String... events) {
-    assertEquals(Arrays.asList(events).toString(), ticker.readEventsAndClear());
+    assertEquals(Arrays.toString(events), ticker.readEventsAndClear());
   }
 
   private static class FakeTicker extends RateLimiter.SleepingTicker {

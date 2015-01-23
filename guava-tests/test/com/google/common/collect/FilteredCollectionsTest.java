@@ -16,14 +16,13 @@
 
 package com.google.common.collect;
 
+import static org.truth0.Truth.ASSERT;
+
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.testing.EqualsTester;
 
 import junit.framework.TestCase;
-
-import org.truth0.Truth;
-import org.truth0.subjects.CollectionSubject;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -101,7 +100,7 @@ public class FilteredCollectionsTest extends TestCase {
         target.add(4);
         C addThenFilter = filter(createUnfiltered(target), EVEN);
 
-        ASSERT.that(filterThenAdd).has().allFrom(addThenFilter);
+        ASSERT.that(filterThenAdd).has().exactlyAs(addThenFilter);
       }
     }
 
@@ -157,7 +156,7 @@ public class FilteredCollectionsTest extends TestCase {
         } catch (IllegalArgumentException expected) {
         }
 
-        ASSERT.that(filteredToModify).has().allFrom(filtered);
+        ASSERT.that(filteredToModify).has().exactlyAs(filtered);
       }
     }
 
@@ -191,7 +190,7 @@ public class FilteredCollectionsTest extends TestCase {
             Predicates.not(Predicates.and(EVEN, PRIME_DIGIT)));
 
         filtered2.clear();
-        ASSERT.that(unfiltered).has().allFrom(inverseFiltered);
+        ASSERT.that(unfiltered).has().exactlyAs(inverseFiltered);
       }
     }
   }
@@ -341,13 +340,5 @@ public class FilteredCollectionsTest extends TestCase {
 
   /** No-op test so that the class has at least one method, making Maven's test runner happy. */
   public void testNoop() {
-  }
-
-  // Hack for JDK5 type inference.
-  private static class ASSERT {
-    static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> that(
-        Collection<T> collection) {
-      return Truth.ASSERT.<T, Collection<T>>that(collection);
-    }
   }
 }

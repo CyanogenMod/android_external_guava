@@ -19,7 +19,6 @@ package com.google.common.collect;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.base.Function;
 
 import java.util.Iterator;
 
@@ -39,14 +38,17 @@ abstract class TransformedIterator<F, T> implements Iterator<T> {
 
   abstract T transform(F from);
 
+  @Override
   public final boolean hasNext() {
     return backingIterator.hasNext();
   }
 
+  @Override
   public final T next() {
     return transform(backingIterator.next());
   }
 
+  @Override
   public final void remove() {
     backingIterator.remove();
   }

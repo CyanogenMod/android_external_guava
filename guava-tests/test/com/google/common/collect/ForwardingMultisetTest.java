@@ -23,14 +23,14 @@ import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.google.MultisetTestSuiteBuilder;
 import com.google.common.collect.testing.google.TestStringMultisetGenerator;
 
+import junit.framework.Test;
+import junit.framework.TestSuite;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
 /**
  * Tests for {@link ForwardingMultiset}.
@@ -259,7 +259,7 @@ public class ForwardingMultisetTest extends ForwardingTestCase {
       }
     }).named("standardElementSet tripwire").withFeatures(CollectionSize.ANY,
         CollectionFeature.ALLOWS_NULL_VALUES,
-        CollectionFeature.SUPPORTS_REMOVE).createTestSuite());
+        CollectionFeature.REMOVE_OPERATIONS).createTestSuite());
 
     return suite;
   }

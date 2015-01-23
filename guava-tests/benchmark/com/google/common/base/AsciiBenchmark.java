@@ -16,9 +16,9 @@
 
 package com.google.common.base;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.base.Ascii;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Chars;
@@ -33,7 +33,7 @@ import java.util.Random;
  *
  * @author Kevin Bourrillion
  */
-public class AsciiBenchmark extends SimpleBenchmark {
+public class AsciiBenchmark {
   private static String ALPHA =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   private static String NONALPHA =
@@ -46,7 +46,7 @@ public class AsciiBenchmark extends SimpleBenchmark {
   Random random;
   String testString;
 
-  @Override protected void setUp() {
+  @BeforeExperiment void setUp() {
     random = new Random();
 
     int nonAlpha = size / nonAlphaRatio;
@@ -72,7 +72,7 @@ public class AsciiBenchmark extends SimpleBenchmark {
     return NONALPHA.charAt(random.nextInt(NONALPHA.length()));
   }
 
-  public int timeAsciiToUpperCase(int reps) {
+  @Benchmark int asciiStringToUpperCase(int reps) {
     String string = noWorkToDo
         ? Ascii.toUpperCase(testString)
         : testString;
@@ -84,19 +84,19 @@ public class AsciiBenchmark extends SimpleBenchmark {
     return dummy;
   }
 
-  public int timeStringToUpperCase1(int reps) {
+  @Benchmark int asciiCharSequenceToUpperCase(int reps) {
     String string = noWorkToDo
-        ? testString.toUpperCase()
+        ? charSequenceToUpperCase(testString)
         : testString;
 
     int dummy = 0;
     for (int i = 0; i < reps; i++) {
-      dummy += string.toUpperCase().length();
+      dummy += charSequenceToUpperCase(string).length();
     }
     return dummy;
   }
 
-  public int timeStringToUpperCase2(int reps) {
+  @Benchmark int stringToUpperCase(int reps) {
     String string = noWorkToDo
         ? testString.toUpperCase(Locale.US)
         : testString;
@@ -108,7 +108,64 @@ public class AsciiBenchmark extends SimpleBenchmark {
     return dummy;
   }
 
-  public static void main(String[] args) {
-    Runner.main(AsciiBenchmark.class, args);
+  @Benchmark boolean equalsIgnoreCaseCharSequence(int reps) {
+    // This benchmark has no concept of "noWorkToDo".
+    String upperString = testString.toUpperCase();
+    CharSequence testSeq = new StringBuilder(testString);
+    CharSequence upperSeq = new StringBuilder(upperString);
+    CharSequence[] lhs = new CharSequence[] { testString, testSeq, testString, testSeq };
+    CharSequence[] rhs = new CharSequence[] { upperString, upperString, upperSeq, upperSeq };
+
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+      dummy ^= Ascii.equalsIgnoreCase(lhs[i & 0x3], rhs[i & 0x3]);
+    }
+    return dummy;
+  }
+
+  @Benchmark boolean equalsIgnoreCaseStringOnly(int reps) {
+    // This benchmark has no concept of "noWorkToDo".
+    String lhs = testString;
+    String rhs = testString.toUpperCase();
+
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+      dummy ^= Ascii.equalsIgnoreCase(lhs, rhs);
+    }
+    return dummy;
+  }
+
+  @Benchmark boolean equalsIgnoreCaseJDK(int reps) {
+    // This benchmark has no concept of "noWorkToDo".
+    String lhs = testString;
+    String rhs = testString.toUpperCase();
+
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+        dummy ^= lhs.equalsIgnoreCase(rhs);
+    }
+    return dummy;
+  }
+
+  @Benchmark boolean isUpperCase(int reps) {
+    // This benchmark has no concept of "noWorkToDo".
+    char[] chars = testString.toCharArray();
+
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+      for (int n = 0; n < chars.length; n++) {
+        dummy ^= Ascii.isUpperCase(chars[n]);
+      }
+    }
+    return dummy;
+  }
+
+  static String charSequenceToUpperCase(CharSequence chars) {
+    int length = chars.length();
+    StringBuilder builder = new StringBuilder(length);
+    for (int i = 0; i < length; i++) {
+      builder.append(Ascii.toUpperCase(chars.charAt(i)));
+    }
+    return builder.toString();
   }
 }

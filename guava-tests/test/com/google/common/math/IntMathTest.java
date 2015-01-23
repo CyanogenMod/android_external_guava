@@ -32,11 +32,11 @@ import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.testing.NullPointerTester;
 
+import junit.framework.TestCase;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-
-import junit.framework.TestCase;
 
 /**
  * Tests for {@link IntMath}.
@@ -94,6 +94,18 @@ public class IntMathTest extends TestCase {
   @GwtIncompatible("sqrt")
   public void testPowersSqrtMaxInt() {
     assertEquals(IntMath.sqrt(Integer.MAX_VALUE, FLOOR), IntMath.FLOOR_SQRT_MAX_INT);
+  }
+  
+  public void testLessThanBranchFree() {
+    for (int x : ALL_INTEGER_CANDIDATES) {
+      for (int y : ALL_INTEGER_CANDIDATES) {
+        if (LongMath.fitsInInt((long) x - y)) {
+          int expected = (x < y) ? 1 : 0;
+          int actual = IntMath.lessThanBranchFree(x, y);
+          assertEquals(expected, actual);
+        }
+      }
+    }
   }
 
   @GwtIncompatible("java.math.BigInteger")

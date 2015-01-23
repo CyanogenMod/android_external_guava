@@ -24,8 +24,6 @@ import junit.framework.TestCase;
 import java.lang.reflect.Method;
 import java.lang.reflect.TypeVariable;
 
-import junit.framework.TestCase;
-
 /**
  * Unit test for {@link TypeParameter}.
  *

@@ -33,35 +33,43 @@ import java.nio.charset.Charset;
  * @author Kevin Bourrillion
  */
 abstract class AbstractStreamingHashFunction implements HashFunction {
-  public <T> HashCode hashObject(T instance, Funnel<? super T> funnel) {
+  @Override public <T> HashCode hashObject(T instance, Funnel<? super T> funnel) {
     return newHasher().putObject(instance, funnel).hash();
   }
 
-  public HashCode hashString(CharSequence input) {
-    return newHasher().putString(input).hash();
+  /**
+   * @deprecated Use {@link AbstractStreamingHashFunction#hashUnencodedChars} instead.
+   */
+  @Deprecated
+  @Override public HashCode hashString(CharSequence input) {
+    return hashUnencodedChars(input);
   }
 
-  public HashCode hashString(CharSequence input, Charset charset) {
+  @Override public HashCode hashUnencodedChars(CharSequence input) {
+    return newHasher().putUnencodedChars(input).hash();
+  }
+
+  @Override public HashCode hashString(CharSequence input, Charset charset) {
     return newHasher().putString(input, charset).hash();
   }
 
-  public HashCode hashInt(int input) {
+  @Override public HashCode hashInt(int input) {
     return newHasher().putInt(input).hash();
   }
 
-  public HashCode hashLong(long input) {
+  @Override public HashCode hashLong(long input) {
     return newHasher().putLong(input).hash();
   }
 
-  public HashCode hashBytes(byte[] input) {
+  @Override public HashCode hashBytes(byte[] input) {
     return newHasher().putBytes(input).hash();
   }
 
-  public HashCode hashBytes(byte[] input, int off, int len) {
+  @Override public HashCode hashBytes(byte[] input, int off, int len) {
     return newHasher().putBytes(input, off, len).hash();
   }
 
-  public Hasher newHasher(int expectedInputSize) {
+  @Override public Hasher newHasher(int expectedInputSize) {
     Preconditions.checkArgument(expectedInputSize >= 0);
     return newHasher();
   }
@@ -109,7 +117,8 @@ abstract class AbstractStreamingHashFunction implements HashFunction {
       checkArgument(bufferSize % chunkSize == 0);
 
       // TODO(user): benchmark performance difference with longer buffer
-      this.buffer = ByteBuffer.allocate(bufferSize + 7) // always space for a single primitive
+      this.buffer = ByteBuffer
+          .allocate(bufferSize + 7) // always space for a single primitive
           .order(ByteOrder.LITTLE_ENDIAN);
       this.bufferSize = bufferSize;
       this.chunkSize = chunkSize;
@@ -139,10 +148,12 @@ abstract class AbstractStreamingHashFunction implements HashFunction {
       process(bb);
     }
 
+    @Override
     public final Hasher putBytes(byte[] bytes) {
       return putBytes(bytes, 0, bytes.length);
     }
 
+    @Override
     public final Hasher putBytes(byte[] bytes, int off, int len) {
       return putBytes(ByteBuffer.wrap(bytes, off, len).order(ByteOrder.LITTLE_ENDIAN));
     }
@@ -172,49 +183,65 @@ abstract class AbstractStreamingHashFunction implements HashFunction {
       return this;
     }
 
+    /**
+     * @deprecated Use {@link AbstractStreamingHasher#putUnencodedChars} instead.
+     */
+    @Deprecated
     @Override
     public final Hasher putString(CharSequence charSequence) {
+      return putUnencodedChars(charSequence);
+    }
+
+    @Override
+    public final Hasher putUnencodedChars(CharSequence charSequence) {
       for (int i = 0; i < charSequence.length(); i++) {
         putChar(charSequence.charAt(i));
       }
       return this;
     }
 
+    @Override
     public final Hasher putByte(byte b) {
       buffer.put(b);
       munchIfFull();
       return this;
     }
 
+    @Override
     public final Hasher putShort(short s) {
       buffer.putShort(s);
       munchIfFull();
       return this;
     }
 
+    @Override
     public final Hasher putChar(char c) {
       buffer.putChar(c);
       munchIfFull();
       return this;
     }
 
+    @Override
     public final Hasher putInt(int i) {
       buffer.putInt(i);
       munchIfFull();
       return this;
     }
 
+    @Override
     public final Hasher putLong(long l) {
       buffer.putLong(l);
       munchIfFull();
       return this;
     }
 
+    @Override
     public final <T> Hasher putObject(T instance, Funnel<? super T> funnel) {
       funnel.funnel(instance, this);
       return this;
     }
 
+    @Override
     public final HashCode hash() {
       munch();
       buffer.flip();

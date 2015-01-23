@@ -25,6 +25,7 @@ import static com.google.common.base.CaseFormat.UPPER_UNDERSCORE;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.testing.NullPointerTester;
+import com.google.common.testing.SerializableTester;
 
 import junit.framework.TestCase;
 
@@ -185,5 +186,42 @@ public class CaseFormatTest extends TestCase {
   public void testUpperUnderscoreToUpperUnderscore() {
     assertEquals("FOO", UPPER_UNDERSCORE.to(UPPER_UNDERSCORE, "FOO"));
     assertEquals("FOO_BAR", UPPER_UNDERSCORE.to(UPPER_UNDERSCORE, "FOO_BAR"));
+  }
+
+  public void testConverterToForward() {
+    assertEquals("FooBar", UPPER_UNDERSCORE.converterTo(UPPER_CAMEL).convert("FOO_BAR"));
+    assertEquals("fooBar", UPPER_UNDERSCORE.converterTo(LOWER_CAMEL).convert("FOO_BAR"));
+    assertEquals("FOO_BAR", UPPER_CAMEL.converterTo(UPPER_UNDERSCORE).convert("FooBar"));
+    assertEquals("FOO_BAR", LOWER_CAMEL.converterTo(UPPER_UNDERSCORE).convert("fooBar"));
+  }
+
+  public void testConverterToBackward() {
+    assertEquals("FOO_BAR", UPPER_UNDERSCORE.converterTo(UPPER_CAMEL).reverse().convert("FooBar"));
+    assertEquals("FOO_BAR", UPPER_UNDERSCORE.converterTo(LOWER_CAMEL).reverse().convert("fooBar"));
+    assertEquals("FooBar", UPPER_CAMEL.converterTo(UPPER_UNDERSCORE).reverse().convert("FOO_BAR"));
+    assertEquals("fooBar", LOWER_CAMEL.converterTo(UPPER_UNDERSCORE).reverse().convert("FOO_BAR"));
+  }
+
+  public void testConverter_nullConversions() {
+    for (CaseFormat outer : CaseFormat.values()) {
+      for (CaseFormat inner : CaseFormat.values()) {
+        assertNull(outer.converterTo(inner).convert(null));
+        assertNull(outer.converterTo(inner).reverse().convert(null));
+      }
+    }
+  }
+
+  public void testConverter_toString() {
+    assertEquals(
+        "LOWER_HYPHEN.converterTo(UPPER_CAMEL)",
+        LOWER_HYPHEN.converterTo(UPPER_CAMEL).toString());
+  }
+
+  public void testConverter_serialization() {
+    for (CaseFormat outer : CaseFormat.values()) {
+      for (CaseFormat inner : CaseFormat.values()) {
+        SerializableTester.reserializeAndAssert(outer.converterTo(inner));
+      }
+    }
   }
 }

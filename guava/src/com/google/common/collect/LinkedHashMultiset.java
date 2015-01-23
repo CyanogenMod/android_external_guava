@@ -41,8 +41,7 @@ import java.util.LinkedHashMap;
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible(serializable = true, emulated = true)
-@SuppressWarnings("serial")
-// we're overriding default serialization
+@SuppressWarnings("serial") // we're overriding default serialization
 public final class LinkedHashMultiset<E> extends AbstractMapBasedMultiset<E> {
 
   /**
@@ -72,8 +71,10 @@ public final class LinkedHashMultiset<E> extends AbstractMapBasedMultiset<E> {
    *
    * @param elements the elements that the multiset should contain
    */
-  public static <E> LinkedHashMultiset<E> create(Iterable<? extends E> elements) {
-    LinkedHashMultiset<E> multiset = create(Multisets.inferDistinctElements(elements));
+  public static <E> LinkedHashMultiset<E> create(
+      Iterable<? extends E> elements) {
+    LinkedHashMultiset<E> multiset =
+        create(Multisets.inferDistinctElements(elements));
     Iterables.addAll(multiset, elements);
     return multiset;
   }
@@ -98,10 +99,12 @@ public final class LinkedHashMultiset<E> extends AbstractMapBasedMultiset<E> {
   }
 
   @GwtIncompatible("java.io.ObjectInputStream")
-  private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+  private void readObject(ObjectInputStream stream)
+      throws IOException, ClassNotFoundException {
     stream.defaultReadObject();
     int distinctElements = Serialization.readCount(stream);
-    setBackingMap(new LinkedHashMap<E, Count>(Maps.capacity(distinctElements)));
+    setBackingMap(new LinkedHashMap<E, Count>(
+        Maps.capacity(distinctElements)));
     Serialization.populateMultiset(this, stream, distinctElements);
   }
 

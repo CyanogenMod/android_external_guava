@@ -30,8 +30,6 @@ import com.google.common.collect.testing.features.MapFeature;
  * Can't be invoked directly; please see
  * {@link com.google.common.collect.testing.MapTestSuiteBuilder}.
  *
- * <p>This class is GWT compatible.
- *
  * @author George van den Driessche
  * @author Chris Povirk
  */
@@ -48,13 +46,13 @@ public class MapContainsValueTester<K, V> extends AbstractMapTester<K, V> {
         getMap().containsValue(samples.e3.getValue()));
   }
 
-  @MapFeature.Require(ALLOWS_NULL_QUERIES)
+  @MapFeature.Require(ALLOWS_NULL_VALUE_QUERIES)
   public void testContains_nullNotContainedButAllowed() {
     assertFalse("containsValue(null) should return false",
         getMap().containsValue(null));
   }
 
-  @MapFeature.Require(absent = ALLOWS_NULL_QUERIES)
+  @MapFeature.Require(absent = ALLOWS_NULL_VALUE_QUERIES)
   public void testContains_nullNotContainedAndUnsupported() {
     expectNullValueMissingWhenNullValuesUnsupported(
         "containsValue(null) should return false or throw");

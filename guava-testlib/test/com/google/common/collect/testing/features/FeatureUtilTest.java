@@ -21,15 +21,14 @@ import static org.truth0.Truth.ASSERT;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import junit.framework.TestCase;
+
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-
-import junit.framework.TestCase;
 
 /**
  * @author George van den Driessche
@@ -160,21 +159,18 @@ public class FeatureUtilTest extends TestCase {
 
     features = Sets.<Feature<?>>newHashSet(
         ExampleDerivedFeature.DERIVED_FEATURE_1);
-    ASSERT.<Feature<?>, Collection<Feature<?>>>that(
-        FeatureUtil.addImpliedFeatures(features)).has().item(
+    ASSERT.that(FeatureUtil.addImpliedFeatures(features)).has().item(
         ExampleDerivedFeature.DERIVED_FEATURE_1);
 
     features = Sets.<Feature<?>>newHashSet(
         ExampleDerivedFeature.DERIVED_FEATURE_2);
-    ASSERT.<Feature<?>, Collection<Feature<?>>>that(
-        FeatureUtil.addImpliedFeatures(features)).has().allOf(
+    ASSERT.that(FeatureUtil.addImpliedFeatures(features)).has().exactly(
         ExampleDerivedFeature.DERIVED_FEATURE_2,
         ExampleBaseFeature.BASE_FEATURE_1);
 
     features = Sets.<Feature<?>>newHashSet(
         ExampleDerivedFeature.COMPOUND_DERIVED_FEATURE);
-    ASSERT.<Feature<?>, Collection<Feature<?>>>that(
-        FeatureUtil.addImpliedFeatures(features)).has().allOf(
+    ASSERT.that(FeatureUtil.addImpliedFeatures(features)).has().exactly(
         ExampleDerivedFeature.COMPOUND_DERIVED_FEATURE,
         ExampleDerivedFeature.DERIVED_FEATURE_1,
         ExampleDerivedFeature.DERIVED_FEATURE_2,
@@ -197,12 +193,12 @@ public class FeatureUtilTest extends TestCase {
 
     features = Sets.<Feature<?>>newHashSet(
         ExampleDerivedFeature.DERIVED_FEATURE_2);
-    ASSERT.<Feature<?>, Collection<Feature<?>>>that(FeatureUtil.impliedFeatures(features)).has().item(
+    ASSERT.that(FeatureUtil.impliedFeatures(features)).has().item(
         ExampleBaseFeature.BASE_FEATURE_1);
 
     features = Sets.<Feature<?>>newHashSet(
         ExampleDerivedFeature.COMPOUND_DERIVED_FEATURE);
-    ASSERT.<Feature<?>, Collection<Feature<?>>>that(FeatureUtil.impliedFeatures(features)).has().allOf(
+    ASSERT.that(FeatureUtil.impliedFeatures(features)).has().exactly(
         ExampleDerivedFeature.DERIVED_FEATURE_1,
         ExampleDerivedFeature.DERIVED_FEATURE_2,
         ExampleBaseFeature.BASE_FEATURE_1,
@@ -254,7 +250,7 @@ public class FeatureUtilTest extends TestCase {
           ExampleDerivedInterfaceTester_Conflict.class);
       fail("Expected ConflictingRequirementsException");
     } catch (ConflictingRequirementsException e) {
-      ASSERT.<Feature<?>, Collection<Feature<?>>>that(e.getConflicts()).has().item(
+      ASSERT.that(e.getConflicts()).has().item(
           ExampleBaseFeature.BASE_FEATURE_1);
       assertEquals(ExampleDerivedInterfaceTester_Conflict.class, e.getSource());
     }
@@ -268,7 +264,7 @@ public class FeatureUtilTest extends TestCase {
       FeatureUtil.buildTesterRequirements(method);
       fail("Expected ConflictingRequirementsException");
     } catch (ConflictingRequirementsException e) {
-      ASSERT.<Feature<?>, Collection<Feature<?>>>that(e.getConflicts()).has().item(
+      ASSERT.that(e.getConflicts()).has().item(
           ExampleBaseFeature.BASE_FEATURE_1);
       assertEquals(method, e.getSource());
     }

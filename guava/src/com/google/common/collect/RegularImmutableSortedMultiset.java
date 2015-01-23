@@ -27,8 +27,7 @@ import javax.annotation.Nullable;
  *
  * @author Louis Wasserman
  */
-@SuppressWarnings("serial")
-// uses writeReplace, not default serialization
+@SuppressWarnings("serial") // uses writeReplace, not default serialization
 final class RegularImmutableSortedMultiset<E> extends ImmutableSortedMultiset<E> {
   private final transient RegularImmutableSortedSet<E> elementSet;
   private final transient int[] counts;
@@ -36,8 +35,12 @@ final class RegularImmutableSortedMultiset<E> extends ImmutableSortedMultiset<E>
   private final transient int offset;
   private final transient int length;
 
-  RegularImmutableSortedMultiset(RegularImmutableSortedSet<E> elementSet, int[] counts,
-      long[] cumulativeCounts, int offset, int length) {
+  RegularImmutableSortedMultiset(
+      RegularImmutableSortedSet<E> elementSet,
+      int[] counts,
+      long[] cumulativeCounts,
+      int offset,
+      int length) {
     this.elementSet = elementSet;
     this.counts = counts;
     this.cumulativeCounts = cumulativeCounts;
@@ -45,23 +48,30 @@ final class RegularImmutableSortedMultiset<E> extends ImmutableSortedMultiset<E>
     this.length = length;
   }
 
-  private Entry<E> getEntry(int index) {
-    return Multisets.immutableEntry(elementSet.asList().get(index), counts[offset + index]);
+  @Override
+  Entry<E> getEntry(int index) {
+    return Multisets.immutableEntry(
+        elementSet.asList().get(index),
+        counts[offset + index]);
   }
 
+  @Override
   public Entry<E> firstEntry() {
     return getEntry(0);
   }
 
+  @Override
   public Entry<E> lastEntry() {
     return getEntry(length - 1);
   }
 
+  @Override
   public int count(@Nullable Object element) {
     int index = elementSet.indexOf(element);
     return (index == -1) ? 0 : counts[index + offset];
   }
 
+  @Override
   public int size() {
     long size = cumulativeCounts[offset + length] - cumulativeCounts[offset];
     return Ints.saturatedCast(size);
@@ -90,42 +100,10 @@ final class RegularImmutableSortedMultiset<E> extends ImmutableSortedMultiset<E>
     } else if (from == 0 && to == length) {
       return this;
     } else {
-      RegularImmutableSortedSet<E> subElementSet = (RegularImmutableSortedSet<E>) elementSet
-          .getSubSet(from, to);
-      return new RegularImmutableSortedMultiset<E>(subElementSet, counts, cumulativeCounts, offset
-          + from, to - from);
-    }
-  }
-
-  @Override
-  ImmutableSet<Entry<E>> createEntrySet() {
-    return new EntrySet();
-  }
-
-  private final class EntrySet extends ImmutableMultiset<E>.EntrySet {
-
-    public int size() {
-      return length;
-    }
-
-    @Override
-    public UnmodifiableIterator<Entry<E>> iterator() {
-      return asList().iterator();
-    }
-
-    @Override
-    ImmutableList<Entry<E>> createAsList() {
-      return new ImmutableAsList<Entry<E>>() {
-
-        public Entry<E> get(int index) {
-          return getEntry(index);
-        }
-
-        @Override
-        ImmutableCollection<Entry<E>> delegateCollection() {
-          return EntrySet.this;
-        }
-      };
+      RegularImmutableSortedSet<E> subElementSet =
+          (RegularImmutableSortedSet<E>) elementSet.getSubSet(from, to);
+      return new RegularImmutableSortedMultiset<E>(
+          subElementSet, counts, cumulativeCounts, offset + from, to - from);
     }
   }
 

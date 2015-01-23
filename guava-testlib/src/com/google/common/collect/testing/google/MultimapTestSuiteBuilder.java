@@ -36,7 +36,9 @@ import com.google.common.collect.testing.TestCollectionGenerator;
 import com.google.common.collect.testing.TestMapGenerator;
 import com.google.common.collect.testing.TestSubjectGenerator;
 import com.google.common.collect.testing.features.CollectionFeature;
+import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.Feature;
+import com.google.common.collect.testing.features.ListFeature;
 import com.google.common.collect.testing.features.MapFeature;
 import com.google.common.testing.SerializableTester;
 
@@ -45,6 +47,7 @@ import junit.framework.TestSuite;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -74,16 +77,26 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
   @Override
   protected List<Class<? extends AbstractTester>> getTesters() {
     return ImmutableList.<Class<? extends AbstractTester>> of(
+        MultimapAsMapGetTester.class,
+        MultimapAsMapTester.class,
         MultimapSizeTester.class,
+        MultimapClearTester.class,
         MultimapContainsKeyTester.class,
         MultimapContainsValueTester.class,
         MultimapContainsEntryTester.class,
+        MultimapEntriesTester.class,
+        MultimapEqualsTester.class,
         MultimapGetTester.class,
+        MultimapKeySetTester.class,
+        MultimapKeysTester.class,
         MultimapPutTester.class,
+        MultimapPutAllMultimapTester.class,
         MultimapPutIterableTester.class,
         MultimapReplaceValuesTester.class,
         MultimapRemoveEntryTester.class,
-        MultimapRemoveAllTester.class);
+        MultimapRemoveAllTester.class,
+        MultimapToStringTester.class,
+        MultimapValuesTester.class);
   }
 
   @Override
@@ -116,7 +129,9 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
 
     derivedSuites.add(computeEntriesTestSuite(parentBuilder));
     derivedSuites.add(computeMultimapGetTestSuite(parentBuilder));
+    derivedSuites.add(computeMultimapAsMapGetTestSuite(parentBuilder));
     derivedSuites.add(computeKeysTestSuite(parentBuilder));
+    derivedSuites.add(computeValuesTestSuite(parentBuilder));
 
     return derivedSuites;
   }
@@ -127,7 +142,7 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
     return CollectionTestSuiteBuilder.using(
         new ValuesGenerator<K, V, M>(parentBuilder.getSubjectGenerator()))
         .withFeatures(computeValuesFeatures(parentBuilder.getFeatures()))
-        .named(parentBuilder.getName() + ".entries")
+        .named(parentBuilder.getName() + ".values")
         .suppressing(parentBuilder.getSuppressedTests())
         .createTestSuite();
   }
@@ -154,6 +169,22 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
         .createTestSuite();
   }
 
+  TestSuite computeMultimapAsMapGetTestSuite(
+      FeatureSpecificTestSuiteBuilder<?, ? extends
+          OneSizeTestContainerGenerator<M, Map.Entry<K, V>>> parentBuilder) {
+    Set<Feature<?>> features = computeMultimapAsMapGetFeatures(parentBuilder.getFeatures());
+    if (Collections.disjoint(features, EnumSet.allOf(CollectionSize.class))) {
+      return new TestSuite();
+    } else {
+      return CollectionTestSuiteBuilder.using(
+          new MultimapAsMapGetGenerator<K, V, M>(parentBuilder.getSubjectGenerator()))
+          .withFeatures(features)
+          .named(parentBuilder.getName() + ".asMap[].get[key]")
+          .suppressing(parentBuilder.getSuppressedTests())
+          .createTestSuite();
+    }
+  }
+
   TestSuite computeKeysTestSuite(
       FeatureSpecificTestSuiteBuilder<?, ? extends
           OneSizeTestContainerGenerator<M, Map.Entry<K, V>>> parentBuilder) {
@@ -170,9 +201,6 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
     if (!derivedFeatures.remove(CollectionFeature.SERIALIZABLE_INCLUDING_VIEWS)) {
       derivedFeatures.remove(CollectionFeature.SERIALIZABLE);
     }
-    if (derivedFeatures.remove(MapFeature.ALLOWS_NULL_QUERIES)) {
-      derivedFeatures.add(CollectionFeature.ALLOWS_NULL_QUERIES);
-    }
     if (derivedFeatures.remove(MapFeature.SUPPORTS_REMOVE)) {
       derivedFeatures.add(CollectionFeature.SUPPORTS_REMOVE);
     }
@@ -181,12 +209,23 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
 
   static Set<Feature<?>> computeEntriesFeatures(
       Set<Feature<?>> multimapFeatures) {
-    return computeDerivedCollectionFeatures(multimapFeatures);
+    Set<Feature<?>> result = computeDerivedCollectionFeatures(multimapFeatures);
+    if (multimapFeatures.contains(MapFeature.ALLOWS_NULL_ENTRY_QUERIES)) {
+      result.add(CollectionFeature.ALLOWS_NULL_QUERIES);
+    }
+    return result;
   }
 
   static Set<Feature<?>> computeValuesFeatures(
       Set<Feature<?>> multimapFeatures) {
-    return computeDerivedCollectionFeatures(multimapFeatures);
+    Set<Feature<?>> result = computeDerivedCollectionFeatures(multimapFeatures);
+    if (multimapFeatures.contains(MapFeature.ALLOWS_NULL_VALUES)) {
+      result.add(CollectionFeature.ALLOWS_NULL_VALUES);
+    }
+    if (multimapFeatures.contains(MapFeature.ALLOWS_NULL_VALUE_QUERIES)) {
+      result.add(CollectionFeature.ALLOWS_NULL_QUERIES);
+    }
+    return result;
   }
 
   static Set<Feature<?>> computeKeysFeatures(
@@ -194,6 +233,9 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
     Set<Feature<?>> result = computeDerivedCollectionFeatures(multimapFeatures);
     if (multimapFeatures.contains(MapFeature.ALLOWS_NULL_KEYS)) {
       result.add(CollectionFeature.ALLOWS_NULL_VALUES);
+    }
+    if (multimapFeatures.contains(MapFeature.ALLOWS_NULL_KEY_QUERIES)) {
+      result.add(CollectionFeature.ALLOWS_NULL_QUERIES);
     }
     return result;
   }
@@ -212,6 +254,7 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
     derivedFeatures.remove(MapFeature.GENERAL_PURPOSE);
     derivedFeatures.remove(MapFeature.SUPPORTS_PUT);
     derivedFeatures.remove(MapFeature.ALLOWS_NULL_VALUES);
+    derivedFeatures.add(MapFeature.ALLOWS_NULL_VALUE_QUERIES);
     derivedFeatures.add(MapFeature.REJECTS_DUPLICATES_AT_CREATION);
     if (!derivedFeatures.contains(CollectionFeature.SERIALIZABLE_INCLUDING_VIEWS)) {
       derivedFeatures.remove(CollectionFeature.SERIALIZABLE);
@@ -224,8 +267,11 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
       .put(
           MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
           CollectionFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION)
-      .put(MapFeature.GENERAL_PURPOSE, CollectionFeature.GENERAL_PURPOSE)
-      .put(MapFeature.ALLOWS_NULL_QUERIES, CollectionFeature.ALLOWS_NULL_QUERIES)
+      .put(MapFeature.GENERAL_PURPOSE, ListFeature.SUPPORTS_ADD_WITH_INDEX)
+      .put(MapFeature.GENERAL_PURPOSE, ListFeature.SUPPORTS_REMOVE_WITH_INDEX)
+      .put(MapFeature.GENERAL_PURPOSE, ListFeature.SUPPORTS_SET)
+      .put(MapFeature.ALLOWS_NULL_VALUE_QUERIES,
+          CollectionFeature.ALLOWS_NULL_QUERIES)
       .put(MapFeature.ALLOWS_NULL_VALUES, CollectionFeature.ALLOWS_NULL_VALUES)
       .put(MapFeature.SUPPORTS_REMOVE, CollectionFeature.SUPPORTS_REMOVE)
       .put(MapFeature.SUPPORTS_PUT, CollectionFeature.SUPPORTS_ADD)
@@ -239,10 +285,24 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
         derivedFeatures.add(entry.getValue());
       }
     }
+    if (derivedFeatures.remove(MultimapFeature.VALUE_COLLECTIONS_SUPPORT_ITERATOR_REMOVE)) {
+      derivedFeatures.add(CollectionFeature.SUPPORTS_ITERATOR_REMOVE);
+    }
     if (!derivedFeatures.contains(CollectionFeature.SERIALIZABLE_INCLUDING_VIEWS)) {
       derivedFeatures.remove(CollectionFeature.SERIALIZABLE);
     }
     derivedFeatures.removeAll(GET_FEATURE_MAP.keySet());
+    return derivedFeatures;
+  }
+
+  Set<Feature<?>> computeMultimapAsMapGetFeatures(
+      Set<Feature<?>> multimapFeatures) {
+    Set<Feature<?>> derivedFeatures = Helpers.copyToSet(
+        computeMultimapGetFeatures(multimapFeatures));
+    if (derivedFeatures.remove(CollectionSize.ANY)) {
+      derivedFeatures.addAll(CollectionSize.ANY.getImpliedFeatures());
+    }
+    derivedFeatures.remove(CollectionSize.ZERO);
     return derivedFeatures;
   }
 
@@ -487,7 +547,7 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
 
   static class MultimapGetGenerator<K, V, M extends Multimap<K, V>>
       implements TestCollectionGenerator<V> {
-    private final OneSizeTestContainerGenerator<M, Map.Entry<K, V>> multimapGenerator;
+    final OneSizeTestContainerGenerator<M, Map.Entry<K, V>> multimapGenerator;
 
     public MultimapGetGenerator(
         OneSizeTestContainerGenerator<
@@ -532,6 +592,27 @@ public class MultimapTestSuiteBuilder<K, V, M extends Multimap<K, V>> extends
         array[i] = mapEntry(k, (V) elements[i]);
       }
       return multimapGenerator.create(array).get(k);
+    }
+  }
+
+  static class MultimapAsMapGetGenerator<K, V, M extends Multimap<K, V>>
+      extends MultimapGetGenerator<K, V, M> {
+
+    public MultimapAsMapGetGenerator(
+        OneSizeTestContainerGenerator<
+        M, Map.Entry<K, V>> multimapGenerator) {
+      super(multimapGenerator);
+    }
+
+    @Override
+    public Collection<V> create(Object... elements) {
+      Entry<K, V>[] array = multimapGenerator.createArray(elements.length);
+      K k = ((TestMultimapGenerator<K, V, M>) multimapGenerator.getInnerGenerator())
+          .sampleKeys().e0;
+      for (int i = 0; i < elements.length; i++) {
+        array[i] = mapEntry(k, (V) elements[i]);
+      }
+      return multimapGenerator.create(array).asMap().get(k);
     }
   }
 

@@ -21,13 +21,13 @@ import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.Helpers;
 import com.google.common.testing.NullPointerTester;
 
+import junit.framework.TestCase;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
-
-import junit.framework.TestCase;
 
 /**
  * Tests for UnsignedLongs
@@ -98,10 +98,10 @@ public class UnsignedLongsTest extends TestCase {
         new long[] {},
         new long[] {LEAST},
         new long[] {LEAST, LEAST},
-        new long[] {LEAST, 1},
-        new long[] {1},
-        new long[] {1, LEAST},
-        new long[] {GREATEST, GREATEST - 1},
+        new long[] {LEAST, (long) 1},
+        new long[] {(long) 1},
+        new long[] {(long) 1, LEAST},
+        new long[] {GREATEST, GREATEST - (long) 1},
         new long[] {GREATEST, GREATEST},
         new long[] {GREATEST, GREATEST, GREATEST});
     

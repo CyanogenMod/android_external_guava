@@ -23,12 +23,12 @@ import com.google.common.collect.testing.TestStringQueueGenerator;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 
+import junit.framework.Test;
+import junit.framework.TestSuite;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Queue;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
 /**
  * Tests for {@code ForwardingQueue}.

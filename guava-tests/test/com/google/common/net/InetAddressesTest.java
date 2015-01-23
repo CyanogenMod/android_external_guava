@@ -18,12 +18,12 @@ package com.google.common.net;
 
 import com.google.common.testing.NullPointerTester;
 
+import junit.framework.TestCase;
+
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
-import junit.framework.TestCase;
 
 /**
  * Tests for {@link InetAddresses}.

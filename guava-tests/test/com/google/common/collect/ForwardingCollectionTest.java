@@ -24,11 +24,11 @@ import com.google.common.collect.testing.TestStringCollectionGenerator;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 
-import java.util.Collection;
-import java.util.Collections;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
+
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Tests for {@link ForwardingCollection}.

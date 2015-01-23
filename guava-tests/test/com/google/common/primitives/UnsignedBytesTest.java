@@ -20,11 +20,11 @@ import com.google.common.collect.testing.Helpers;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
+import junit.framework.TestCase;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
-import junit.framework.TestCase;
 
 /**
  * Unit test for {@link UnsignedBytes}.
@@ -226,9 +226,9 @@ public class UnsignedBytesTest extends TestCase {
   public void testLexicographicalComparatorDefaultChoice() {
     Comparator<byte[]> defaultComparator =
         UnsignedBytes.lexicographicalComparator();
-    Comparator<byte[]> pureJavaComparator =
-        UnsignedBytes.LexicographicalComparatorHolder.PureJavaComparator.INSTANCE;
-    assertSame(defaultComparator, pureJavaComparator);
+    Comparator<byte[]> unsafeComparator =
+        UnsignedBytes.LexicographicalComparatorHolder.UnsafeComparator.INSTANCE;
+    assertSame(defaultComparator, unsafeComparator);
   }
 
   public void testLexicographicalComparator() {
@@ -252,6 +252,23 @@ public class UnsignedBytesTest extends TestCase {
     Comparator<byte[]> javaImpl = UnsignedBytes.lexicographicalComparatorJavaImpl();
     Helpers.testComparator(javaImpl, ordered);
     assertSame(javaImpl, SerializableTester.reserialize(javaImpl));
+  }
+  
+  @SuppressWarnings("unchecked")
+  public void testLexicographicalComparatorLongInputs() {
+    for (Comparator<byte[]> comparator : Arrays.asList(
+        UnsignedBytes.lexicographicalComparator(),
+        UnsignedBytes.lexicographicalComparatorJavaImpl())) {
+      for (int i = 0; i < 32; i++) {
+        byte[] left = new byte[32];
+        byte[] right = new byte[32];
+
+        assertTrue(comparator.compare(left, right) == 0);
+        left[i] = 1;
+        assertTrue(comparator.compare(left, right) > 0);
+        assertTrue(comparator.compare(right, left) < 0);
+      }
+    }
   }
 
   public void testNulls() {

@@ -19,7 +19,6 @@ package com.google.common.hash;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.jdk5backport.Arrays;
@@ -181,7 +180,7 @@ final class HashTestUtils {
         }
         String s = new String(value);
         for (PrimitiveSink sink : sinks) {
-          sink.putString(s);
+          sink.putUnencodedChars(s);
         }
       }
     },
@@ -189,7 +188,7 @@ final class HashTestUtils {
       @Override void performAction(Random random, Iterable<? extends PrimitiveSink> sinks) {
         String s = new String(new char[] { randomLowSurrogate(random) });
         for (PrimitiveSink sink : sinks) {
-          sink.putString(s);
+          sink.putUnencodedChars(s);
         }
       }
     },
@@ -197,7 +196,7 @@ final class HashTestUtils {
       @Override void performAction(Random random, Iterable<? extends PrimitiveSink> sinks) {
         String s = new String(new char[] { randomHighSurrogate(random) });
         for (PrimitiveSink sink : sinks) {
-          sink.putString(s);
+          sink.putUnencodedChars(s);
         }
       }
     },
@@ -206,7 +205,7 @@ final class HashTestUtils {
         String s = new String(new char[] {
             randomLowSurrogate(random), randomHighSurrogate(random)});
         for (PrimitiveSink sink : sinks) {
-          sink.putString(s);
+          sink.putUnencodedChars(s);
         }
       }
     },
@@ -215,7 +214,7 @@ final class HashTestUtils {
         String s = new String(new char[] {
             randomHighSurrogate(random), randomLowSurrogate(random)});
         for (PrimitiveSink sink : sinks) {
-          sink.putString(s);
+          sink.putUnencodedChars(s);
         }
       }
     };
@@ -260,8 +259,8 @@ final class HashTestUtils {
         // flip input bit for key2
         int key2 = key1 ^ (1 << i);
         // get hashes
-        int hash1 = function.newHasher().putInt(key1).hash().asInt();
-        int hash2 = function.newHasher().putInt(key2).hash().asInt();
+        int hash1 = function.hashInt(key1).asInt();
+        int hash2 = function.hashInt(key2).asInt();
         // test whether the hash values have same output bits
         same |= ~(hash1 ^ hash2);
         // test whether the hash values have different output bits
@@ -299,8 +298,8 @@ final class HashTestUtils {
         // flip input bit for key2
         int key2 = key1 ^ (1 << i);
         // compute hash values
-        int hash1 = function.newHasher().putInt(key1).hash().asInt();
-        int hash2 = function.newHasher().putInt(key2).hash().asInt();
+        int hash1 = function.hashInt(key1).asInt();
+        int hash2 = function.hashInt(key2).asInt();
         for (int k = 0; k < hashBits; k++) {
           if ((hash1 & (1 << k)) == (hash2 & (1 << k))) {
             same[k] += 1;
@@ -338,15 +337,15 @@ final class HashTestUtils {
         int maxCount = 20; // the probability of error here is miniscule
         boolean diff = false;
 
-        while (diff == false) {
+        while (!diff) {
           int delta = (1 << i) | (1 << j);
           int key1 = rand.nextInt();
           // apply delta
           int key2 = key1 ^ delta;
 
           // get hashes
-          int hash1 = function.newHasher().putInt(key1).hash().asInt();
-          int hash2 = function.newHasher().putInt(key2).hash().asInt();
+          int hash1 = function.hashInt(key1).asInt();
+          int hash2 = function.hashInt(key2).asInt();
 
           // this 2-bit candidate delta is not a characteristic
           // if deltas are different
@@ -389,8 +388,8 @@ final class HashTestUtils {
           // flip input bit for key2
           int key2 = key1 ^ delta;
           // compute hash values
-          int hash1 = function.newHasher().putInt(key1).hash().asInt();
-          int hash2 = function.newHasher().putInt(key2).hash().asInt();
+          int hash1 = function.hashInt(key1).asInt();
+          int hash2 = function.hashInt(key2).asInt();
           for (int k = 0; k < hashBits; k++) {
             if ((hash1 & (1 << k)) == (hash2 & (1 << k))) {
               same[k] += 1;
@@ -511,7 +510,7 @@ final class HashTestUtils {
         hashFunction.newHasher().putLong(l).hash());
   }
 
-  private static final ImmutableList<Charset> CHARSETS = ImmutableList.of(
+  private static final ImmutableSet<Charset> CHARSETS = ImmutableSet.of(
       Charsets.ISO_8859_1,
       Charsets.US_ASCII,
       Charsets.UTF_16,
@@ -523,12 +522,14 @@ final class HashTestUtils {
     // Test that only data and data-order is important, not the individual operations.
     new EqualsTester()
         .addEqualityGroup(
-            hashFunction.newHasher().putString("abc").hash(),
-            hashFunction.newHasher().putString("ab").putString("c").hash(),
-            hashFunction.newHasher().putString("a").putString("bc").hash(),
-            hashFunction.newHasher().putString("a").putString("b").putString("c").hash(),
-            hashFunction.newHasher().putChar('a').putString("bc").hash(),
-            hashFunction.newHasher().putString("ab").putChar('c').hash(),
+            hashFunction.hashUnencodedChars("abc"),
+            hashFunction.newHasher().putUnencodedChars("abc").hash(),
+            hashFunction.newHasher().putUnencodedChars("ab").putUnencodedChars("c").hash(),
+            hashFunction.newHasher().putUnencodedChars("a").putUnencodedChars("bc").hash(),
+            hashFunction.newHasher().putUnencodedChars("a").putUnencodedChars("b")
+                .putUnencodedChars("c").hash(),
+            hashFunction.newHasher().putChar('a').putUnencodedChars("bc").hash(),
+            hashFunction.newHasher().putUnencodedChars("ab").putChar('c').hash(),
             hashFunction.newHasher().putChar('a').putChar('b').putChar('c').hash())
         .testEquals();
 
@@ -536,13 +537,8 @@ final class HashTestUtils {
     byte[] bytes = new byte[size];
     random.nextBytes(bytes);
     String string = new String(bytes);
-    assertEquals(hashFunction.hashString(string),
-        hashFunction.newHasher().putString(string).hash());
-    // These assertions causes failures when testing with mvn. See b/6657789
-    // assertEquals(hashFunction.hashString(string),
-    //     hashFunction.hashString(string, Charsets.UTF_16LE));
-    // assertEquals(hashFunction.hashString(string),
-    //     hashFunction.newHasher().putString(string, Charsets.UTF_16LE).hash());
+    assertEquals(hashFunction.hashUnencodedChars(string),
+        hashFunction.newHasher().putUnencodedChars(string).hash());
     for (Charset charset : CHARSETS) {
       assertEquals(hashFunction.hashString(string, charset),
           hashFunction.newHasher().putString(string, charset).hash());
@@ -550,9 +546,9 @@ final class HashTestUtils {
   }
 
   /**
-   * This verifies that putString(String) and hashString(String) are equivalent, even for
-   * funny strings composed by (possibly unmatched, and mostly illegal) surrogate characters.
-   * (But doesn't test that they do the right thing - just their consistency).
+   * This verifies that putUnencodedChars(String) and hashUnencodedChars(String) are equivalent,
+   * even for funny strings composed by (possibly unmatched, and mostly illegal) surrogate
+   * characters. (But doesn't test that they do the right thing - just their consistency).
    */
   private static void assertHashStringWithSurrogatesEquivalence(
       HashFunction hashFunction, Random random) {
@@ -562,8 +558,8 @@ final class HashTestUtils {
       chars[i] = random.nextBoolean() ? randomLowSurrogate(random) : randomHighSurrogate(random);
     }
     String string = new String(chars);
-    assertEquals(hashFunction.hashString(string),
-        hashFunction.newHasher().putString(string).hash());
+    assertEquals(hashFunction.hashUnencodedChars(string),
+        hashFunction.newHasher().putUnencodedChars(string).hash());
   }
 
   static char randomLowSurrogate(Random random) {

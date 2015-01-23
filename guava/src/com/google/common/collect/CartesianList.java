@@ -20,9 +20,9 @@ import com.google.common.annotations.GwtCompatible;
 import com.google.common.math.IntMath;
 
 import java.util.AbstractList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.RandomAccess;
 
 import javax.annotation.Nullable;
 
@@ -32,13 +32,14 @@ import javax.annotation.Nullable;
  * @author Louis Wasserman
  */
 @GwtCompatible
-final class CartesianList<E> extends AbstractList<List<E>> {
+final class CartesianList<E> extends AbstractList<List<E>> implements RandomAccess {
 
   private transient final ImmutableList<List<E>> axes;
   private transient final int[] axesSizeProduct;
-
+  
   static <E> List<List<E>> create(List<? extends List<? extends E>> lists) {
-    ImmutableList.Builder<List<E>> axesBuilder = new ImmutableList.Builder<List<E>>(lists.size());
+    ImmutableList.Builder<List<E>> axesBuilder =
+        new ImmutableList.Builder<List<E>>(lists.size());
     for (List<? extends E> list : lists) {
       List<E> copy = ImmutableList.copyOf(list);
       if (copy.isEmpty()) {
@@ -55,7 +56,8 @@ final class CartesianList<E> extends AbstractList<List<E>> {
     axesSizeProduct[axes.size()] = 1;
     try {
       for (int i = axes.size() - 1; i >= 0; i--) {
-        axesSizeProduct[i] = IntMath.checkedMultiply(axesSizeProduct[i + 1], axes.get(i).size());
+        axesSizeProduct[i] =
+            IntMath.checkedMultiply(axesSizeProduct[i + 1], axes.get(i).size());
       }
     } catch (ArithmeticException e) {
       throw new IllegalArgumentException(
@@ -73,10 +75,12 @@ final class CartesianList<E> extends AbstractList<List<E>> {
     checkElementIndex(index, size());
     return new ImmutableList<E>() {
 
+      @Override
       public int size() {
         return axes.size();
       }
 
+      @Override
       public E get(int axis) {
         checkElementIndex(axis, size());
         int axisIndex = getAxisIndexForProductIndex(index, axis);
@@ -112,49 +116,5 @@ final class CartesianList<E> extends AbstractList<List<E>> {
       }
     }
     return true;
-  }
-
-  @Override
-  public int indexOf(Object o) {
-    if (!(o instanceof List)) {
-      return -1;
-    }
-    List<?> l = (List<?>) o;
-    if (l.size() != axes.size()) {
-      return -1;
-    }
-    Iterator<?> lIterator = l.iterator();
-    int i = 0;
-    for (List<E> axis : axes) {
-      Object lElement = lIterator.next();
-      int axisIndex = axis.indexOf(lElement);
-      if (axisIndex == -1) {
-        return -1;
-      }
-      i = (i * axis.size()) + axisIndex;
-    }
-    return i;
-  }
-
-  @Override
-  public int lastIndexOf(Object o) {
-    if (!(o instanceof List)) {
-      return -1;
-    }
-    List<?> l = (List<?>) o;
-    if (l.size() != axes.size()) {
-      return -1;
-    }
-    Iterator<?> lIterator = l.iterator();
-    int i = 0;
-    for (List<E> axis : axes) {
-      Object lElement = lIterator.next();
-      int axisIndex = axis.lastIndexOf(lElement);
-      if (axisIndex == -1) {
-        return -1;
-      }
-      i = (i * axis.size()) + axisIndex;
-    }
-    return i;
   }
 }

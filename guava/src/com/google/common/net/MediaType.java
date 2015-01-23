@@ -33,7 +33,6 @@ import com.google.common.base.Joiner.MapJoiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -82,13 +81,15 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public final class MediaType {
   private static final String CHARSET_ATTRIBUTE = "charset";
-  private static final ImmutableListMultimap<String, String> UTF_8_CONSTANT_PARAMETERS = ImmutableListMultimap
-      .of(CHARSET_ATTRIBUTE, Ascii.toLowerCase(UTF_8.name()));
+  private static final ImmutableListMultimap<String, String> UTF_8_CONSTANT_PARAMETERS =
+      ImmutableListMultimap.of(CHARSET_ATTRIBUTE, Ascii.toLowerCase(UTF_8.name()));
 
   /** Matcher for type, subtype and attributes. */
   private static final CharMatcher TOKEN_MATCHER = ASCII.and(JAVA_ISO_CONTROL.negate())
-      .and(CharMatcher.isNot(' ')).and(CharMatcher.noneOf("()<>@,;:\\\"/[]?="));
-  private static final CharMatcher QUOTED_TEXT_MATCHER = ASCII.and(CharMatcher.noneOf("\"\\\r"));
+      .and(CharMatcher.isNot(' '))
+      .and(CharMatcher.noneOf("()<>@,;:\\\"/[]?="));
+  private static final CharMatcher QUOTED_TEXT_MATCHER = ASCII
+      .and(CharMatcher.noneOf("\"\\\r"));
   /*
    * This matches the same characters as linear-white-space from RFC 822, but we make no effort to
    * enforce any particular rules with regards to line folding as stated in the class docs.
@@ -104,15 +105,29 @@ public final class MediaType {
 
   private static final String WILDCARD = "*";
 
+  private static final Map<MediaType, MediaType> KNOWN_TYPES = Maps.newHashMap();
+
+  private static MediaType createConstant(String type, String subtype) {
+    return addKnownType(new MediaType(type, subtype, ImmutableListMultimap.<String, String>of()));
+  }
+
+  private static MediaType createConstantUtf8(String type, String subtype) {
+    return addKnownType(new MediaType(type, subtype, UTF_8_CONSTANT_PARAMETERS));
+  }
+
+  private static MediaType addKnownType(MediaType mediaType) {
+    KNOWN_TYPES.put(mediaType, mediaType);
+    return mediaType;
+  }
+
   /*
    * The following constants are grouped by their type and ordered alphabetically by the constant
    * name within that type. The constant name should be a sensible identifier that is closest to the
    * "common name" of the media.  This is often, but not necessarily the same as the subtype.
    *
-   * Be sure to declare all constants with the type and subtype in all lowercase.
-   *
-   * When adding constants, be sure to add an entry into the KNOWN_TYPES map. For types that
-   * take a charset (e.g. all text/* types), default to UTF-8 and suffix with "_UTF_8".
+   * Be sure to declare all constants with the type and subtype in all lowercase. For types that
+   * take a charset (e.g. all text/* types), default to UTF-8 and suffix the constant name with
+   * "_UTF_8".
    */
 
   public static final MediaType ANY_TYPE = createConstant(WILDCARD, WILDCARD);
@@ -123,8 +138,8 @@ public final class MediaType {
   public static final MediaType ANY_APPLICATION_TYPE = createConstant(APPLICATION_TYPE, WILDCARD);
 
   /* text types */
-  public static final MediaType CACHE_MANIFEST_UTF_8 = createConstantUtf8(TEXT_TYPE,
-      "cache-manifest");
+  public static final MediaType CACHE_MANIFEST_UTF_8 =
+      createConstantUtf8(TEXT_TYPE, "cache-manifest");
   public static final MediaType CSS_UTF_8 = createConstantUtf8(TEXT_TYPE, "css");
   public static final MediaType CSV_UTF_8 = createConstantUtf8(TEXT_TYPE, "csv");
   public static final MediaType HTML_UTF_8 = createConstantUtf8(TEXT_TYPE, "html");
@@ -136,6 +151,13 @@ public final class MediaType {
    * but this may be necessary in certain situations for compatibility.
    */
   public static final MediaType TEXT_JAVASCRIPT_UTF_8 = createConstantUtf8(TEXT_TYPE, "javascript");
+  /**
+   * <a href="http://www.iana.org/assignments/media-types/text/tab-separated-values">
+   * Tab separated values</a>.
+   *
+   * @since 15.0
+   */
+  public static final MediaType TSV_UTF_8 = createConstantUtf8(TEXT_TYPE, "tab-separated-values");
   public static final MediaType VCARD_UTF_8 = createConstantUtf8(TEXT_TYPE, "vcard");
   public static final MediaType WML_UTF_8 = createConstantUtf8(TEXT_TYPE, "vnd.wap.wml");
   /**
@@ -147,10 +169,37 @@ public final class MediaType {
 
   /* image types */
   public static final MediaType BMP = createConstant(IMAGE_TYPE, "bmp");
+  /**
+   * The media type for the <a href="http://en.wikipedia.org/wiki/Camera_Image_File_Format">Canon
+   * Image File Format</a> ({@code crw} files), a widely-used "raw image" format for cameras. It is
+   * found in {@code /etc/mime.types}, e.g. in <href=
+   * "http://anonscm.debian.org/gitweb/?p=collab-maint/mime-support.git;a=blob;f=mime.types;hb=HEAD"
+   * >Debian 3.48-1</a>.
+   *
+   * @since 15.0
+   */
+  public static final MediaType CRW = createConstant(IMAGE_TYPE, "x-canon-crw");
   public static final MediaType GIF = createConstant(IMAGE_TYPE, "gif");
   public static final MediaType ICO = createConstant(IMAGE_TYPE, "vnd.microsoft.icon");
   public static final MediaType JPEG = createConstant(IMAGE_TYPE, "jpeg");
   public static final MediaType PNG = createConstant(IMAGE_TYPE, "png");
+  /**
+   * The media type for the Photoshop File Format ({@code psd} files) as defined by <a href=
+   * "http://www.iana.org/assignments/media-types/image/vnd.adobe.photoshop">IANA</a>, and found in
+   * {@code /etc/mime.types}, e.g. <a href=
+   * "http://svn.apache.org/repos/asf/httpd/httpd/branches/1.3.x/conf/mime.types"></a> of the Apache
+   * <a href="http://httpd.apache.org/">HTTPD project</a>; for the specification, see
+   * <href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/PhotoshopFileFormats.htm">
+   * Adobe Photoshop Document Format</a> and <a href=
+   * "http://en.wikipedia.org/wiki/Adobe_Photoshop#File_format">Wikipedia</a>; this is the regular
+   * output/input of Photoshop (which can also export to various image formats; note that files with
+   * extension "PSB" are in a distinct but related format).
+   * <p>This is a more recent replacement for the older, experimental type
+   * {@code x-photoshop}: <a href="http://tools.ietf.org/html/rfc2046#section-6">RFC-2046.6</a>.
+   *
+   * @since 15.0
+   */
+  public static final MediaType PSD = createConstant(IMAGE_TYPE, "vnd.adobe.photoshop");
   public static final MediaType SVG_UTF_8 = createConstantUtf8(IMAGE_TYPE, "svg+xml");
   public static final MediaType TIFF = createConstant(IMAGE_TYPE, "tiff");
   public static final MediaType WEBP = createConstant(IMAGE_TYPE, "webp");
@@ -178,8 +227,35 @@ public final class MediaType {
   public static final MediaType APPLICATION_XML_UTF_8 = createConstantUtf8(APPLICATION_TYPE, "xml");
   public static final MediaType ATOM_UTF_8 = createConstantUtf8(APPLICATION_TYPE, "atom+xml");
   public static final MediaType BZIP2 = createConstant(APPLICATION_TYPE, "x-bzip2");
+  /**
+   * Media type for <a href="http://en.wikipedia.org/wiki/Embedded_OpenType">Embedded OpenType</a>
+   * fonts. This is
+   * <a href="http://www.iana.org/assignments/media-types/application/vnd.ms-fontobject">registered
+   * </a> with the IANA.
+   *
+   * @since 17.0
+   */
+  public static final MediaType EOT = createConstant(APPLICATION_TYPE, "vnd.ms-fontobject");
+  /**
+   * As described in the <a href="http://idpf.org/epub">International Digital Publishing Forum</a>
+   * EPUB is the distribution and interchange format standard for digital publications and
+   * documents. This media type is defined in the
+   * <a href="http://www.idpf.org/epub/30/spec/epub30-ocf.html">EPUB Open Container Format</a>
+   * specification.
+   *
+   * @since 15.0
+   */
+  public static final MediaType EPUB = createConstant(APPLICATION_TYPE, "epub+zip");
   public static final MediaType FORM_DATA = createConstant(APPLICATION_TYPE,
       "x-www-form-urlencoded");
+  /**
+   * As described in <a href="https://www.rsa.com/rsalabs/node.asp?id=2138">PKCS #12: Personal
+   * Information Exchange Syntax Standard</a>, PKCS #12 defines an archive file format for storing
+   * many cryptography objects as a single file.
+   *
+   * @since 15.0
+   */
+  public static final MediaType KEY_ARCHIVE = createConstant(APPLICATION_TYPE, "pkcs12");
   /**
    * This is a non-standard media type, but is commonly used in serving hosted binary files as it is
    * <a href="http://code.google.com/p/browsersec/wiki/Part2#Survey_of_content_sniffing_behaviors">
@@ -193,20 +269,20 @@ public final class MediaType {
    */
   public static final MediaType APPLICATION_BINARY = createConstant(APPLICATION_TYPE, "binary");
   public static final MediaType GZIP = createConstant(APPLICATION_TYPE, "x-gzip");
-  /**
-   * <a href="http://www.rfc-editor.org/rfc/rfc4329.txt">RFC 4329</a> declares this to be the
-   * correct media type for JavaScript, but {@link #TEXT_JAVASCRIPT_UTF_8 text/javascript} may be
-   * necessary in certain situations for compatibility.
-   */
-  public static final MediaType JAVASCRIPT_UTF_8 = createConstantUtf8(APPLICATION_TYPE,
-      "javascript");
+   /**
+    * <a href="http://www.rfc-editor.org/rfc/rfc4329.txt">RFC 4329</a> declares this to be the
+    * correct media type for JavaScript, but {@link #TEXT_JAVASCRIPT_UTF_8 text/javascript} may be
+    * necessary in certain situations for compatibility.
+    */
+  public static final MediaType JAVASCRIPT_UTF_8 =
+      createConstantUtf8(APPLICATION_TYPE, "javascript");
   public static final MediaType JSON_UTF_8 = createConstantUtf8(APPLICATION_TYPE, "json");
   public static final MediaType KML = createConstant(APPLICATION_TYPE, "vnd.google-earth.kml+xml");
   public static final MediaType KMZ = createConstant(APPLICATION_TYPE, "vnd.google-earth.kmz");
   public static final MediaType MBOX = createConstant(APPLICATION_TYPE, "mbox");
   public static final MediaType MICROSOFT_EXCEL = createConstant(APPLICATION_TYPE, "vnd.ms-excel");
-  public static final MediaType MICROSOFT_POWERPOINT = createConstant(APPLICATION_TYPE,
-      "vnd.ms-powerpoint");
+  public static final MediaType MICROSOFT_POWERPOINT =
+      createConstant(APPLICATION_TYPE, "vnd.ms-powerpoint");
   public static final MediaType MICROSOFT_WORD = createConstant(APPLICATION_TYPE, "msword");
   public static final MediaType OCTET_STREAM = createConstant(APPLICATION_TYPE, "octet-stream");
   public static final MediaType OGG_CONTAINER = createConstant(APPLICATION_TYPE, "ogg");
@@ -214,24 +290,50 @@ public final class MediaType {
       "vnd.openxmlformats-officedocument.wordprocessingml.document");
   public static final MediaType OOXML_PRESENTATION = createConstant(APPLICATION_TYPE,
       "vnd.openxmlformats-officedocument.presentationml.presentation");
-  public static final MediaType OOXML_SHEET = createConstant(APPLICATION_TYPE,
-      "vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  public static final MediaType OPENDOCUMENT_GRAPHICS = createConstant(APPLICATION_TYPE,
-      "vnd.oasis.opendocument.graphics");
-  public static final MediaType OPENDOCUMENT_PRESENTATION = createConstant(APPLICATION_TYPE,
-      "vnd.oasis.opendocument.presentation");
-  public static final MediaType OPENDOCUMENT_SPREADSHEET = createConstant(APPLICATION_TYPE,
-      "vnd.oasis.opendocument.spreadsheet");
-  public static final MediaType OPENDOCUMENT_TEXT = createConstant(APPLICATION_TYPE,
-      "vnd.oasis.opendocument.text");
+  public static final MediaType OOXML_SHEET =
+      createConstant(APPLICATION_TYPE, "vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  public static final MediaType OPENDOCUMENT_GRAPHICS =
+      createConstant(APPLICATION_TYPE, "vnd.oasis.opendocument.graphics");
+  public static final MediaType OPENDOCUMENT_PRESENTATION =
+      createConstant(APPLICATION_TYPE, "vnd.oasis.opendocument.presentation");
+  public static final MediaType OPENDOCUMENT_SPREADSHEET =
+      createConstant(APPLICATION_TYPE, "vnd.oasis.opendocument.spreadsheet");
+  public static final MediaType OPENDOCUMENT_TEXT =
+      createConstant(APPLICATION_TYPE, "vnd.oasis.opendocument.text");
   public static final MediaType PDF = createConstant(APPLICATION_TYPE, "pdf");
   public static final MediaType POSTSCRIPT = createConstant(APPLICATION_TYPE, "postscript");
+  /**
+   * <a href="http://tools.ietf.org/html/draft-rfernando-protocol-buffers-00">Protocol buffers</a>
+   *
+   * @since 15.0
+   */
+  public static final MediaType PROTOBUF = createConstant(APPLICATION_TYPE, "protobuf");
   public static final MediaType RDF_XML_UTF_8 = createConstantUtf8(APPLICATION_TYPE, "rdf+xml");
   public static final MediaType RTF_UTF_8 = createConstantUtf8(APPLICATION_TYPE, "rtf");
+  /**
+   * Media type for SFNT fonts (which includes
+   * <a href="http://en.wikipedia.org/wiki/TrueType/">TrueType</a> and
+   * <a href="http://en.wikipedia.org/wiki/OpenType/">OpenType</a> fonts). This is
+   * <a href="http://www.iana.org/assignments/media-types/application/font-sfnt">registered</a>
+   * with the IANA.
+   *
+   * @since 17.0
+   */
+  public static final MediaType SFNT = createConstant(APPLICATION_TYPE, "font-sfnt");
   public static final MediaType SHOCKWAVE_FLASH = createConstant(APPLICATION_TYPE,
       "x-shockwave-flash");
   public static final MediaType SKETCHUP = createConstant(APPLICATION_TYPE, "vnd.sketchup.skp");
   public static final MediaType TAR = createConstant(APPLICATION_TYPE, "x-tar");
+  /**
+   * Media type for the
+   * <a href="http://en.wikipedia.org/wiki/Web_Open_Font_Format">Web Open Font Format</a> (WOFF)
+   * <a href="http://www.w3.org/TR/WOFF/">defined</a> by the W3C. This is
+   * <a href="http://www.iana.org/assignments/media-types/application/font-woff">registered</a>
+   * with the IANA.
+   *
+   * @since 17.0
+   */
+  public static final MediaType WOFF = createConstant(APPLICATION_TYPE, "font-woff");
   public static final MediaType XHTML_UTF_8 = createConstantUtf8(APPLICATION_TYPE, "xhtml+xml");
   /**
    * Media type for Extensible Resource Descriptors. This is not yet registered with the IANA, but
@@ -243,98 +345,15 @@ public final class MediaType {
   public static final MediaType XRD_UTF_8 = createConstantUtf8(APPLICATION_TYPE, "xrd+xml");
   public static final MediaType ZIP = createConstant(APPLICATION_TYPE, "zip");
 
-  private static final ImmutableMap<MediaType, MediaType> KNOWN_TYPES =
-      new ImmutableMap.Builder<MediaType, MediaType>()
-          .put(ANY_TYPE, ANY_TYPE)
-          .put(ANY_TEXT_TYPE, ANY_TEXT_TYPE)
-          .put(ANY_IMAGE_TYPE, ANY_IMAGE_TYPE)
-          .put(ANY_AUDIO_TYPE, ANY_AUDIO_TYPE)
-          .put(ANY_VIDEO_TYPE, ANY_VIDEO_TYPE)
-          .put(ANY_APPLICATION_TYPE, ANY_APPLICATION_TYPE)
-          /* text types */
-          .put(CACHE_MANIFEST_UTF_8, CACHE_MANIFEST_UTF_8)
-          .put(CSS_UTF_8, CSS_UTF_8)
-          .put(CSV_UTF_8, CSV_UTF_8)
-          .put(HTML_UTF_8, HTML_UTF_8)
-          .put(I_CALENDAR_UTF_8, I_CALENDAR_UTF_8)
-          .put(PLAIN_TEXT_UTF_8, PLAIN_TEXT_UTF_8)
-          .put(TEXT_JAVASCRIPT_UTF_8, TEXT_JAVASCRIPT_UTF_8)
-          .put(VCARD_UTF_8, VCARD_UTF_8)
-          .put(WML_UTF_8, WML_UTF_8)
-          .put(XML_UTF_8, XML_UTF_8)
-          /* image types */
-          .put(BMP, BMP)
-          .put(GIF, GIF)
-          .put(ICO, ICO)
-          .put(JPEG, JPEG)
-          .put(PNG, PNG)
-          .put(SVG_UTF_8, SVG_UTF_8)
-          .put(TIFF, TIFF)
-          .put(WEBP, WEBP)
-          /* audio types */
-          .put(MP4_AUDIO, MP4_AUDIO)
-          .put(MPEG_AUDIO, MPEG_AUDIO)
-          .put(OGG_AUDIO, OGG_AUDIO)
-          .put(WEBM_AUDIO, WEBM_AUDIO)
-          /* video types */
-          .put(MP4_VIDEO, MP4_VIDEO)
-          .put(MPEG_VIDEO, MPEG_VIDEO)
-          .put(OGG_VIDEO, OGG_VIDEO)
-          .put(QUICKTIME, QUICKTIME)
-          .put(WEBM_VIDEO, WEBM_VIDEO)
-          .put(WMV, WMV)
-          /* application types */
-          .put(APPLICATION_XML_UTF_8, APPLICATION_XML_UTF_8)
-          .put(ATOM_UTF_8, ATOM_UTF_8)
-          .put(BZIP2, BZIP2)
-          .put(FORM_DATA, FORM_DATA)
-          .put(APPLICATION_BINARY, APPLICATION_BINARY)
-          .put(GZIP, GZIP)
-          .put(JAVASCRIPT_UTF_8, JAVASCRIPT_UTF_8)
-          .put(JSON_UTF_8, JSON_UTF_8)
-          .put(KML, KML)
-          .put(KMZ, KMZ)
-          .put(MBOX, MBOX)
-          .put(MICROSOFT_EXCEL, MICROSOFT_EXCEL)
-          .put(MICROSOFT_POWERPOINT, MICROSOFT_POWERPOINT)
-          .put(MICROSOFT_WORD, MICROSOFT_WORD)
-          .put(OCTET_STREAM, OCTET_STREAM)
-          .put(OGG_CONTAINER, OGG_CONTAINER)
-          .put(OOXML_DOCUMENT, OOXML_DOCUMENT)
-          .put(OOXML_PRESENTATION, OOXML_PRESENTATION)
-          .put(OOXML_SHEET, OOXML_SHEET)
-          .put(OPENDOCUMENT_GRAPHICS, OPENDOCUMENT_GRAPHICS)
-          .put(OPENDOCUMENT_PRESENTATION, OPENDOCUMENT_PRESENTATION)
-          .put(OPENDOCUMENT_SPREADSHEET, OPENDOCUMENT_SPREADSHEET)
-          .put(OPENDOCUMENT_TEXT, OPENDOCUMENT_TEXT)
-          .put(PDF, PDF)
-          .put(POSTSCRIPT, POSTSCRIPT)
-          .put(RDF_XML_UTF_8, RDF_XML_UTF_8)
-          .put(RTF_UTF_8, RTF_UTF_8)
-          .put(SHOCKWAVE_FLASH, SHOCKWAVE_FLASH)
-          .put(SKETCHUP, SKETCHUP)
-          .put(TAR, TAR)
-          .put(XHTML_UTF_8, XHTML_UTF_8)
-          .put(XRD_UTF_8, XRD_UTF_8)
-          .put(ZIP, ZIP)
-          .build();
-
   private final String type;
   private final String subtype;
   private final ImmutableListMultimap<String, String> parameters;
 
-  private MediaType(String type, String subtype, ImmutableListMultimap<String, String> parameters) {
+  private MediaType(String type, String subtype,
+      ImmutableListMultimap<String, String> parameters) {
     this.type = type;
     this.subtype = subtype;
     this.parameters = parameters;
-  }
-
-  private static MediaType createConstant(String type, String subtype) {
-    return new MediaType(type, subtype, ImmutableListMultimap.<String, String> of());
-  }
-
-  private static MediaType createConstantUtf8(String type, String subtype) {
-    return new MediaType(type, subtype, UTF_8_CONSTANT_PARAMETERS);
   }
 
   /** Returns the top-level media type.  For example, {@code "text"} in {@code "text/plain"}. */
@@ -355,7 +374,7 @@ public final class MediaType {
   private Map<String, ImmutableMultiset<String>> parametersAsMap() {
     return Maps.transformValues(parameters.asMap(),
         new Function<Collection<String>, ImmutableMultiset<String>>() {
-          public ImmutableMultiset<String> apply(Collection<String> input) {
+          @Override public ImmutableMultiset<String> apply(Collection<String> input) {
             return ImmutableMultiset.copyOf(input);
           }
         });
@@ -453,7 +472,7 @@ public final class MediaType {
    * <li>All of the parameters present in the argument are present in this instance.
    * </ol>
    *
-   * For example: <pre>   {@code
+   * <p>For example: <pre>   {@code
    *   PLAIN_TEXT_UTF_8.is(PLAIN_TEXT_UTF_8) // true
    *   PLAIN_TEXT_UTF_8.is(HTML_UTF_8) // false
    *   PLAIN_TEXT_UTF_8.is(ANY_TYPE) // true
@@ -481,7 +500,7 @@ public final class MediaType {
    * type, but not the subtype.
    */
   public static MediaType create(String type, String subtype) {
-    return create(type, subtype, ImmutableListMultimap.<String, String> of());
+    return create(type, subtype, ImmutableListMultimap.<String, String>of());
   }
 
   /**
@@ -529,7 +548,8 @@ public final class MediaType {
     return create(VIDEO_TYPE, subtype);
   }
 
-  private static MediaType create(String type, String subtype, Multimap<String, String> parameters) {
+  private static MediaType create(String type, String subtype,
+      Multimap<String, String> parameters) {
     checkNotNull(type);
     checkNotNull(subtype);
     checkNotNull(parameters);
@@ -595,7 +615,7 @@ public final class MediaType {
       }
       return create(type, subtype, parameters.build());
     } catch (IllegalStateException e) {
-      throw new IllegalArgumentException(e);
+      throw new IllegalArgumentException("Could not parse '" + input + "'", e);
     }
   }
 
@@ -646,22 +666,21 @@ public final class MediaType {
     }
   }
 
-  @Override
-  public boolean equals(@Nullable Object obj) {
+  @Override public boolean equals(@Nullable Object obj) {
     if (obj == this) {
       return true;
     } else if (obj instanceof MediaType) {
       MediaType that = (MediaType) obj;
-      return this.type.equals(that.type) && this.subtype.equals(that.subtype)
-      // compare parameters regardless of order
+      return this.type.equals(that.type)
+          && this.subtype.equals(that.subtype)
+          // compare parameters regardless of order
           && this.parametersAsMap().equals(that.parametersAsMap());
     } else {
       return false;
     }
   }
 
-  @Override
-  public int hashCode() {
+  @Override public int hashCode() {
     return Objects.hashCode(type, subtype, parametersAsMap());
   }
 
@@ -671,14 +690,13 @@ public final class MediaType {
    * Returns the string representation of this media type in the format described in <a
    * href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045</a>.
    */
-  @Override
-  public String toString() {
+  @Override public String toString() {
     StringBuilder builder = new StringBuilder().append(type).append('/').append(subtype);
     if (!parameters.isEmpty()) {
       builder.append("; ");
       Multimap<String, String> quotedParameters = Multimaps.transformValues(parameters,
           new Function<String, String>() {
-            public String apply(String value) {
+            @Override public String apply(String value) {
               return TOKEN_MATCHER.matchesAllOf(value) ? value : escapeAndQuote(value);
             }
           });

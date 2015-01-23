@@ -36,66 +36,55 @@ public class AbstractPackageSanityTestsTest extends TestCase {
   private final AbstractPackageSanityTests sanityTests = new AbstractPackageSanityTests() {};
 
   public void testFindClassesToTest_testClass() {
-    ASSERT.<Class<?>, List<Class<?>>> that(findClassesToTest(ImmutableList.of(EmptyTest.class)))
+    ASSERT.that(findClassesToTest(ImmutableList.of(EmptyTest.class)))
         .isEmpty();
-    ASSERT.<Class<?>, List<Class<?>>> that(findClassesToTest(ImmutableList.of(EmptyTests.class)))
+    ASSERT.that(findClassesToTest(ImmutableList.of(EmptyTests.class)))
         .isEmpty();
-    ASSERT
-        .<Class<?>, List<Class<?>>> that(findClassesToTest(ImmutableList.of(EmptyTestCase.class)))
+    ASSERT.that(findClassesToTest(ImmutableList.of(EmptyTestCase.class)))
         .isEmpty();
-    ASSERT.<Class<?>, List<Class<?>>> that(
-        findClassesToTest(ImmutableList.of(EmptyTestSuite.class))).isEmpty();
+    ASSERT.that(findClassesToTest(ImmutableList.of(EmptyTestSuite.class)))
+        .isEmpty();
   }
 
   public void testFindClassesToTest_noCorrespondingTestClass() {
-    ASSERT.<Class<?>, List<Class<?>>> that(findClassesToTest(ImmutableList.of(Foo.class))).has()
-        .allOf(Foo.class).inOrder();
-    ASSERT
-        .<Class<?>, List<Class<?>>> that(
-            findClassesToTest(ImmutableList.of(Foo.class, Foo2Test.class))).has().allOf(Foo.class)
-        .inOrder();
+    ASSERT.that(findClassesToTest(ImmutableList.of(Foo.class)))
+        .has().exactly(Foo.class).inOrder();
+    ASSERT.that(findClassesToTest(ImmutableList.of(Foo.class, Foo2Test.class)))
+        .has().exactly(Foo.class).inOrder();
   }
 
   public void testFindClassesToTest_publicApiOnly() {
     sanityTests.publicApiOnly();
-    ASSERT.<Class<?>, List<Class<?>>> that(findClassesToTest(ImmutableList.of(Foo.class)))
+    ASSERT.that(findClassesToTest(ImmutableList.of(Foo.class)))
         .isEmpty();
-    ASSERT.<Class<?>, List<Class<?>>> that(findClassesToTest(ImmutableList.of(PublicFoo.class)))
-        .has().item(PublicFoo.class);
+    ASSERT.that(findClassesToTest(ImmutableList.of(PublicFoo.class))).has().item(PublicFoo.class);
   }
 
   public void testFindClassesToTest_ignoreClasses() {
-    sanityTests.ignoreClasses(Predicates.<Object> equalTo(PublicFoo.class));
-    ASSERT.<Class<?>, List<Class<?>>> that(findClassesToTest(ImmutableList.of(PublicFoo.class)))
+    sanityTests.ignoreClasses(Predicates.<Object>equalTo(PublicFoo.class));
+    ASSERT.that(findClassesToTest(ImmutableList.of(PublicFoo.class)))
         .isEmpty();
-    ASSERT.<Class<?>, List<Class<?>>> that(findClassesToTest(ImmutableList.of(Foo.class))).has()
-        .item(Foo.class);
+    ASSERT.that(findClassesToTest(ImmutableList.of(Foo.class))).has().item(Foo.class);
   }
 
   public void testFindClassesToTest_withCorrespondingTestClassButNotExplicitlyTested() {
-    ASSERT
-        .<Class<?>, List<Class<?>>> that(
-            findClassesToTest(ImmutableList.of(Foo.class, FooTest.class), "testNotThere")).has()
-        .allOf(Foo.class).inOrder();
-    ASSERT
-        .<Class<?>, List<Class<?>>> that(
-            findClassesToTest(ImmutableList.of(Foo.class, FooTest.class), "testNotPublic")).has()
-        .allOf(Foo.class).inOrder();
+    ASSERT.that(findClassesToTest(ImmutableList.of(Foo.class, FooTest.class), "testNotThere"))
+        .has().exactly(Foo.class).inOrder();
+    ASSERT.that(findClassesToTest(ImmutableList.of(Foo.class, FooTest.class), "testNotPublic"))
+        .has().exactly(Foo.class).inOrder();
   }
 
   public void testFindClassesToTest_withCorrespondingTestClassAndExplicitlyTested() {
     ImmutableList<Class<? extends Object>> classes = ImmutableList.of(Foo.class, FooTest.class);
-    ASSERT.<Class<?>, List<Class<?>>> that(findClassesToTest(classes, "testPublic")).isEmpty();
-    ASSERT
-        .<Class<?>, List<Class<?>>> that(findClassesToTest(classes, "testNotThere", "testPublic"))
+    ASSERT.that(findClassesToTest(classes, "testPublic"))
+        .isEmpty();
+    ASSERT.that(findClassesToTest(classes, "testNotThere", "testPublic"))
         .isEmpty();
   }
 
   public void testFindClassesToTest_withCorrespondingTestClass_noTestName() {
-    ASSERT
-        .<Class<?>, List<Class<?>>> that(
-            findClassesToTest(ImmutableList.of(Foo.class, FooTest.class))).has().allOf(Foo.class)
-        .inOrder();
+    ASSERT.that(findClassesToTest(ImmutableList.of(Foo.class, FooTest.class)))
+        .has().exactly(Foo.class).inOrder();
   }
 
   static class EmptyTestCase {}
@@ -111,24 +100,20 @@ public class AbstractPackageSanityTestsTest extends TestCase {
   public static class PublicFoo {}
 
   static class FooTest {
-    @SuppressWarnings("unused")
-    // accessed reflectively
+    @SuppressWarnings("unused") // accessed reflectively
     public void testPublic() {}
-
-    @SuppressWarnings("unused")
-    // accessed reflectively
+    @SuppressWarnings("unused") // accessed reflectively
     void testNotPublic() {}
   }
 
   // Shouldn't be mistaken as Foo's test
   static class Foo2Test {
-    @SuppressWarnings("unused")
-    // accessed reflectively
+    @SuppressWarnings("unused") // accessed reflectively
     public void testPublic() {}
   }
 
-  private List<Class<?>> findClassesToTest(Iterable<? extends Class<?>> classes,
-      String... explicitTestNames) {
+  private List<Class<?>> findClassesToTest(
+      Iterable<? extends Class<?>> classes, String... explicitTestNames) {
     return sanityTests.findClassesToTest(classes, Arrays.asList(explicitTestNames));
   }
 }

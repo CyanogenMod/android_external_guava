@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * handler}
  * <li> a {@linkplain ThreadFactory#newThread backing thread factory}
  * </ul>
- * If no backing thread factory is provided, a default backing thread factory is
+ * <p>If no backing thread factory is provided, a default backing thread factory is
  * used as if by calling {@code setThreadFactory(}{@link
  * Executors#defaultThreadFactory()}{@code )}.
  *
@@ -95,10 +95,10 @@ public final class ThreadFactoryBuilder {
   public ThreadFactoryBuilder setPriority(int priority) {
     // Thread#setPriority() already checks for validity. These error messages
     // are nicer though and will fail-fast.
-    checkArgument(priority >= Thread.MIN_PRIORITY, "Thread priority (%s) must be >= %s", priority,
-        Thread.MIN_PRIORITY);
-    checkArgument(priority <= Thread.MAX_PRIORITY, "Thread priority (%s) must be <= %s", priority,
-        Thread.MAX_PRIORITY);
+    checkArgument(priority >= Thread.MIN_PRIORITY,
+        "Thread priority (%s) must be >= %s", priority, Thread.MIN_PRIORITY);
+    checkArgument(priority <= Thread.MAX_PRIORITY,
+        "Thread priority (%s) must be <= %s", priority, Thread.MAX_PRIORITY);
     this.priority = priority;
     return this;
   }
@@ -128,7 +128,8 @@ public final class ThreadFactoryBuilder {
    *
    * @see MoreExecutors
    */
-  public ThreadFactoryBuilder setThreadFactory(ThreadFactory backingThreadFactory) {
+  public ThreadFactoryBuilder setThreadFactory(
+      ThreadFactory backingThreadFactory) {
     this.backingThreadFactory = checkNotNull(backingThreadFactory);
     return this;
   }
@@ -149,12 +150,15 @@ public final class ThreadFactoryBuilder {
     final String nameFormat = builder.nameFormat;
     final Boolean daemon = builder.daemon;
     final Integer priority = builder.priority;
-    final UncaughtExceptionHandler uncaughtExceptionHandler = builder.uncaughtExceptionHandler;
-    final ThreadFactory backingThreadFactory = (builder.backingThreadFactory != null) ? builder.backingThreadFactory
+    final UncaughtExceptionHandler uncaughtExceptionHandler =
+        builder.uncaughtExceptionHandler;
+    final ThreadFactory backingThreadFactory =
+        (builder.backingThreadFactory != null)
+        ? builder.backingThreadFactory
         : Executors.defaultThreadFactory();
     final AtomicLong count = (nameFormat != null) ? new AtomicLong(0) : null;
     return new ThreadFactory() {
-      public Thread newThread(Runnable runnable) {
+      @Override public Thread newThread(Runnable runnable) {
         Thread thread = backingThreadFactory.newThread(runnable);
         if (nameFormat != null) {
           thread.setName(String.format(nameFormat, count.getAndIncrement()));

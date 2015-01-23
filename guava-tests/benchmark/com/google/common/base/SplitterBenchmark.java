@@ -16,9 +16,9 @@
 
 package com.google.common.base;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.collect.Iterables;
 
 /**
@@ -26,7 +26,7 @@ import com.google.common.collect.Iterables;
  *
  * @author Paul Lindner
  */
-public class SplitterBenchmark extends SimpleBenchmark {
+public class SplitterBenchmark {
   // overall size of string
   @Param({"1", "10", "100", "1000"}) int length;
   // Number of matching strings
@@ -37,11 +37,11 @@ public class SplitterBenchmark extends SimpleBenchmark {
   private static final Splitter CHAR_SPLITTER = Splitter.on('X');
   private static final Splitter STRING_SPLITTER = Splitter.on("X");
 
-  @Override protected void setUp() {
+  @BeforeExperiment void setUp() {
     input = Strings.repeat(text, length);
   }
 
-  public void timeCharSplitter(int reps) {
+  @Benchmark void charSplitter(int reps) {
     int total = 0;
 
     for (int i = 0; i < reps; i++) {
@@ -49,15 +49,11 @@ public class SplitterBenchmark extends SimpleBenchmark {
     }
   }
 
-  public void timeStringSplitter(int reps) {
+  @Benchmark void stringSplitter(int reps) {
     int total = 0;
 
     for (int i = 0; i < reps; i++) {
      total += Iterables.size(STRING_SPLITTER.split(input));
     }
-  }
-
-  public static void main(String[] args) {
-    Runner.main(SplitterBenchmark.class, args);
   }
 }

@@ -19,6 +19,8 @@ package com.google.common.collect.testing;
 import static com.google.common.collect.testing.Helpers.NullsBeforeB;
 import static com.google.common.collect.testing.Helpers.testComparator;
 
+import com.google.common.annotations.GwtCompatible;
+
 import junit.framework.TestCase;
 
 /**
@@ -26,6 +28,7 @@ import junit.framework.TestCase;
  *
  * @author Chris Povirk
  */
+@GwtCompatible
 public class HelpersTest extends TestCase {
   public void testNullsBeforeB() {
     testComparator(NullsBeforeB.INSTANCE, "a", "azzzzzz", null, "b", "c");

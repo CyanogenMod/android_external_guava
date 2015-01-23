@@ -48,8 +48,7 @@ public interface Function<F, T> {
    * @throws NullPointerException if {@code input} is null and this function does not accept null
    *     arguments
    */
-  @Nullable
-  T apply(@Nullable F input);
+  @Nullable T apply(@Nullable F input);
 
   /**
    * Indicates whether another object is equal to this function.
@@ -61,6 +60,6 @@ public interface Function<F, T> {
    * {@code f} of type {@code F}. Note that a {@code false} result from this method does not imply
    * that the functions are known <i>not</i> to be interchangeable.
    */
-
+  @Override
   boolean equals(@Nullable Object object);
 }

@@ -19,6 +19,8 @@ package com.google.common.collect;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 
+import junit.framework.TestCase;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -31,8 +33,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import junit.framework.TestCase;
 
 /**
  * Base test case for testing the variety of forwarding classes.
@@ -111,7 +111,7 @@ public abstract class ForwardingTestCase extends TestCase {
       return 0;
     } else if ((returnType == Set.class) || (returnType == Collection.class)) {
       return Collections.emptySet();
-    } else if (returnType == Iterator.class){
+    } else if (returnType == Iterator.class) {
       return Iterators.emptyModifiableIterator();
     } else if (returnType.isArray()) {
       return Array.newInstance(returnType.getComponentType(), 0);
@@ -140,7 +140,7 @@ public abstract class ForwardingTestCase extends TestCase {
         }
       } catch (Throwable cause) {
         throw new InvocationTargetException(cause,
-            method.toString() + " with args: " + Arrays.toString(parameters));
+            method + " with args: " + Arrays.toString(parameters));
       }
     }
   }

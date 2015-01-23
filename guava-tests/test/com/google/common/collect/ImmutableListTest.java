@@ -41,6 +41,10 @@ import com.google.common.collect.testing.testers.ListHashCodeTester;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -51,10 +55,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
 /**
  * Unit test for {@link ImmutableList}.
@@ -262,7 +262,7 @@ public class ImmutableListTest extends TestCase {
       try {
         ImmutableList.copyOf((String[]) null);
         fail();
-      } catch(NullPointerException expected) {
+      } catch (NullPointerException expected) {
       }
     }
 
@@ -338,7 +338,7 @@ public class ImmutableListTest extends TestCase {
       try {
         ImmutableList.copyOf((Iterator<String>) null);
         fail();
-      } catch(NullPointerException expected) {
+      } catch (NullPointerException expected) {
       }
     }
 
@@ -450,8 +450,9 @@ public class ImmutableListTest extends TestCase {
       assertTrue(concurrentlyMutatedList.getAllStates()
           .contains(copyOfIterable));
 
-      // Check that it's a RegularImmutableList iff it is nonempty:
-      assertEquals(copyOfIterable.size() == 0, copyOfIterable.isEmpty());
+      // Check that we didn't end up with a RegularImmutableList of size 1.
+      assertEquals(copyOfIterable.size() == 1,
+          copyOfIterable instanceof SingletonImmutableList);
     }
 
     private static void runConcurrentlyMutatedTest(WrapWithIterable wrap) {
@@ -536,7 +537,7 @@ public class ImmutableListTest extends TestCase {
       void perform(List<Integer> list);
     }
 
-    static final ListFrobber add(final int element) {
+    static ListFrobber add(final int element) {
       return new ListFrobber() {
         @Override
         public void perform(List<Integer> list) {
@@ -545,7 +546,7 @@ public class ImmutableListTest extends TestCase {
       };
     }
 
-    static final ListFrobber remove() {
+    static ListFrobber remove() {
       return new ListFrobber() {
         @Override
         public void perform(List<Integer> list) {
@@ -554,7 +555,7 @@ public class ImmutableListTest extends TestCase {
       };
     }
 
-    static final ListFrobber nop() {
+    static ListFrobber nop() {
       return new ListFrobber() {
         @Override
         public void perform(List<Integer> list) {

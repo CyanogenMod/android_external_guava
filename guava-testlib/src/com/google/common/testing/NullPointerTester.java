@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Converter;
 import com.google.common.base.Objects;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
@@ -70,6 +71,8 @@ public final class NullPointerTester {
   private final ClassToInstanceMap<Object> defaults =
       MutableClassToInstanceMap.create();
   private final List<Member> ignoredMembers = Lists.newArrayList();
+
+  private ExceptionTypePolicy policy = ExceptionTypePolicy.NPE_OR_UOE;
 
   /**
    * Sets a default value that can be used for any parameter of type
@@ -335,12 +338,11 @@ public final class NullPointerTester {
       @SuppressWarnings("unchecked") // We'll get a runtime exception if the type is wrong.
       Invokable<Object, ?> unsafe = (Invokable<Object, ?>) invokable;
       unsafe.invoke(instance, params);
-      Assert.fail("No exception thrown from " + invokable +
-          Arrays.toString(params) + " for " + testedClass);
+      Assert.fail("No exception thrown for parameter at index " + paramIndex
+          + " from " + invokable + Arrays.toString(params) + " for " + testedClass);
     } catch (InvocationTargetException e) {
       Throwable cause = e.getCause();
-      if (cause instanceof NullPointerException ||
-          cause instanceof UnsupportedOperationException) {
+      if (policy.isExpectedType(cause)) {
         return;
       }
       AssertionFailedError error = new AssertionFailedError(
@@ -371,11 +373,11 @@ public final class NullPointerTester {
       Parameter param = params.get(i);
       if (i != indexOfParamToSetToNull) {
         args[i] = getDefaultValue(param.getType());
-        if (!isPrimitiveOrNullable(param)) {
-          Assert.assertTrue("No default value found for "
-              + bestAvailableString(param.getType(), i, invokable) + " of " + invokable,
-              args[i] != null);
-        }
+        Assert.assertTrue(
+            "Can't find or create a sample instance for type '"
+                + bestAvailableString(param.getType(), i, invokable)
+                + "'; please provide one using NullPointerTester.setDefault()",
+            args[i] != null || isNullable(param));
       }
     }
     return args;
@@ -389,10 +391,10 @@ public final class NullPointerTester {
     if (defaultValue != null) {
       return defaultValue;
     }
-    @SuppressWarnings("unchecked") // All null values are generics-safe
-    T nullValue = (T) ArbitraryInstances.get(type.getRawType());
-    if (nullValue != null) {
-      return nullValue;
+    @SuppressWarnings("unchecked") // All arbitrary instances are generics-safe
+    T arbitrary = (T) ArbitraryInstances.get(type.getRawType());
+    if (arbitrary != null) {
+      return arbitrary;
     }
     if (type.getRawType() == Class.class) {
       // If parameter is Class<? extends Foo>, we return Foo.class
@@ -406,10 +408,35 @@ public final class NullPointerTester {
       T defaultType = (T) getFirstTypeParameter(type.getType());
       return defaultType;
     }
+    if (type.getRawType() == Converter.class) {
+      TypeToken<?> convertFromType = type.resolveType(
+          Converter.class.getTypeParameters()[0]);
+      TypeToken<?> convertToType = type.resolveType(
+          Converter.class.getTypeParameters()[1]);
+      @SuppressWarnings("unchecked") // returns default for both F and T
+      T defaultConverter = (T) defaultConverter(convertFromType, convertToType);
+      return defaultConverter;
+    }
     if (type.getRawType().isInterface()) {
       return newDefaultReturningProxy(type);
     }
     return null;
+  }
+
+  private <F, T> Converter<F, T> defaultConverter(
+      final TypeToken<F> convertFromType, final TypeToken<T> convertToType) {
+    return new Converter<F, T>() {
+      @Override protected T doForward(F a) {
+        return doConvert(convertToType);
+      }
+      @Override protected F doBackward(T b) {
+        return doConvert(convertFromType);
+      }
+
+      private /*static*/ <S> S doConvert(TypeToken<S> type) {
+        return checkNotNull(getDefaultValue(type));
+      }
+    };
   }
 
   private static TypeToken<?> getFirstTypeParameter(Type type) {
@@ -438,10 +465,48 @@ public final class NullPointerTester {
   }
 
   static boolean isPrimitiveOrNullable(Parameter param) {
-    return param.getType().getRawType().isPrimitive() || param.isAnnotationPresent(Nullable.class);
+    return param.getType().getRawType().isPrimitive() || isNullable(param);
+  }
+
+  private static boolean isNullable(Parameter param) {
+    return param.isAnnotationPresent(Nullable.class);
   }
 
   private boolean isIgnored(Member member) {
     return member.isSynthetic() || ignoredMembers.contains(member);
+  }
+
+  /**
+   * Strategy for exception type matching used by {@link NullPointerTester}.
+   */
+  private enum ExceptionTypePolicy {
+
+    /**
+     * Exceptions should be {@link NullPointerException} or
+     * {@link UnsupportedOperationException}.
+     */
+    NPE_OR_UOE() {
+      @Override
+      public boolean isExpectedType(Throwable cause) {
+        return cause instanceof NullPointerException
+            || cause instanceof UnsupportedOperationException;
+      }
+    },
+
+    /**
+     * Exceptions should be {@link NullPointerException},
+     * {@link IllegalArgumentException}, or
+     * {@link UnsupportedOperationException}.
+     */
+    NPE_IAE_OR_UOE() {
+      @Override
+      public boolean isExpectedType(Throwable cause) {
+        return cause instanceof NullPointerException
+            || cause instanceof IllegalArgumentException
+            || cause instanceof UnsupportedOperationException;
+      }
+    };
+
+    public abstract boolean isExpectedType(Throwable cause);
   }
 }

@@ -35,13 +35,14 @@ final class SmallCharMatcher extends FastMatcher {
   private final boolean containsZero;
   private final long filter;
 
-  private SmallCharMatcher(char[] table, long filter, boolean containsZero, String description) {
+  private SmallCharMatcher(char[] table, long filter, boolean containsZero,
+      String description) {
     super(description);
     this.table = table;
     this.filter = filter;
     this.containsZero = containsZero;
   }
-
+  
   private static final int C1 = 0xcc9e2d51;
   private static final int C2 = 0x1b873593;
 
@@ -67,14 +68,13 @@ final class SmallCharMatcher extends FastMatcher {
   // Represents how tightly we can pack things, as a maximum.
   private static final double DESIRED_LOAD_FACTOR = 0.5;
 
-  /**
-   * Returns an array size suitable for the backing array of a hash table that
-   * uses open addressing with linear probing in its implementation.  The
-   * returned size is the smallest power of two that can hold setSize elements
-   * with the desired load factor.
-   */
-  @VisibleForTesting
-  static int chooseTableSize(int setSize) {
+ /**
+  * Returns an array size suitable for the backing array of a hash table that
+  * uses open addressing with linear probing in its implementation.  The
+  * returned size is the smallest power of two that can hold setSize elements
+  * with the desired load factor.
+  */
+  @VisibleForTesting static int chooseTableSize(int setSize) {
     if (setSize == 1) {
       return 2;
     }
@@ -87,7 +87,6 @@ final class SmallCharMatcher extends FastMatcher {
     return tableSize;
   }
 
-  @GwtIncompatible("java.util.BitSet")
   static CharMatcher from(BitSet chars, String description) {
     // Compute the filter.
     long filter = 0;
@@ -128,7 +127,7 @@ final class SmallCharMatcher extends FastMatcher {
       // Check for empty.
       if (table[index] == 0) {
         return false;
-        // Check for match.
+      // Check for match.
       } else if (table[index] == c) {
         return true;
       } else {
@@ -141,7 +140,6 @@ final class SmallCharMatcher extends FastMatcher {
   }
 
   @Override
-  @GwtIncompatible("java.util.BitSet")
   void setBits(BitSet table) {
     if (containsZero) {
       table.set(0);

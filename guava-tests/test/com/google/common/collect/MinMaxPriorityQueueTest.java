@@ -16,10 +16,13 @@
 
 package com.google.common.collect;
 
+import static org.truth0.Truth.ASSERT;
+
 import com.google.common.collect.testing.IteratorFeature;
 import com.google.common.collect.testing.IteratorTester;
-import com.google.common.testing.FluentAsserts;
 import com.google.common.testing.NullPointerTester;
+
+import junit.framework.TestCase;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,8 +37,6 @@ import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import junit.framework.TestCase;
 
 /**
  * Unit test for {@link MinMaxPriorityQueue}.
@@ -354,7 +355,7 @@ public class MinMaxPriorityQueueTest extends TestCase {
       }
     }
     assertTrue(q.isIntact());
-    FluentAsserts.assertThat(result).has().allOf(1, 15, 13, 8, 14);
+    ASSERT.that(result).has().exactly(1, 15, 13, 8, 14);
   }
 
   /**
@@ -522,11 +523,9 @@ public class MinMaxPriorityQueueTest extends TestCase {
           @Override protected void verify(List<T> elements) {
             assertEquals(Sets.newHashSet(elements),
                 Sets.newHashSet(mmHeap.iterator()));
-            assertTrue("Invalid MinMaxHeap: " + mmHeap.toString(),
-                mmHeap.isIntact());
+            assertTrue("Invalid MinMaxHeap: " + mmHeap, mmHeap.isIntact());
           }
         };
-    tester.ignoreSunJavaBug6529795();
     tester.test();
   }
 
@@ -719,23 +718,23 @@ public class MinMaxPriorityQueueTest extends TestCase {
     List<Integer> contents = Lists.newArrayList(expected);
     List<Integer> elements = Lists.newArrayListWithCapacity(size);
     while (!q.isEmpty()) {
-      FluentAsserts.assertThat(q).has().allFrom(contents);
+      ASSERT.that(q).has().exactlyAs(contents);
       Integer next = q.pollFirst();
       contents.remove(next);
-      FluentAsserts.assertThat(q).has().allFrom(contents);
+      ASSERT.that(q).has().exactlyAs(contents);
       for (int i = 0; i <= size; i++) {
         q.add(i);
         contents.add(i);
-        FluentAsserts.assertThat(q).has().allFrom(contents);
+        ASSERT.that(q).has().exactlyAs(contents);
         q.add(next);
         contents.add(next);
-        FluentAsserts.assertThat(q).has().allFrom(contents);
+        ASSERT.that(q).has().exactlyAs(contents);
         q.remove(i);
         assertTrue(contents.remove(Integer.valueOf(i)));
-        FluentAsserts.assertThat(q).has().allFrom(contents);
+        ASSERT.that(q).has().exactlyAs(contents);
         assertEquals(next, q.poll());
         contents.remove(next);
-        FluentAsserts.assertThat(q).has().allFrom(contents);
+        ASSERT.that(q).has().exactlyAs(contents);
       }
       elements.add(next);
     }

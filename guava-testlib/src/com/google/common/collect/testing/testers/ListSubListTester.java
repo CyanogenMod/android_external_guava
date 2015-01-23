@@ -44,8 +44,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Can't be invoked directly; please see
  * {@link com.google.common.collect.testing.ListTestSuiteBuilder}.
  *
- * <p>This class is GWT compatible.
- *
  * @author Chris Povirk
  */
 @SuppressWarnings("unchecked") // too many "unchecked generic array creations"
@@ -97,6 +95,16 @@ public class ListSubListTester<E> extends AbstractListTester<E> {
   public void testSubList_subListRemoveAffectsOriginal() {
     List<E> subList = getList().subList(0, 1);
     subList.remove(0);
+    List<E> expected =
+        Arrays.asList(createSamplesArray()).subList(1, getNumElements());
+    expectContents(expected);
+  }
+
+  @ListFeature.Require(SUPPORTS_REMOVE_WITH_INDEX)
+  @CollectionSize.Require(absent = ZERO)
+  public void testSubList_subListClearAffectsOriginal() {
+    List<E> subList = getList().subList(0, 1);
+    subList.clear();
     List<E> expected =
         Arrays.asList(createSamplesArray()).subList(1, getNumElements());
     expectContents(expected);

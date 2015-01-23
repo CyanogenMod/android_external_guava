@@ -16,17 +16,17 @@
 
 package com.google.common.io;
 
+import static com.google.common.io.SourceSinkFactory.CharSinkFactory;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.SourceSinkFactory.CharSinkFactory;
 
-import java.io.BufferedWriter;
+import junit.framework.TestSuite;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.Map;
-
-import junit.framework.TestSuite;
 
 /**
  * A generator of {@code TestSuite} instances for testing {@code CharSink} implementations.
@@ -87,7 +87,7 @@ public class CharSinkTester extends SourceSinkTester<CharSink, String, CharSinkF
   }
 
   public void testOpenBufferedStream() throws IOException {
-    BufferedWriter writer = sink.openBufferedStream();
+    Writer writer = sink.openBufferedStream();
     try {
       writer.write(data);
     } finally {

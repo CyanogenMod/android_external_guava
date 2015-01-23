@@ -16,18 +16,17 @@
 
 package com.google.common.io;
 
+import static com.google.common.io.SourceSinkFactory.ByteSourceFactory;
+import static com.google.common.io.SourceSinkFactory.CharSourceFactory;
 import static org.junit.Assert.assertArrayEquals;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
-import com.google.common.io.SourceSinkFactory.ByteSourceFactory;
-import com.google.common.io.SourceSinkFactory.CharSourceFactory;
 
 import junit.framework.TestSuite;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -93,8 +92,9 @@ public class ByteSourceTester extends SourceSinkTester<ByteSource, byte[], ByteS
       // test a random slice() of the ByteSource
       Random random = new Random();
       byte[] expected = factory.getExpected(bytes);
-      int off = random.nextInt(expected.length);
-      int len = random.nextInt(expected.length - off);
+      // if expected.length == 0, off has to be 0 but length doesn't matter--result will be empty
+      int off = expected.length == 0 ? 0 : random.nextInt(expected.length);
+      int len = expected.length == 0 ? 4 : random.nextInt(expected.length - off);
       ByteSourceFactory sliced = SourceSinkFactories.asSlicedByteSourceFactory(factory, off, len);
       suite.addTest(suiteForBytes(sliced, bytes, name + ".slice[int, int]",
           desc, false));
@@ -126,7 +126,7 @@ public class ByteSourceTester extends SourceSinkTester<ByteSource, byte[], ByteS
   }
 
   public void testOpenBufferedStream() throws IOException {
-    BufferedInputStream in = source.openBufferedStream();
+    InputStream in = source.openBufferedStream();
     try {
       byte[] readBytes = ByteStreams.toByteArray(in);
       assertExpectedBytes(readBytes);
@@ -158,6 +158,10 @@ public class ByteSourceTester extends SourceSinkTester<ByteSource, byte[], ByteS
     assertExpectedBytes(out.toByteArray());
   }
 
+  public void testIsEmpty() throws IOException {
+    assertEquals(expected.length == 0, source.isEmpty());
+  }
+
   public void testSize() throws IOException {
     assertEquals(expected.length, source.size());
   }
@@ -170,6 +174,25 @@ public class ByteSourceTester extends SourceSinkTester<ByteSource, byte[], ByteS
             new ByteArrayInputStream(expected), new Random());
       }
     }));
+  }
+
+  public void testRead_usingByteProcessor() throws IOException {
+    byte[] readBytes = source.read(new ByteProcessor<byte[]>() {
+      final ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+      @Override
+      public boolean processBytes(byte[] buf, int off, int len) throws IOException {
+        out.write(buf, off, len);
+        return true;
+      }
+
+      @Override
+      public byte[] getResult() {
+        return out.toByteArray();
+      }
+    });
+
+    assertExpectedBytes(readBytes);
   }
 
   public void testHash() throws IOException {

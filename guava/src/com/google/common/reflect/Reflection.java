@@ -83,11 +83,14 @@ public final class Reflection {
    * @throws IllegalArgumentException if {@code interfaceType} does not specify
    *     the type of a Java interface
    */
-  public static <T> T newProxy(Class<T> interfaceType, InvocationHandler handler) {
+  public static <T> T newProxy(
+      Class<T> interfaceType, InvocationHandler handler) {
     checkNotNull(handler);
     checkArgument(interfaceType.isInterface(), "%s is not an interface", interfaceType);
-    Object object = Proxy.newProxyInstance(interfaceType.getClassLoader(),
-        new Class<?>[] { interfaceType }, handler);
+    Object object = Proxy.newProxyInstance(
+        interfaceType.getClassLoader(),
+        new Class<?>[] { interfaceType },
+        handler);
     return interfaceType.cast(object);
   }
 

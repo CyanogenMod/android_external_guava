@@ -22,6 +22,8 @@ import com.google.common.jdk5backport.Arrays;
 
 import junit.framework.TestCase;
 
+import junit.framework.TestCase;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -87,7 +89,7 @@ public class AbstractNonStreamingHashFunctionTest extends TestCase {
     for (int i = 0; i < s.length(); i++) {
       h1.putChar(s.charAt(i));
     }
-    h2.putString(s);
+    h2.putUnencodedChars(s);
     assertEquals(h1.hash(), h2.hash());
   }
 
@@ -103,7 +105,7 @@ public class AbstractNonStreamingHashFunctionTest extends TestCase {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         @Override
         HashCode makeHash() {
-          return HashCodes.fromBytes(out.toByteArray());
+          return HashCode.fromBytes(out.toByteArray());
         }
 
         @Override
@@ -131,12 +133,12 @@ public class AbstractNonStreamingHashFunctionTest extends TestCase {
 
     @Override
     public HashCode hashBytes(byte[] input) {
-      return HashCodes.fromBytes(input);
+      return HashCode.fromBytes(input);
     }
 
     @Override
     public HashCode hashBytes(byte[] input, int off, int len) {
-      return HashCodes.fromBytes(Arrays.copyOfRange(input, off, off + len));
+      return HashCode.fromBytes(Arrays.copyOfRange(input, off, off + len));
     }
 
     @Override

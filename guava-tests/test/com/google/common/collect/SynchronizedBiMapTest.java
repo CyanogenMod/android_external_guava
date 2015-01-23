@@ -27,10 +27,10 @@ import com.google.common.collect.testing.google.BiMapInverseTester;
 import com.google.common.collect.testing.google.BiMapTestSuiteBuilder;
 import com.google.common.collect.testing.google.TestStringBiMapGenerator;
 
+import junit.framework.TestSuite;
+
 import java.util.Map.Entry;
 import java.util.Set;
-
-import junit.framework.TestSuite;
 
 /**
  * Tests for {@code Synchronized#biMap}.
@@ -44,16 +44,20 @@ public class SynchronizedBiMapTest extends SynchronizedMapTest {
     suite.addTest(BiMapTestSuiteBuilder.using(new SynchTestingBiMapGenerator())
         .named("Synchronized.biMap[TestBiMap]")
         .withFeatures(CollectionSize.ANY,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
             MapFeature.ALLOWS_NULL_KEYS,
             MapFeature.ALLOWS_NULL_VALUES,
+            MapFeature.ALLOWS_ANY_NULL_QUERIES,
             MapFeature.GENERAL_PURPOSE,
             MapFeature.REJECTS_DUPLICATES_AT_CREATION)
         .createTestSuite());
     suite.addTest(BiMapTestSuiteBuilder.using(new SynchronizedHashBiMapGenerator())
         .named("synchronizedBiMap[HashBiMap]")
         .withFeatures(CollectionSize.ANY,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
             MapFeature.ALLOWS_NULL_KEYS,
             MapFeature.ALLOWS_NULL_VALUES,
+            MapFeature.ALLOWS_ANY_NULL_QUERIES,
             MapFeature.GENERAL_PURPOSE,
             MapFeature.REJECTS_DUPLICATES_AT_CREATION,
             CollectionFeature.SERIALIZABLE)

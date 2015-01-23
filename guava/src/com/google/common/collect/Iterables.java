@@ -18,16 +18,15 @@ package com.google.common.collect;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.CollectPreconditions.checkRemove;
 
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -37,7 +36,6 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.RandomAccess;
 import java.util.Set;
-import java.util.SortedSet;
 
 import javax.annotation.Nullable;
 
@@ -63,9 +61,11 @@ public final class Iterables {
   private Iterables() {}
 
   /** Returns an unmodifiable view of {@code iterable}. */
-  public static <T> Iterable<T> unmodifiableIterable(final Iterable<T> iterable) {
+  public static <T> Iterable<T> unmodifiableIterable(
+      final Iterable<T> iterable) {
     checkNotNull(iterable);
-    if (iterable instanceof UnmodifiableIterable || iterable instanceof ImmutableCollection) {
+    if (iterable instanceof UnmodifiableIterable ||
+        iterable instanceof ImmutableCollection) {
       return iterable;
     }
     return new UnmodifiableIterable<T>(iterable);
@@ -77,8 +77,8 @@ public final class Iterables {
    * @deprecated no need to use this
    * @since 10.0
    */
-  @Deprecated
-  public static <E> Iterable<E> unmodifiableIterable(ImmutableCollection<E> iterable) {
+  @Deprecated public static <E> Iterable<E> unmodifiableIterable(
+      ImmutableCollection<E> iterable) {
     return checkNotNull(iterable);
   }
 
@@ -89,6 +89,7 @@ public final class Iterables {
       this.iterable = iterable;
     }
 
+    @Override
     public Iterator<T> iterator() {
       return Iterators.unmodifiableIterator(iterable.iterator());
     }
@@ -104,8 +105,9 @@ public final class Iterables {
    * Returns the number of elements in {@code iterable}.
    */
   public static int size(Iterable<?> iterable) {
-    return (iterable instanceof Collection) ? ((Collection<?>) iterable).size() : Iterators
-        .size(iterable.iterator());
+    return (iterable instanceof Collection)
+        ? ((Collection<?>) iterable).size()
+        : Iterators.size(iterable.iterator());
   }
 
   /**
@@ -131,10 +133,11 @@ public final class Iterables {
    * @param elementsToRemove the elements to remove
    * @return {@code true} if any element was removed from {@code iterable}
    */
-  public static boolean removeAll(Iterable<?> removeFrom, Collection<?> elementsToRemove) {
-    return (removeFrom instanceof Collection) ? ((Collection<?>) removeFrom)
-        .removeAll(checkNotNull(elementsToRemove)) : Iterators.removeAll(removeFrom.iterator(),
-        elementsToRemove);
+  public static boolean removeAll(
+      Iterable<?> removeFrom, Collection<?> elementsToRemove) {
+    return (removeFrom instanceof Collection)
+        ? ((Collection<?>) removeFrom).removeAll(checkNotNull(elementsToRemove))
+        : Iterators.removeAll(removeFrom.iterator(), elementsToRemove);
   }
 
   /**
@@ -148,10 +151,11 @@ public final class Iterables {
    * @param elementsToRetain the elements to retain
    * @return {@code true} if any element was removed from {@code iterable}
    */
-  public static boolean retainAll(Iterable<?> removeFrom, Collection<?> elementsToRetain) {
-    return (removeFrom instanceof Collection) ? ((Collection<?>) removeFrom)
-        .retainAll(checkNotNull(elementsToRetain)) : Iterators.retainAll(removeFrom.iterator(),
-        elementsToRetain);
+  public static boolean retainAll(
+      Iterable<?> removeFrom, Collection<?> elementsToRetain) {
+    return (removeFrom instanceof Collection)
+        ? ((Collection<?>) removeFrom).retainAll(checkNotNull(elementsToRetain))
+        : Iterators.retainAll(removeFrom.iterator(), elementsToRetain);
   }
 
   /**
@@ -167,15 +171,17 @@ public final class Iterables {
    *     {@code remove()}.
    * @since 2.0
    */
-  public static <T> boolean removeIf(Iterable<T> removeFrom, Predicate<? super T> predicate) {
+  public static <T> boolean removeIf(
+      Iterable<T> removeFrom, Predicate<? super T> predicate) {
     if (removeFrom instanceof RandomAccess && removeFrom instanceof List) {
-      return removeIfFromRandomAccessList((List<T>) removeFrom, checkNotNull(predicate));
+      return removeIfFromRandomAccessList(
+          (List<T>) removeFrom, checkNotNull(predicate));
     }
     return Iterators.removeIf(removeFrom.iterator(), predicate);
   }
 
-  private static <T> boolean removeIfFromRandomAccessList(List<T> list,
-      Predicate<? super T> predicate) {
+  private static <T> boolean removeIfFromRandomAccessList(
+      List<T> list, Predicate<? super T> predicate) {
     // Note: Not all random access lists support set() so we need to deal with
     // those that don't and attempt the slower remove() based solution.
     int from = 0;
@@ -225,13 +231,31 @@ public final class Iterables {
   }
 
   /**
+   * Removes and returns the first matching element, or returns {@code null} if there is none.
+   */
+  @Nullable
+  static <T> T removeFirstMatching(Iterable<T> removeFrom, Predicate<? super T> predicate) {
+    checkNotNull(predicate);
+    Iterator<T> iterator = removeFrom.iterator();
+    while (iterator.hasNext()) {
+      T next = iterator.next();
+      if (predicate.apply(next)) {
+        iterator.remove();
+        return next;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Determines whether two iterables contain equal elements in the same order.
    * More specifically, this method returns {@code true} if {@code iterable1}
    * and {@code iterable2} contain the same number of elements and every element
    * of {@code iterable1} is equal to the corresponding element of
    * {@code iterable2}.
    */
-  public static boolean elementsEqual(Iterable<?> iterable1, Iterable<?> iterable2) {
+  public static boolean elementsEqual(
+      Iterable<?> iterable1, Iterable<?> iterable2) {
     if (iterable1 instanceof Collection && iterable2 instanceof Collection) {
       Collection<?> collection1 = (Collection<?>) iterable1;
       Collection<?> collection2 = (Collection<?>) iterable2;
@@ -243,8 +267,12 @@ public final class Iterables {
   }
 
   /**
-   * Returns a string representation of {@code iterable}, with the format
-   * {@code [e1, e2, ..., en]}.
+   * Returns a string representation of {@code iterable}, with the format {@code
+   * [e1, e2, ..., en]} (that is, identical to {@link java.util.Arrays
+   * Arrays}{@code .toString(Iterables.toArray(iterable))}). Note that for
+   * <i>most</i> implementations of {@link Collection}, {@code
+   * collection.toString()} also gives the same result, but that behavior is not
+   * generally guaranteed.
    */
   public static String toString(Iterable<?> iterable) {
     return Iterators.toString(iterable.iterator());
@@ -269,7 +297,8 @@ public final class Iterables {
    *     elements
    */
   @Nullable
-  public static <T> T getOnlyElement(Iterable<? extends T> iterable, @Nullable T defaultValue) {
+  public static <T> T getOnlyElement(
+      Iterable<? extends T> iterable, @Nullable T defaultValue) {
     return Iterators.getOnlyElement(iterable.iterator(), defaultValue);
   }
 
@@ -305,8 +334,9 @@ public final class Iterables {
    * created with the contents of the iterable in the same iteration order.
    */
   private static <E> Collection<E> toCollection(Iterable<E> iterable) {
-    return (iterable instanceof Collection) ? (Collection<E>) iterable : Lists
-        .newArrayList(iterable.iterator());
+    return (iterable instanceof Collection)
+        ? (Collection<E>) iterable
+        : Lists.newArrayList(iterable.iterator());
   }
 
   /**
@@ -315,12 +345,13 @@ public final class Iterables {
    * @return {@code true} if {@code collection} was modified as a result of this
    *     operation.
    */
-  public static <T> boolean addAll(Collection<T> addTo, Iterable<? extends T> elementsToAdd) {
+  public static <T> boolean addAll(
+      Collection<T> addTo, Iterable<? extends T> elementsToAdd) {
     if (elementsToAdd instanceof Collection) {
       Collection<? extends T> c = Collections2.cast(elementsToAdd);
       return addTo.addAll(c);
     }
-    return Iterators.addAll(addTo, elementsToAdd.iterator());
+    return Iterators.addAll(addTo, checkNotNull(elementsToAdd).iterator());
   }
 
   /**
@@ -333,8 +364,7 @@ public final class Iterables {
   public static int frequency(Iterable<?> iterable, @Nullable Object element) {
     if ((iterable instanceof Multiset)) {
       return ((Multiset<?>) iterable).count(element);
-    }
-    if ((iterable instanceof Set)) {
+    } else if ((iterable instanceof Set)) {
       return ((Set<?>) iterable).contains(element) ? 1 : 0;
     }
     return Iterators.frequency(iterable.iterator(), element);
@@ -360,13 +390,11 @@ public final class Iterables {
   public static <T> Iterable<T> cycle(final Iterable<T> iterable) {
     checkNotNull(iterable);
     return new FluentIterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
         return Iterators.cycle(iterable);
       }
-
-      @Override
-      public String toString() {
+      @Override public String toString() {
         return iterable.toString() + " (cycled)";
       }
     };
@@ -402,11 +430,9 @@ public final class Iterables {
    * <p>The returned iterable's iterator supports {@code remove()} when the
    * corresponding input iterator supports it.
    */
-  @SuppressWarnings("unchecked")
-  public static <T> Iterable<T> concat(Iterable<? extends T> a, Iterable<? extends T> b) {
-    checkNotNull(a);
-    checkNotNull(b);
-    return concat(Arrays.asList(a, b));
+  public static <T> Iterable<T> concat(
+      Iterable<? extends T> a, Iterable<? extends T> b) {
+    return concat(ImmutableList.of(a, b));
   }
 
   /**
@@ -418,13 +444,9 @@ public final class Iterables {
    * <p>The returned iterable's iterator supports {@code remove()} when the
    * corresponding input iterator supports it.
    */
-  @SuppressWarnings("unchecked")
-  public static <T> Iterable<T> concat(Iterable<? extends T> a, Iterable<? extends T> b,
-      Iterable<? extends T> c) {
-    checkNotNull(a);
-    checkNotNull(b);
-    checkNotNull(c);
-    return concat(Arrays.asList(a, b, c));
+  public static <T> Iterable<T> concat(Iterable<? extends T> a,
+      Iterable<? extends T> b, Iterable<? extends T> c) {
+    return concat(ImmutableList.of(a, b, c));
   }
 
   /**
@@ -437,14 +459,10 @@ public final class Iterables {
    * <p>The returned iterable's iterator supports {@code remove()} when the
    * corresponding input iterator supports it.
    */
-  @SuppressWarnings("unchecked")
-  public static <T> Iterable<T> concat(Iterable<? extends T> a, Iterable<? extends T> b,
-      Iterable<? extends T> c, Iterable<? extends T> d) {
-    checkNotNull(a);
-    checkNotNull(b);
-    checkNotNull(c);
-    checkNotNull(d);
-    return concat(Arrays.asList(a, b, c, d));
+  public static <T> Iterable<T> concat(Iterable<? extends T> a,
+      Iterable<? extends T> b, Iterable<? extends T> c,
+      Iterable<? extends T> d) {
+    return concat(ImmutableList.of(a, b, c, d));
   }
 
   /**
@@ -471,10 +489,11 @@ public final class Iterables {
    * iterable may throw {@code NullPointerException} if any of the input
    * iterators is null.
    */
-  public static <T> Iterable<T> concat(final Iterable<? extends Iterable<? extends T>> inputs) {
+  public static <T> Iterable<T> concat(
+      final Iterable<? extends Iterable<? extends T>> inputs) {
     checkNotNull(inputs);
     return new FluentIterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
         return Iterators.concat(iterators(inputs));
       }
@@ -484,17 +503,13 @@ public final class Iterables {
   /**
    * Returns an iterator over the iterators of the given iterables.
    */
-  private static <T> UnmodifiableIterator<Iterator<? extends T>> iterators(
+  private static <T> Iterator<Iterator<? extends T>> iterators(
       Iterable<? extends Iterable<? extends T>> iterables) {
-    final Iterator<? extends Iterable<? extends T>> iterableIterator = iterables.iterator();
-    return new UnmodifiableIterator<Iterator<? extends T>>() {
-
-      public boolean hasNext() {
-        return iterableIterator.hasNext();
-      }
-
-      public Iterator<? extends T> next() {
-        return iterableIterator.next().iterator();
+    return new TransformedIterator<Iterable<? extends T>, Iterator<? extends T>>(
+        iterables.iterator()) {
+      @Override
+      Iterator<? extends T> transform(Iterable<? extends T> from) {
+        return from.iterator();
       }
     };
   }
@@ -519,11 +534,12 @@ public final class Iterables {
    *     iterable} divided into partitions
    * @throws IllegalArgumentException if {@code size} is nonpositive
    */
-  public static <T> Iterable<List<T>> partition(final Iterable<T> iterable, final int size) {
+  public static <T> Iterable<List<T>> partition(
+      final Iterable<T> iterable, final int size) {
     checkNotNull(iterable);
     checkArgument(size > 0);
     return new FluentIterable<List<T>>() {
-
+      @Override
       public Iterator<List<T>> iterator() {
         return Iterators.partition(iterable.iterator(), size);
       }
@@ -547,11 +563,12 @@ public final class Iterables {
    *     trailing null elements)
    * @throws IllegalArgumentException if {@code size} is nonpositive
    */
-  public static <T> Iterable<List<T>> paddedPartition(final Iterable<T> iterable, final int size) {
+  public static <T> Iterable<List<T>> paddedPartition(
+      final Iterable<T> iterable, final int size) {
     checkNotNull(iterable);
     checkArgument(size > 0);
     return new FluentIterable<List<T>>() {
-
+      @Override
       public Iterator<List<T>> iterator() {
         return Iterators.paddedPartition(iterable.iterator(), size);
       }
@@ -562,12 +579,12 @@ public final class Iterables {
    * Returns the elements of {@code unfiltered} that satisfy a predicate. The
    * resulting iterable's iterator does not support {@code remove()}.
    */
-  public static <T> Iterable<T> filter(final Iterable<T> unfiltered,
-      final Predicate<? super T> predicate) {
+  public static <T> Iterable<T> filter(
+      final Iterable<T> unfiltered, final Predicate<? super T> predicate) {
     checkNotNull(unfiltered);
     checkNotNull(predicate);
     return new FluentIterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
         return Iterators.filter(unfiltered.iterator(), predicate);
       }
@@ -586,11 +603,12 @@ public final class Iterables {
    *     iterable that were of the requested type
    */
   @GwtIncompatible("Class.isInstance")
-  public static <T> Iterable<T> filter(final Iterable<?> unfiltered, final Class<T> type) {
+  public static <T> Iterable<T> filter(
+      final Iterable<?> unfiltered, final Class<T> type) {
     checkNotNull(unfiltered);
     checkNotNull(type);
     return new FluentIterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
         return Iterators.filter(unfiltered.iterator(), type);
       }
@@ -600,7 +618,8 @@ public final class Iterables {
   /**
    * Returns {@code true} if any element in {@code iterable} satisfies the predicate.
    */
-  public static <T> boolean any(Iterable<T> iterable, Predicate<? super T> predicate) {
+  public static <T> boolean any(
+      Iterable<T> iterable, Predicate<? super T> predicate) {
     return Iterators.any(iterable.iterator(), predicate);
   }
 
@@ -608,7 +627,8 @@ public final class Iterables {
    * Returns {@code true} if every element in {@code iterable} satisfies the
    * predicate. If {@code iterable} is empty, {@code true} is returned.
    */
-  public static <T> boolean all(Iterable<T> iterable, Predicate<? super T> predicate) {
+  public static <T> boolean all(
+      Iterable<T> iterable, Predicate<? super T> predicate) {
     return Iterators.all(iterable.iterator(), predicate);
   }
 
@@ -621,7 +641,8 @@ public final class Iterables {
    * @throws NoSuchElementException if no element in {@code iterable} matches
    *     the given predicate
    */
-  public static <T> T find(Iterable<T> iterable, Predicate<? super T> predicate) {
+  public static <T> T find(Iterable<T> iterable,
+      Predicate<? super T> predicate) {
     return Iterators.find(iterable.iterator(), predicate);
   }
 
@@ -634,8 +655,8 @@ public final class Iterables {
    * @since 7.0
    */
   @Nullable
-  public static <T> T find(Iterable<? extends T> iterable, Predicate<? super T> predicate,
-      @Nullable T defaultValue) {
+  public static <T> T find(Iterable<? extends T> iterable,
+      Predicate<? super T> predicate, @Nullable T defaultValue) {
     return Iterators.find(iterable.iterator(), predicate, defaultValue);
   }
 
@@ -649,7 +670,8 @@ public final class Iterables {
    *
    * @since 11.0
    */
-  public static <T> Optional<T> tryFind(Iterable<T> iterable, Predicate<? super T> predicate) {
+  public static <T> Optional<T> tryFind(Iterable<T> iterable,
+      Predicate<? super T> predicate) {
     return Iterators.tryFind(iterable.iterator(), predicate);
   }
 
@@ -664,7 +686,8 @@ public final class Iterables {
    *
    * @since 2.0
    */
-  public static <T> int indexOf(Iterable<T> iterable, Predicate<? super T> predicate) {
+  public static <T> int indexOf(
+      Iterable<T> iterable, Predicate<? super T> predicate) {
     return Iterators.indexOf(iterable.iterator(), predicate);
   }
 
@@ -685,7 +708,7 @@ public final class Iterables {
     checkNotNull(fromIterable);
     checkNotNull(function);
     return new FluentIterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
         return Iterators.transform(fromIterable.iterator(), function);
       }
@@ -702,25 +725,9 @@ public final class Iterables {
    */
   public static <T> T get(Iterable<T> iterable, int position) {
     checkNotNull(iterable);
-    if (iterable instanceof List) {
-      return ((List<T>) iterable).get(position);
-    }
-
-    if (iterable instanceof Collection) {
-      // Can check both ends
-      Collection<T> collection = (Collection<T>) iterable;
-      Preconditions.checkElementIndex(position, collection.size());
-    } else {
-      // Can only check the lower end
-      checkNonnegativeIndex(position);
-    }
-    return Iterators.get(iterable.iterator(), position);
-  }
-
-  private static void checkNonnegativeIndex(int position) {
-    if (position < 0) {
-      throw new IndexOutOfBoundsException("position cannot be negative: " + position);
-    }
+    return (iterable instanceof List)
+        ? ((List<T>) iterable).get(position)
+        : Iterators.get(iterable.iterator(), position);
   }
 
   /**
@@ -739,12 +746,14 @@ public final class Iterables {
   @Nullable
   public static <T> T get(Iterable<? extends T> iterable, int position, @Nullable T defaultValue) {
     checkNotNull(iterable);
-    checkNonnegativeIndex(position);
-
-    try {
-      return get(iterable, position);
-    } catch (IndexOutOfBoundsException e) {
-      return defaultValue;
+    Iterators.checkNonnegative(position);
+    if (iterable instanceof List) {
+      List<? extends T> list = Lists.cast(iterable);
+      return (position < list.size()) ? list.get(position) : defaultValue;
+    } else {
+      Iterator<? extends T> iterator = iterable.iterator();
+      Iterators.advance(iterator, position);
+      return Iterators.getNext(iterator, defaultValue);
     }
   }
 
@@ -782,16 +791,6 @@ public final class Iterables {
       return getLastInNonemptyList(list);
     }
 
-    /*
-     * TODO(kevinb): consider whether this "optimization" is worthwhile. Users
-     * with SortedSets tend to know they are SortedSets and probably would not
-     * call this method.
-     */
-    if (iterable instanceof SortedSet) {
-      SortedSet<T> sortedSet = (SortedSet<T>) iterable;
-      return sortedSet.last();
-    }
-
     return Iterators.getLast(iterable.iterator());
   }
 
@@ -806,25 +805,12 @@ public final class Iterables {
   @Nullable
   public static <T> T getLast(Iterable<? extends T> iterable, @Nullable T defaultValue) {
     if (iterable instanceof Collection) {
-      Collection<? extends T> collection = Collections2.cast(iterable);
-      if (collection.isEmpty()) {
+      Collection<? extends T> c = Collections2.cast(iterable);
+      if (c.isEmpty()) {
         return defaultValue;
+      } else if (iterable instanceof List) {
+        return getLastInNonemptyList(Lists.cast(iterable));
       }
-    }
-
-    if (iterable instanceof List) {
-      List<? extends T> list = Lists.cast(iterable);
-      return getLastInNonemptyList(list);
-    }
-
-    /*
-     * TODO(kevinb): consider whether this "optimization" is worthwhile. Users
-     * with SortedSets tend to know they are SortedSets and probably would not
-     * call this method.
-     */
-    if (iterable instanceof SortedSet) {
-      SortedSet<? extends T> sortedSet = Sets.cast(iterable);
-      return sortedSet.last();
     }
 
     return Iterators.getLast(iterable.iterator(), defaultValue);
@@ -854,24 +840,25 @@ public final class Iterables {
    *
    * @since 3.0
    */
-  public static <T> Iterable<T> skip(final Iterable<T> iterable, final int numberToSkip) {
+  public static <T> Iterable<T> skip(final Iterable<T> iterable,
+      final int numberToSkip) {
     checkNotNull(iterable);
     checkArgument(numberToSkip >= 0, "number to skip cannot be negative");
 
     if (iterable instanceof List) {
       final List<T> list = (List<T>) iterable;
       return new FluentIterable<T>() {
-
+        @Override
         public Iterator<T> iterator() {
           // TODO(kevinb): Support a concurrently modified collection?
-          return (numberToSkip >= list.size()) ? Iterators.<T> emptyIterator() : list.subList(
-              numberToSkip, list.size()).iterator();
+          int toSkip = Math.min(list.size(), numberToSkip);
+          return list.subList(toSkip, list.size()).iterator();
         }
       };
     }
 
     return new FluentIterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
         final Iterator<T> iterator = iterable.iterator();
 
@@ -885,26 +872,21 @@ public final class Iterables {
         return new Iterator<T>() {
           boolean atStart = true;
 
+          @Override
           public boolean hasNext() {
             return iterator.hasNext();
           }
 
+          @Override
           public T next() {
-            if (!hasNext()) {
-              throw new NoSuchElementException();
-            }
-
-            try {
-              return iterator.next();
-            } finally {
-              atStart = false;
-            }
+            T result = iterator.next();
+            atStart = false; // not called if next() fails
+            return result;
           }
 
+          @Override
           public void remove() {
-            if (atStart) {
-              throw new IllegalStateException();
-            }
+            checkRemove(!atStart);
             iterator.remove();
           }
         };
@@ -915,20 +897,21 @@ public final class Iterables {
   /**
    * Creates an iterable with the first {@code limitSize} elements of the given
    * iterable. If the original iterable does not contain that many elements, the
-   * returned iterator will have the same behavior as the original iterable. The
+   * returned iterable will have the same behavior as the original iterable. The
    * returned iterable's iterator supports {@code remove()} if the original
    * iterator does.
    *
    * @param iterable the iterable to limit
-   * @param limitSize the maximum number of elements in the returned iterator
+   * @param limitSize the maximum number of elements in the returned iterable
    * @throws IllegalArgumentException if {@code limitSize} is negative
    * @since 3.0
    */
-  public static <T> Iterable<T> limit(final Iterable<T> iterable, final int limitSize) {
+  public static <T> Iterable<T> limit(
+      final Iterable<T> iterable, final int limitSize) {
     checkNotNull(iterable);
     checkArgument(limitSize >= 0, "limit is negative");
     return new FluentIterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
         return Iterators.limit(iterable.iterator(), limitSize);
       }
@@ -957,9 +940,14 @@ public final class Iterables {
   public static <T> Iterable<T> consumingIterable(final Iterable<T> iterable) {
     if (iterable instanceof Queue) {
       return new FluentIterable<T>() {
-
+        @Override
         public Iterator<T> iterator() {
           return new ConsumingQueueIterator<T>((Queue<T>) iterable);
+        }
+
+        @Override
+        public String toString() {
+          return "Iterables.consumingIterable(...)";
         }
       };
     }
@@ -967,9 +955,14 @@ public final class Iterables {
     checkNotNull(iterable);
 
     return new FluentIterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
         return Iterators.consumingIterator(iterable.iterator());
+      }
+
+      @Override
+      public String toString() {
+        return "Iterables.consumingIterable(...)";
       }
     };
   }
@@ -981,8 +974,7 @@ public final class Iterables {
       this.queue = queue;
     }
 
-    @Override
-    public T computeNext() {
+    @Override public T computeNext() {
       try {
         return queue.remove();
       } catch (NoSuchElementException e) {
@@ -1028,9 +1020,10 @@ public final class Iterables {
     checkNotNull(iterables, "iterables");
     checkNotNull(comparator, "comparator");
     Iterable<T> iterable = new FluentIterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
-        return Iterators.mergeSorted(Iterables.transform(iterables, Iterables.<T> toIterator()),
+        return Iterators.mergeSorted(
+            Iterables.transform(iterables, Iterables.<T>toIterator()),
             comparator);
       }
     };
@@ -1039,9 +1032,10 @@ public final class Iterables {
 
   // TODO(user): Is this the best place for this? Move to fluent functions?
   // Useful as a public method?
-  private static <T> Function<Iterable<? extends T>, Iterator<? extends T>> toIterator() {
+  private static <T> Function<Iterable<? extends T>, Iterator<? extends T>>
+      toIterator() {
     return new Function<Iterable<? extends T>, Iterator<? extends T>>() {
-
+      @Override
       public Iterator<? extends T> apply(Iterable<? extends T> iterable) {
         return iterable.iterator();
       }

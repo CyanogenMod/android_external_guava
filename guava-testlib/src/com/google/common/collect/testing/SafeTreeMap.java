@@ -17,8 +17,10 @@
 package com.google.common.collect.testing;
 
 import java.io.Serializable;
+import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -33,9 +35,9 @@ import java.util.TreeMap;
  */
 public final class SafeTreeMap<K, V> implements Serializable, SortedMap<K, V> {
   @SuppressWarnings("unchecked")
-  private static final Comparator NATURAL_ORDER = new Comparator<Comparable>() {
-    @Override public int compare(Comparable o1, Comparable o2) {
-      return o1.compareTo(o2);
+  private static final Comparator<Object> NATURAL_ORDER = new Comparator<Object>() {
+    @Override public int compare(Object o1, Object o2) {
+      return ((Comparable<Object>) o1).compareTo(o2);
     }
   };
   private final SortedMap<K, V> delegate;
@@ -70,7 +72,7 @@ public final class SafeTreeMap<K, V> implements Serializable, SortedMap<K, V> {
   @Override public Comparator<? super K> comparator() {
     Comparator<? super K> comparator = delegate.comparator();
     if (comparator == null) {
-      comparator = NATURAL_ORDER;
+      comparator = (Comparator<? super K>) NATURAL_ORDER;
     }
     return comparator;
   }
@@ -90,7 +92,42 @@ public final class SafeTreeMap<K, V> implements Serializable, SortedMap<K, V> {
   }
 
   @Override public Set<Entry<K, V>> entrySet() {
-    return delegate.entrySet();
+    return new AbstractSet<Entry<K, V>>() {
+      private Set<Entry<K, V>> delegate() {
+        return delegate.entrySet();
+      }
+
+      @Override
+      public boolean contains(Object object) {
+        try {
+          return delegate().contains(object);
+        } catch (NullPointerException e) {
+          return false;
+        } catch (ClassCastException e) {
+          return false;
+        }
+      }
+
+      @Override
+      public Iterator<Entry<K, V>> iterator() {
+        return delegate().iterator();
+      }
+
+      @Override
+      public int size() {
+        return delegate().size();
+      }
+
+      @Override
+      public boolean remove(Object o) {
+        return delegate().remove(o);
+      }
+
+      @Override
+      public void clear() {
+        delegate().clear();
+      }
+    };
   }
 
   @Override public K firstKey() {

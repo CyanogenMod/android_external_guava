@@ -59,7 +59,7 @@ import javax.annotation.CheckReturnValue;
  * <li>accumulation of cache access statistics
  * </ul>
  *
- * These features are all optional; caches can be created using all or none of them. By default
+ * <p>These features are all optional; caches can be created using all or none of them. By default
  * cache instances created by {@code CacheBuilder} will not perform any type of eviction.
  *
  * <p>Usage example: <pre>   {@code
@@ -75,7 +75,7 @@ import javax.annotation.CheckReturnValue;
  *             }
  *           });}</pre>
  *
- * Or equivalently, <pre>   {@code
+ * <p>Or equivalently, <pre>   {@code
  *
  *   // In real life this would come from a command-line flag or config file
  *   String spec = "maximumSize=10000,expireAfterWrite=10m";
@@ -116,7 +116,7 @@ import javax.annotation.CheckReturnValue;
  * <p>If {@linkplain #expireAfterWrite expireAfterWrite} or
  * {@linkplain #expireAfterAccess expireAfterAccess} is requested entries may be evicted on each
  * cache modification, on occasional cache accesses, or on calls to {@link Cache#cleanUp}. Expired
- * entries may be counted in {@link Cache#size}, but will never be visible to read or write
+ * entries may be counted by {@link Cache#size}, but will never be visible to read or write
  * operations.
  *
  * <p>If {@linkplain #weakKeys weakKeys}, {@linkplain #weakValues weakValues}, or
@@ -127,7 +127,7 @@ import javax.annotation.CheckReturnValue;
  * visible to read or write operations.
  *
  * <p>Certain cache configurations will result in the accrual of periodic maintenance tasks which
- * will be performed during write operations, or during occasional read operations in the absense of
+ * will be performed during write operations, or during occasional read operations in the absence of
  * writes. The {@link Cache#cleanUp} method of the returned cache will also perform maintenance, but
  * calling it should not be necessary with a high throughput cache. Only caches built with
  * {@linkplain #removalListener removalListener}, {@linkplain #expireAfterWrite expireAfterWrite},
@@ -156,27 +156,33 @@ public final class CacheBuilder<K, V> {
   private static final int DEFAULT_EXPIRATION_NANOS = 0;
   private static final int DEFAULT_REFRESH_NANOS = 0;
 
-  static final Supplier<? extends StatsCounter> NULL_STATS_COUNTER = Suppliers
-      .ofInstance(new StatsCounter() {
-
+  static final Supplier<? extends StatsCounter> NULL_STATS_COUNTER = Suppliers.ofInstance(
+      new StatsCounter() {
+        @Override
         public void recordHits(int count) {}
 
+        @Override
         public void recordMisses(int count) {}
 
+        @Override
         public void recordLoadSuccess(long loadTime) {}
 
+        @Override
         public void recordLoadException(long loadTime) {}
 
+        @Override
         public void recordEviction() {}
 
+        @Override
         public CacheStats snapshot() {
           return EMPTY_STATS;
         }
       });
   static final CacheStats EMPTY_STATS = new CacheStats(0, 0, 0, 0, 0, 0);
 
-  static final Supplier<StatsCounter> CACHE_STATS_COUNTER = new Supplier<StatsCounter>() {
-
+  static final Supplier<StatsCounter> CACHE_STATS_COUNTER =
+      new Supplier<StatsCounter>() {
+    @Override
     public StatsCounter get() {
       return new SimpleStatsCounter();
     }
@@ -185,19 +191,20 @@ public final class CacheBuilder<K, V> {
   enum NullListener implements RemovalListener<Object, Object> {
     INSTANCE;
 
+    @Override
     public void onRemoval(RemovalNotification<Object, Object> notification) {}
   }
 
   enum OneWeigher implements Weigher<Object, Object> {
     INSTANCE;
 
+    @Override
     public int weigh(Object key, Object value) {
       return 1;
     }
   }
 
   static final Ticker NULL_TICKER = new Ticker() {
-
     @Override
     public long read() {
       return 0;
@@ -250,7 +257,8 @@ public final class CacheBuilder<K, V> {
   @Beta
   @GwtIncompatible("To be supported")
   public static CacheBuilder<Object, Object> from(CacheBuilderSpec spec) {
-    return spec.toCacheBuilder().lenientParsing();
+    return spec.toCacheBuilder()
+        .lenientParsing();
   }
 
   /**
@@ -301,8 +309,8 @@ public final class CacheBuilder<K, V> {
    */
   @GwtIncompatible("To be supported")
   CacheBuilder<K, V> valueEquivalence(Equivalence<Object> equivalence) {
-    checkState(valueEquivalence == null, "value equivalence was already set to %s",
-        valueEquivalence);
+    checkState(valueEquivalence == null,
+        "value equivalence was already set to %s", valueEquivalence);
     this.valueEquivalence = checkNotNull(equivalence);
     return this;
   }
@@ -638,8 +646,8 @@ public final class CacheBuilder<K, V> {
   }
 
   long getExpireAfterAccessNanos() {
-    return (expireAfterAccessNanos == UNSET_INT) ? DEFAULT_EXPIRATION_NANOS
-        : expireAfterAccessNanos;
+    return (expireAfterAccessNanos == UNSET_INT)
+        ? DEFAULT_EXPIRATION_NANOS : expireAfterAccessNanos;
   }
 
   /**
@@ -754,6 +762,10 @@ public final class CacheBuilder<K, V> {
     statsCounterSupplier = CACHE_STATS_COUNTER;
     return this;
   }
+  
+  boolean isRecordingStats() {
+    return statsCounterSupplier == CACHE_STATS_COUNTER;
+  }
 
   Supplier<? extends StatsCounter> getStatsCounterSupplier() {
     return statsCounterSupplier;
@@ -771,7 +783,8 @@ public final class CacheBuilder<K, V> {
    * @param loader the cache loader used to obtain new values
    * @return a cache having the requested features
    */
-  public <K1 extends K, V1 extends V> LoadingCache<K1, V1> build(CacheLoader<? super K1, V1> loader) {
+  public <K1 extends K, V1 extends V> LoadingCache<K1, V1> build(
+      CacheLoader<? super K1, V1> loader) {
     checkWeightWithWeigher();
     return new LocalCache.LocalLoadingCache<K1, V1>(this, loader);
   }
@@ -816,7 +829,6 @@ public final class CacheBuilder<K, V> {
    * Returns a string representation for this CacheBuilder instance. The exact form of the returned
    * string is not specified.
    */
-
   @Override
   public String toString() {
     Objects.ToStringHelper s = Objects.toStringHelper(this);

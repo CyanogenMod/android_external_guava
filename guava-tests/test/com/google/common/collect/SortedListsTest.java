@@ -20,9 +20,9 @@ import com.google.common.collect.SortedLists.KeyAbsentBehavior;
 import com.google.common.collect.SortedLists.KeyPresentBehavior;
 import com.google.common.testing.NullPointerTester;
 
-import java.util.List;
-
 import junit.framework.TestCase;
+
+import java.util.List;
 
 /**
  * Tests for SortedLists.

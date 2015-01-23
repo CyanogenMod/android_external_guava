@@ -26,6 +26,6 @@ import java.util.SortedSet;
  * @author Louis Wasserman
  */
 interface SortedMultisetBridge<E> extends Multiset<E> {
-
+  @Override
   SortedSet<E> elementSet();
 }

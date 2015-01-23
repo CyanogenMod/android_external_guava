@@ -28,8 +28,6 @@ import java.util.Set;
 /**
  * Optional features of classes derived from {@code List}.
  *
- * <p>This class is GWT compatible.
- *
  * @author George van den Driessche
  */
 // Enum values use constructors with generic varargs.
@@ -49,7 +47,7 @@ public enum ListFeature implements Feature<List> {
 
   /** Features supported by lists where only removal is allowed. */
   REMOVE_OPERATIONS(
-      CollectionFeature.SUPPORTS_REMOVE,
+      CollectionFeature.REMOVE_OPERATIONS,
       SUPPORTS_REMOVE_WITH_INDEX
   );
 

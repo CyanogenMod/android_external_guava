@@ -38,6 +38,7 @@ final class ImmutableMapKeySet<K, V> extends ImmutableSet<K> {
     this.map = map;
   }
 
+  @Override
   public int size() {
     return map.size();
   }
@@ -57,6 +58,7 @@ final class ImmutableMapKeySet<K, V> extends ImmutableSet<K> {
     final ImmutableList<Entry<K, V>> entryList = map.entrySet().asList();
     return new ImmutableAsList<K>() {
 
+      @Override
       public K get(int index) {
         return entryList.get(index).getKey();
       }
@@ -82,15 +84,12 @@ final class ImmutableMapKeySet<K, V> extends ImmutableSet<K> {
   @GwtIncompatible("serialization")
   private static class KeySetSerializedForm<K> implements Serializable {
     final ImmutableMap<K, ?> map;
-
     KeySetSerializedForm(ImmutableMap<K, ?> map) {
       this.map = map;
     }
-
     Object readResolve() {
       return map.keySet();
     }
-
     private static final long serialVersionUID = 0;
   }
 }

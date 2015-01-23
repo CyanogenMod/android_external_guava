@@ -30,8 +30,7 @@ import javax.annotation.Nullable;
  * @author Nick Kralevich
  */
 @GwtCompatible(serializable = true, emulated = true)
-@SuppressWarnings("serial")
-// uses writeReplace(), not default serialization
+@SuppressWarnings("serial") // uses writeReplace(), not default serialization
 final class SingletonImmutableSet<E> extends ImmutableSet<E> {
 
   final transient E element;
@@ -54,50 +53,34 @@ final class SingletonImmutableSet<E> extends ImmutableSet<E> {
     cachedHashCode = hashCode;
   }
 
+  @Override
   public int size() {
     return 1;
   }
 
-  @Override
-  public boolean isEmpty() {
+  @Override public boolean isEmpty() {
     return false;
   }
 
-  @Override
-  public boolean contains(Object target) {
+  @Override public boolean contains(Object target) {
     return element.equals(target);
   }
 
-  @Override
-  public UnmodifiableIterator<E> iterator() {
+  @Override public UnmodifiableIterator<E> iterator() {
     return Iterators.singletonIterator(element);
   }
 
-  @Override
-  boolean isPartialView() {
+  @Override boolean isPartialView() {
     return false;
   }
 
   @Override
-  public Object[] toArray() {
-    return new Object[] { element };
+  int copyIntoArray(Object[] dst, int offset) {
+    dst[offset] = element;
+    return offset + 1;
   }
 
-  @Override
-  public <T> T[] toArray(T[] array) {
-    if (array.length == 0) {
-      array = ObjectArrays.newArray(array, 1);
-    } else if (array.length > 1) {
-      array[1] = null;
-    }
-    // Writes will produce ArrayStoreException when the toArray() doc requires.
-    Object[] objectArray = array;
-    objectArray[0] = element;
-    return array;
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
+  @Override public boolean equals(@Nullable Object object) {
     if (object == this) {
       return true;
     }
@@ -108,8 +91,7 @@ final class SingletonImmutableSet<E> extends ImmutableSet<E> {
     return false;
   }
 
-  @Override
-  public final int hashCode() {
+  @Override public final int hashCode() {
     // Racy single-check.
     int code = cachedHashCode;
     if (code == 0) {
@@ -118,15 +100,16 @@ final class SingletonImmutableSet<E> extends ImmutableSet<E> {
     return code;
   }
 
-  @Override
-  boolean isHashCodeFast() {
+  @Override boolean isHashCodeFast() {
     return cachedHashCode != 0;
   }
 
-  @Override
-  public String toString() {
+  @Override public String toString() {
     String elementToString = element.toString();
-    return new StringBuilder(elementToString.length() + 2).append('[').append(elementToString)
-        .append(']').toString();
+    return new StringBuilder(elementToString.length() + 2)
+        .append('[')
+        .append(elementToString)
+        .append(']')
+        .toString();
   }
 }

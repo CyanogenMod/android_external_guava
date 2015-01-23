@@ -17,12 +17,12 @@
 package com.google.common.io;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.io.SourceSinkFactory.ByteSinkFactory;
+import static com.google.common.io.SourceSinkFactory.ByteSourceFactory;
+import static com.google.common.io.SourceSinkFactory.CharSinkFactory;
+import static com.google.common.io.SourceSinkFactory.CharSourceFactory;
 
 import com.google.common.base.Charsets;
-import com.google.common.io.SourceSinkFactory.ByteSinkFactory;
-import com.google.common.io.SourceSinkFactory.ByteSourceFactory;
-import com.google.common.io.SourceSinkFactory.CharSinkFactory;
-import com.google.common.io.SourceSinkFactory.CharSourceFactory;
 import com.google.common.jdk5backport.Arrays;
 
 import java.io.ByteArrayOutputStream;
@@ -57,6 +57,14 @@ public class SourceSinkFactories {
 
   public static ByteSourceFactory byteArraySourceFactory() {
     return new ByteArraySourceFactory();
+  }
+
+  public static ByteSourceFactory emptyByteSourceFactory() {
+    return new EmptyByteSourceFactory();
+  }
+
+  public static CharSourceFactory emptyCharSourceFactory() {
+    return new EmptyCharSourceFactory();
   }
 
   public static ByteSourceFactory fileByteSourceFactory() {
@@ -108,7 +116,12 @@ public class SourceSinkFactories {
 
       @Override
       public String getExpected(String data) {
-        return checkNotNull(data);
+        try {
+          return new String(factory.getExpected(data.getBytes(Charsets.UTF_8.name())),
+              Charsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+          throw new AssertionError();
+        }
       }
 
       @Override
@@ -163,7 +176,8 @@ public class SourceSinkFactories {
 
       @Override
       public byte[] getExpected(byte[] bytes) {
-        return Arrays.copyOfRange(factory.getExpected(bytes), off, off + len);
+        byte[] baseExpected = factory.getExpected(bytes);
+        return Arrays.copyOfRange(baseExpected, off, Math.min(baseExpected.length, off + len));
       }
 
       @Override
@@ -177,7 +191,7 @@ public class SourceSinkFactories {
 
     @Override
     public CharSource createSource(String data) throws IOException {
-      return CharStreams.asCharSource(data);
+      return CharSource.wrap(data);
     }
 
     @Override
@@ -194,12 +208,46 @@ public class SourceSinkFactories {
 
     @Override
     public ByteSource createSource(byte[] bytes) throws IOException {
-      return ByteStreams.asByteSource(bytes);
+      return ByteSource.wrap(bytes);
     }
 
     @Override
     public byte[] getExpected(byte[] bytes) {
       return bytes;
+    }
+
+    @Override
+    public void tearDown() throws IOException {
+    }
+  }
+
+  private static class EmptyCharSourceFactory implements CharSourceFactory {
+
+    @Override
+    public CharSource createSource(String data) throws IOException {
+      return CharSource.empty();
+    }
+
+    @Override
+    public String getExpected(String data) {
+      return "";
+    }
+
+    @Override
+    public void tearDown() throws IOException {
+    }
+  }
+
+  private static class EmptyByteSourceFactory implements ByteSourceFactory {
+
+    @Override
+    public ByteSource createSource(byte[] bytes) throws IOException {
+      return ByteSource.empty();
+    }
+
+    @Override
+    public byte[] getExpected(byte[] bytes) {
+      return new byte[0];
     }
 
     @Override
@@ -222,6 +270,7 @@ public class SourceSinkFactories {
     protected File getFile() {
       return fileThreadLocal.get();
     }
+
     public final void tearDown() throws IOException {
       if (!fileThreadLocal.get().delete()) {
         logger.warning("Unable to delete file: " + fileThreadLocal.get());

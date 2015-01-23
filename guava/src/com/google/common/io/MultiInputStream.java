@@ -33,7 +33,7 @@ import javax.annotation.Nullable;
  */
 final class MultiInputStream extends InputStream {
 
-  private Iterator<? extends InputSupplier<? extends InputStream>> it;
+  private Iterator<? extends ByteSource> it;
   private InputStream in;
 
   /**
@@ -41,14 +41,13 @@ final class MultiInputStream extends InputStream {
    *
    * @param it an iterator of I/O suppliers that will provide each substream
    */
-  public MultiInputStream(Iterator<? extends InputSupplier<? extends InputStream>> it)
-      throws IOException {
+  public MultiInputStream(
+      Iterator<? extends ByteSource> it) throws IOException {
     this.it = checkNotNull(it);
     advance();
   }
 
-  @Override
-  public void close() throws IOException {
+  @Override public void close() throws IOException {
     if (in != null) {
       try {
         in.close();
@@ -64,25 +63,22 @@ final class MultiInputStream extends InputStream {
   private void advance() throws IOException {
     close();
     if (it.hasNext()) {
-      in = it.next().getInput();
+      in = it.next().openStream();
     }
   }
 
-  @Override
-  public int available() throws IOException {
+  @Override public int available() throws IOException {
     if (in == null) {
       return 0;
     }
     return in.available();
   }
 
-  @Override
-  public boolean markSupported() {
+  @Override public boolean markSupported() {
     return false;
   }
 
-  @Override
-  public int read() throws IOException {
+  @Override public int read() throws IOException {
     if (in == null) {
       return -1;
     }
@@ -94,8 +90,7 @@ final class MultiInputStream extends InputStream {
     return result;
   }
 
-  @Override
-  public int read(@Nullable byte[] b, int off, int len) throws IOException {
+  @Override public int read(@Nullable byte[] b, int off, int len) throws IOException {
     if (in == null) {
       return -1;
     }
@@ -107,8 +102,7 @@ final class MultiInputStream extends InputStream {
     return result;
   }
 
-  @Override
-  public long skip(long n) throws IOException {
+  @Override public long skip(long n) throws IOException {
     if (in == null || n <= 0) {
       return 0;
     }

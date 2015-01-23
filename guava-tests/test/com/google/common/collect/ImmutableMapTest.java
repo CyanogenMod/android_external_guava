@@ -35,6 +35,7 @@ import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.MapFeature;
 import com.google.common.collect.testing.google.MapGenerators.ImmutableMapCopyOfEnumMapGenerator;
+import com.google.common.collect.testing.google.MapGenerators.ImmutableMapCopyOfGenerator;
 import com.google.common.collect.testing.google.MapGenerators.ImmutableMapEntryListGenerator;
 import com.google.common.collect.testing.google.MapGenerators.ImmutableMapGenerator;
 import com.google.common.collect.testing.google.MapGenerators.ImmutableMapKeyListGenerator;
@@ -44,6 +45,10 @@ import com.google.common.testing.EqualsTester;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,10 +56,6 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
 /**
  * Tests for {@link ImmutableMap}.
@@ -78,6 +79,15 @@ public class ImmutableMapTest extends TestCase {
             MapFeature.REJECTS_DUPLICATES_AT_CREATION,
             CollectionFeature.ALLOWS_NULL_QUERIES)
         .named("ImmutableMap")
+        .createTestSuite());
+
+    suite.addTest(MapTestSuiteBuilder.using(new ImmutableMapCopyOfGenerator())
+        .withFeatures(
+            CollectionSize.ANY,
+            CollectionFeature.SERIALIZABLE_INCLUDING_VIEWS,
+            CollectionFeature.KNOWN_ORDER,
+            CollectionFeature.ALLOWS_NULL_QUERIES)
+        .named("ImmutableMap.copyOf")
         .createTestSuite());
 
     suite.addTest(MapTestSuiteBuilder.using(new ImmutableMapCopyOfEnumMapGenerator())
@@ -373,6 +383,57 @@ public class ImmutableMapTest extends TestCase {
       assertMapEquals(mapTwo, "one", 1, "two", 2, "three", 3, "four", 4);
     }
 
+    public void testBuilderPutNullKeyFailsAtomically() {
+      Builder<String, Integer> builder = new Builder<String, Integer>();
+      try {
+        builder.put(null, 1);
+        fail();
+      } catch (NullPointerException expected) {}
+      builder.put("foo", 2);
+      assertMapEquals(builder.build(), "foo", 2);
+    }
+
+    public void testBuilderPutImmutableEntryWithNullKeyFailsAtomically() {
+      Builder<String, Integer> builder = new Builder<String, Integer>();
+      try {
+        builder.put(Maps.immutableEntry((String) null, 1));
+        fail();
+      } catch (NullPointerException expected) {}
+      builder.put("foo", 2);
+      assertMapEquals(builder.build(), "foo", 2);
+    }
+
+    // for GWT compatibility
+    static class SimpleEntry<K, V> extends AbstractMapEntry<K, V> {
+      public K key;
+      public V value;
+
+      SimpleEntry(K key, V value) {
+        this.key = key;
+        this.value = value;
+      }
+
+      @Override
+      public K getKey() {
+        return key;
+      }
+
+      @Override
+      public V getValue() {
+        return value;
+      }
+    }
+
+    public void testBuilderPutMutableEntryWithNullKeyFailsAtomically() {
+      Builder<String, Integer> builder = new Builder<String, Integer>();
+      try {
+        builder.put(new SimpleEntry<String, Integer>(null, 1));
+        fail();
+      } catch (NullPointerException expected) {}
+      builder.put("foo", 2);
+      assertMapEquals(builder.build(), "foo", 2);
+    }
+
     public void testBuilderPutNullKey() {
       Builder<String, Integer> builder = new Builder<String, Integer>();
       try {
@@ -418,7 +479,6 @@ public class ImmutableMapTest extends TestCase {
         builder.build();
         fail();
       } catch (IllegalArgumentException expected) {
-        assertEquals("duplicate key: one", expected.getMessage());
       }
     }
 
@@ -473,7 +533,6 @@ public class ImmutableMapTest extends TestCase {
         ImmutableMap.of("one", 1, "one", 1);
         fail();
       } catch (IllegalArgumentException expected) {
-        assertEquals("duplicate key: one", expected.getMessage());
       }
     }
 
@@ -526,6 +585,7 @@ public class ImmutableMapTest extends TestCase {
     ImmutableMap<String, Integer> map = ImmutableMap.of("one", 1);
     ImmutableSetMultimap<String, Integer> multimap1 = map.asMultimap();
     ImmutableSetMultimap<String, Integer> multimap2 = map.asMultimap();
+    assertEquals(1, multimap1.asMap().size());
     assertSame(multimap1, multimap2);
   }
 

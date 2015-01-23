@@ -27,13 +27,13 @@ import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.MapFeature;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Unit test for {@link ImmutableTypeToInstanceMap}.
@@ -68,7 +68,7 @@ public class ImmutableTypeToInstanceMapTest extends TestCase {
             MapFeature.RESTRICTS_KEYS,
             CollectionFeature.KNOWN_ORDER,
             CollectionSize.ANY,
-            MapFeature.ALLOWS_NULL_QUERIES)
+            MapFeature.ALLOWS_ANY_NULL_QUERIES)
         .createTestSuite());
 
     return suite;
@@ -100,7 +100,7 @@ public class ImmutableTypeToInstanceMapTest extends TestCase {
     assertEquals(ImmutableList.of(1), map.getInstance(type));
   }
 
-  public void testGenericArrayType() {
+  public void testGeneriArrayType() {
     @SuppressWarnings("unchecked") // Trying to test generic array
     ImmutableList<Integer>[] array = new ImmutableList[] {ImmutableList.of(1)};
     TypeToken<ImmutableList<Integer>[]> type = new TypeToken<ImmutableList<Integer>[]>() {};
@@ -109,8 +109,7 @@ public class ImmutableTypeToInstanceMapTest extends TestCase {
             .put(type, array)
             .build();
     assertEquals(1, map.size());
-    ASSERT.<ImmutableList<Integer>, List<ImmutableList<Integer>>>
-      that(map.getInstance(type)).has().allOf(array[0]).inOrder();
+    ASSERT.that(map.getInstance(type)).has().exactly(array[0]).inOrder();
   }
 
   public void testWildcardType() {

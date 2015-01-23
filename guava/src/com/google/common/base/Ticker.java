@@ -55,7 +55,6 @@ public abstract class Ticker {
   }
 
   private static final Ticker SYSTEM_TICKER = new Ticker() {
-
     @Override
     public long read() {
       return Platform.systemNanoTime();
