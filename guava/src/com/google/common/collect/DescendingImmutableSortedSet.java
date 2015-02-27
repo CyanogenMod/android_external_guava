@@ -33,6 +33,7 @@ class DescendingImmutableSortedSet<E> extends ImmutableSortedSet<E> {
     this.forward = forward;
   }
 
+  @Override
   public int size() {
     return forward.size();
   }
@@ -48,8 +49,8 @@ class DescendingImmutableSortedSet<E> extends ImmutableSortedSet<E> {
   }
 
   @Override
-  ImmutableSortedSet<E> subSetImpl(E fromElement, boolean fromInclusive, E toElement,
-      boolean toInclusive) {
+  ImmutableSortedSet<E> subSetImpl(
+      E fromElement, boolean fromInclusive, E toElement, boolean toInclusive) {
     return forward.subSet(toElement, toInclusive, fromElement, fromInclusive).descendingSet();
   }
 

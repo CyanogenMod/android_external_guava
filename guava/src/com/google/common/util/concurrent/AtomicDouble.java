@@ -57,8 +57,8 @@ public class AtomicDouble extends Number implements java.io.Serializable {
 
   private transient volatile long value;
 
-  private static final AtomicLongFieldUpdater<AtomicDouble> updater = AtomicLongFieldUpdater
-      .newUpdater(AtomicDouble.class, "value");
+  private static final AtomicLongFieldUpdater<AtomicDouble> updater =
+      AtomicLongFieldUpdater.newUpdater(AtomicDouble.class, "value");
 
   /**
    * Creates a new {@code AtomicDouble} with the given initial value.
@@ -129,7 +129,9 @@ public class AtomicDouble extends Number implements java.io.Serializable {
    * the actual value was not bitwise equal to the expected value.
    */
   public final boolean compareAndSet(double expect, double update) {
-    return updater.compareAndSet(this, doubleToRawLongBits(expect), doubleToRawLongBits(update));
+    return updater.compareAndSet(this,
+                                 doubleToRawLongBits(expect),
+                                 doubleToRawLongBits(update));
   }
 
   /**
@@ -148,8 +150,9 @@ public class AtomicDouble extends Number implements java.io.Serializable {
    * @return {@code true} if successful
    */
   public final boolean weakCompareAndSet(double expect, double update) {
-    return updater
-        .weakCompareAndSet(this, doubleToRawLongBits(expect), doubleToRawLongBits(update));
+    return updater.weakCompareAndSet(this,
+                                     doubleToRawLongBits(expect),
+                                     doubleToRawLongBits(update));
   }
 
   /**
@@ -192,7 +195,6 @@ public class AtomicDouble extends Number implements java.io.Serializable {
    * Returns the String representation of the current value.
    * @return the String representation of the current value
    */
-  @Override
   public String toString() {
     return Double.toString(get());
   }
@@ -201,7 +203,6 @@ public class AtomicDouble extends Number implements java.io.Serializable {
    * Returns the value of this {@code AtomicDouble} as an {@code int}
    * after a narrowing primitive conversion.
    */
-  @Override
   public int intValue() {
     return (int) get();
   }
@@ -210,7 +211,6 @@ public class AtomicDouble extends Number implements java.io.Serializable {
    * Returns the value of this {@code AtomicDouble} as a {@code long}
    * after a narrowing primitive conversion.
    */
-  @Override
   public long longValue() {
     return (long) get();
   }
@@ -219,7 +219,6 @@ public class AtomicDouble extends Number implements java.io.Serializable {
    * Returns the value of this {@code AtomicDouble} as a {@code float}
    * after a narrowing primitive conversion.
    */
-  @Override
   public float floatValue() {
     return (float) get();
   }
@@ -227,7 +226,6 @@ public class AtomicDouble extends Number implements java.io.Serializable {
   /**
    * Returns the value of this {@code AtomicDouble} as a {@code double}.
    */
-  @Override
   public double doubleValue() {
     return get();
   }
@@ -237,7 +235,8 @@ public class AtomicDouble extends Number implements java.io.Serializable {
    *
    * @serialData The current value is emitted (a {@code double}).
    */
-  private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException {
+  private void writeObject(java.io.ObjectOutputStream s)
+      throws java.io.IOException {
     s.defaultWriteObject();
 
     s.writeDouble(get());
@@ -246,8 +245,8 @@ public class AtomicDouble extends Number implements java.io.Serializable {
   /**
    * Reconstitutes the instance from a stream (that is, deserializes it).
    */
-  private void readObject(java.io.ObjectInputStream s) throws java.io.IOException,
-      ClassNotFoundException {
+  private void readObject(java.io.ObjectInputStream s)
+      throws java.io.IOException, ClassNotFoundException {
     s.defaultReadObject();
 
     set(s.readDouble());

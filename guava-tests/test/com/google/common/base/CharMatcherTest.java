@@ -16,6 +16,8 @@
 
 package com.google.common.base;
 
+import static com.google.common.base.CharMatcher.BREAKING_WHITESPACE;
+import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.google.common.base.CharMatcher.anyOf;
 import static com.google.common.base.CharMatcher.forPredicate;
 import static com.google.common.base.CharMatcher.inRange;
@@ -28,14 +30,14 @@ import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.Sets;
 import com.google.common.testing.NullPointerTester;
 
+import junit.framework.AssertionFailedError;
+import junit.framework.TestCase;
+
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-
-import junit.framework.AssertionFailedError;
-import junit.framework.TestCase;
 
 /**
  * Unit test for {@link CharMatcher}.
@@ -78,6 +80,14 @@ public class CharMatcherTest extends TestCase {
   // The rest of the behavior of ANY and DEFAULT will be covered in the tests for
   // the text processing methods below.
 
+  public void testWhitespaceBreakingWhitespaceSubset() throws Exception {
+    for (int c = 0; c <= Character.MAX_VALUE; c++) {
+      if (BREAKING_WHITESPACE.apply((char) c)) {
+        assertTrue(Integer.toHexString(c), WHITESPACE.apply((char) c));
+      }
+    }
+  }
+
   // The next tests require ICU4J and have, at least for now, been sliced out
   // of the open-source view of the tests.
 
@@ -115,6 +125,7 @@ public class CharMatcherTest extends TestCase {
     doTestSetBits(CharMatcher.ASCII);
     doTestSetBits(CharMatcher.DIGIT);
     doTestSetBits(CharMatcher.INVISIBLE);
+    doTestSetBits(CharMatcher.WHITESPACE);
     doTestSetBits(inRange('A', 'Z').and(inRange('F', 'K').negate()));
   }
 
@@ -736,12 +747,21 @@ public class CharMatcherTest extends TestCase {
   }
 
   public void testToString() {
-    assertEquals("CharMatcher.NONE", CharMatcher.anyOf("").toString());
-    assertEquals("CharMatcher.is('\\u0031')", CharMatcher.anyOf("1").toString());
-    assertEquals("CharMatcher.anyOf(\"\\u0031\\u0032\")", CharMatcher.anyOf("12").toString());
-    assertEquals("CharMatcher.anyOf(\"\\u0031\\u0032\\u0033\")",
-        CharMatcher.anyOf("321").toString());
-    assertEquals("CharMatcher.inRange('\\u0031', '\\u0033')",
-        CharMatcher.inRange('1', '3').toString());
+    assertToStringWorks("CharMatcher.NONE", CharMatcher.anyOf(""));
+    assertToStringWorks("CharMatcher.is('\\u0031')", CharMatcher.anyOf("1"));
+    assertToStringWorks("CharMatcher.isNot('\\u0031')", CharMatcher.isNot('1'));
+    assertToStringWorks("CharMatcher.anyOf(\"\\u0031\\u0032\")", CharMatcher.anyOf("12"));
+    assertToStringWorks("CharMatcher.anyOf(\"\\u0031\\u0032\\u0033\")",
+        CharMatcher.anyOf("321"));
+    assertToStringWorks("CharMatcher.inRange('\\u0031', '\\u0033')",
+        CharMatcher.inRange('1', '3'));
+  }
+
+  private static void assertToStringWorks(String expected, CharMatcher matcher) {
+    assertEquals(expected, matcher.toString());
+    assertEquals(expected, matcher.precomputed().toString());
+    assertEquals(expected, matcher.negate().negate().toString());
+    assertEquals(expected, matcher.negate().precomputed().negate().toString());
+    assertEquals(expected, matcher.negate().precomputed().negate().precomputed().toString());
   }
 }

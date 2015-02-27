@@ -98,7 +98,7 @@ public abstract class RateLimiter {
    * The simplest way to maintain a rate of QPS is to keep the timestamp of the last
    * granted request, and ensure that (1/QPS) seconds have elapsed since then. For example,
    * for a rate of QPS=5 (5 tokens per second), if we ensure that a request isn't granted
-   * earlier than 200ms after the the last one, then we achieve the intended rate.
+   * earlier than 200ms after the last one, then we achieve the intended rate.
    * If a request comes and the last request was granted only 100ms ago, then we wait for
    * another 100ms. At this rate, serving 15 fresh permits (i.e. for an acquire(15) request)
    * naturally takes 3 seconds.
@@ -221,15 +221,30 @@ public abstract class RateLimiter {
    * requests being smoothly limited at the stable rate of {@code permitsPerSecond}.
    *
    * @param permitsPerSecond the rate of the returned {@code RateLimiter}, measured in
-   *        how many permits become available per second.
+   *        how many permits become available per second. Must be positive
    */
+  // TODO(user): "This is equivalent to
+  //                 {@code createWithCapacity(permitsPerSecond, 1, TimeUnit.SECONDS)}".
   public static RateLimiter create(double permitsPerSecond) {
+    /*
+       * The default RateLimiter configuration can save the unused permits of up to one second.
+       * This is to avoid unnecessary stalls in situations like this: A RateLimiter of 1qps,
+       * and 4 threads, all calling acquire() at these moments:
+       *
+       * T0 at 0 seconds
+       * T1 at 1.05 seconds
+       * T2 at 2 seconds
+       * T3 at 3 seconds
+       *
+       * Due to the slight delay of T1, T2 would have to sleep till 2.05 seconds,
+       * and T3 would also have to sleep till 3.05 seconds.
+     */
     return create(SleepingTicker.SYSTEM_TICKER, permitsPerSecond);
   }
 
   @VisibleForTesting
   static RateLimiter create(SleepingTicker ticker, double permitsPerSecond) {
-    RateLimiter rateLimiter = new Bursty(ticker);
+    RateLimiter rateLimiter = new Bursty(ticker, 1.0 /* maxBurstSeconds */);
     rateLimiter.setRate(permitsPerSecond);
     return rateLimiter;
   }
@@ -244,36 +259,36 @@ public abstract class RateLimiter {
    * i.e. it will go through the same warming up process as when it was first created.
    *
    * <p>The returned {@code RateLimiter} is intended for cases where the resource that actually
-   * fulfils the requests (e.g., a remote server) needs "warmup" time, rather than
+   * fulfills the requests (e.g., a remote server) needs "warmup" time, rather than
    * being immediately accessed at the stable (maximum) rate.
    *
    * <p>The returned {@code RateLimiter} starts in a "cold" state (i.e. the warmup period
    * will follow), and if it is left unused for long enough, it will return to that state.
    *
    * @param permitsPerSecond the rate of the returned {@code RateLimiter}, measured in
-   *        how many permits become available per second
+   *        how many permits become available per second. Must be positive
    * @param warmupPeriod the duration of the period where the {@code RateLimiter} ramps up its
    *        rate, before reaching its stable (maximum) rate
    * @param unit the time unit of the warmupPeriod argument
    */
-  // TODO(user): add a burst size of 1-second-worth of permits, as in the metronome?
   public static RateLimiter create(double permitsPerSecond, long warmupPeriod, TimeUnit unit) {
     return create(SleepingTicker.SYSTEM_TICKER, permitsPerSecond, warmupPeriod, unit);
   }
 
   @VisibleForTesting
-  static RateLimiter create(SleepingTicker ticker, double permitsPerSecond, long warmupPeriod,
-      TimeUnit timeUnit) {
-    RateLimiter rateLimiter = new WarmingUp(ticker, warmupPeriod, timeUnit);
+  static RateLimiter create(
+      SleepingTicker ticker, double permitsPerSecond, long warmupPeriod, TimeUnit unit) {
+    RateLimiter rateLimiter = new WarmingUp(ticker, warmupPeriod, unit);
     rateLimiter.setRate(permitsPerSecond);
     return rateLimiter;
   }
 
   @VisibleForTesting
-  static RateLimiter createBursty(SleepingTicker ticker, double permitsPerSecond, int maxBurstSize) {
-    Bursty rateLimiter = new Bursty(ticker);
+  static RateLimiter createWithCapacity(
+      SleepingTicker ticker, double permitsPerSecond, long maxBurstBuildup, TimeUnit unit) {
+    double maxBurstSeconds = unit.toNanos(maxBurstBuildup) / 1E+9;
+    Bursty rateLimiter = new Bursty(ticker, maxBurstSeconds);
     rateLimiter.setRate(permitsPerSecond);
-    rateLimiter.maxPermits = maxBurstSize;
     return rateLimiter;
   }
 
@@ -334,11 +349,11 @@ public abstract class RateLimiter {
    * e.g. if the {@code RateLimiter} was configured with a warmup period of 20 seconds,
    * it still has a warmup period of 20 seconds after this method invocation.
    *
-   * @param permitsPerSecond the new stable rate of this {@code RateLimiter}.
+   * @param permitsPerSecond the new stable rate of this {@code RateLimiter}. Must be positive
    */
   public final void setRate(double permitsPerSecond) {
-    Preconditions.checkArgument(permitsPerSecond > 0.0 && !Double.isNaN(permitsPerSecond),
-        "rate must be positive");
+    Preconditions.checkArgument(permitsPerSecond > 0.0
+        && !Double.isNaN(permitsPerSecond), "rate must be positive");
     synchronized (mutex) {
       resync(readSafeMicros());
       double stableIntervalMicros = TimeUnit.SECONDS.toMicros(1L) / permitsPerSecond;
@@ -361,27 +376,55 @@ public abstract class RateLimiter {
   }
 
   /**
-   * Acquires a permit from this {@code RateLimiter}, blocking until the request can be granted.
+   * Acquires a single permit from this {@code RateLimiter}, blocking until the
+   * request can be granted. Tells the amount of time slept, if any.
    *
    * <p>This method is equivalent to {@code acquire(1)}.
+   *
+   * @return time spent sleeping to enforce rate, in seconds; 0.0 if not rate-limited
+   * @since 16.0 (present in 13.0 with {@code void} return type})
    */
-  public void acquire() {
-    acquire(1);
+  public double acquire() {
+    return acquire(1);
   }
 
   /**
    * Acquires the given number of permits from this {@code RateLimiter}, blocking until the
-   * request be granted.
+   * request can be granted. Tells the amount of time slept, if any.
    *
    * @param permits the number of permits to acquire
+   * @return time spent sleeping to enforce rate, in seconds; 0.0 if not rate-limited
+   * @since 16.0 (present in 13.0 with {@code void} return type})
    */
-  public void acquire(int permits) {
-    checkPermits(permits);
-    long microsToWait;
-    synchronized (mutex) {
-      microsToWait = reserveNextTicket(permits, readSafeMicros());
-    }
+  public double acquire(int permits) {
+    long microsToWait = reserve(permits);
     ticker.sleepMicrosUninterruptibly(microsToWait);
+    return 1.0 * microsToWait / TimeUnit.SECONDS.toMicros(1L);
+  }
+
+  /**
+   * Reserves a single permit from this {@code RateLimiter} for future use, returning the number of
+   * microseconds until the reservation.
+   *
+   * <p>This method is equivalent to {@code reserve(1)}.
+   *
+   * @return time in microseconds to wait until the resource can be acquired.
+   */
+  long reserve() {
+    return reserve(1);
+  }
+
+  /**
+   * Reserves the given number of permits from this {@code RateLimiter} for future use, returning
+   * the number of microseconds until the reservation can be consumed.
+   *
+   * @return time in microseconds to wait until the resource can be acquired.
+   */
+  long reserve(int permits) {
+    checkPermits(permits);
+    synchronized (mutex) {
+      return reserveNextTicket(permits, readSafeMicros());
+    }
   }
 
   /**
@@ -461,10 +504,12 @@ public abstract class RateLimiter {
 
   /**
    * Reserves next ticket and returns the wait time that the caller must wait for.
+   *
+   * <p>The return value is guaranteed to be non-negative.
    */
   private long reserveNextTicket(double requiredPermits, long nowMicros) {
     resync(nowMicros);
-    long microsToNextFreeTicket = nextFreeTicketMicros - nowMicros;
+    long microsToNextFreeTicket = Math.max(0, nextFreeTicketMicros - nowMicros);
     double storedPermitsToSpend = Math.min(requiredPermits, this.storedPermits);
     double freshPermits = requiredPermits - storedPermitsToSpend;
 
@@ -489,8 +534,8 @@ public abstract class RateLimiter {
   private void resync(long nowMicros) {
     // if nextFreeTicket is in the past, resync to now
     if (nowMicros > nextFreeTicketMicros) {
-      storedPermits = Math.min(maxPermits, storedPermits + (nowMicros - nextFreeTicketMicros)
-          / stableIntervalMicros);
+      storedPermits = Math.min(maxPermits,
+          storedPermits + (nowMicros - nextFreeTicketMicros) / stableIntervalMicros);
       nextFreeTicketMicros = nowMicros;
     }
   }
@@ -606,7 +651,8 @@ public abstract class RateLimiter {
         // if we don't special-case this, we would get storedPermits == NaN, below
         storedPermits = 0.0;
       } else {
-        storedPermits = (oldMaxPermits == 0.0) ? maxPermits // initial state is cold
+        storedPermits = (oldMaxPermits == 0.0)
+            ? maxPermits // initial state is cold
             : storedPermits * maxPermits / oldMaxPermits;
       }
     }
@@ -618,9 +664,8 @@ public abstract class RateLimiter {
       // measuring the integral on the right part of the function (the climbing line)
       if (availablePermitsAboveHalf > 0.0) {
         double permitsAboveHalfToTake = Math.min(availablePermitsAboveHalf, permitsToTake);
-        micros = (long) (permitsAboveHalfToTake
-            * (permitsToTime(availablePermitsAboveHalf) + permitsToTime(availablePermitsAboveHalf
-                - permitsAboveHalfToTake)) / 2.0);
+        micros = (long) (permitsAboveHalfToTake * (permitsToTime(availablePermitsAboveHalf)
+            + permitsToTime(availablePermitsAboveHalf - permitsAboveHalfToTake)) / 2.0);
         permitsToTake -= permitsAboveHalfToTake;
       }
       // measuring the integral on the left part of the function (the horizontal line)
@@ -634,30 +679,26 @@ public abstract class RateLimiter {
   }
 
   /**
-   * This implements a trivial function, where storedPermits are translated to
-   * zero throttling - thus, a client gets an infinite speedup for permits acquired out
-   * of the storedPermits pool. This is also used for the special case of the "metronome",
-   * where the width of the function is also zero; maxStoredPermits is zero, thus
-   * storedPermits and permitsToTake are always zero as well. Such a RateLimiter can
-   * not save permits when unused, thus all permits it serves are fresh, using the
-   * designated rate.
+   * This implements a "bursty" RateLimiter, where storedPermits are translated to
+   * zero throttling. The maximum number of permits that can be saved (when the RateLimiter is
+   * unused) is defined in terms of time, in this sense: if a RateLimiter is 2qps, and this
+   * time is specified as 10 seconds, we can save up to 2 * 10 = 20 permits.
    */
   private static class Bursty extends RateLimiter {
-    Bursty(SleepingTicker ticker) {
+    /** The work (permits) of how many seconds can be saved up if this RateLimiter is unused? */
+    final double maxBurstSeconds;
+
+    Bursty(SleepingTicker ticker, double maxBurstSeconds) {
       super(ticker);
+      this.maxBurstSeconds = maxBurstSeconds;
     }
 
     @Override
     void doSetRate(double permitsPerSecond, double stableIntervalMicros) {
       double oldMaxPermits = this.maxPermits;
-      /*
-       * We allow the equivalent work of up to one second to be granted with zero waiting, if the
-       * rate limiter has been unused for as much. This is to avoid potentially producing tiny
-       * wait interval between subsequent requests for sufficiently large rates, which would
-       * unnecessarily overconstrain the thread scheduler.
-       */
-      maxPermits = permitsPerSecond; // one second worth of permits
-      storedPermits = (oldMaxPermits == 0.0) ? 0.0 // initial state
+      maxPermits = maxBurstSeconds * permitsPerSecond;
+      storedPermits = (oldMaxPermits == 0.0)
+          ? 0.0 // initial state
           : storedPermits * maxPermits / oldMaxPermits;
     }
 
@@ -672,7 +713,6 @@ public abstract class RateLimiter {
     abstract void sleepMicrosUninterruptibly(long micros);
 
     static final SleepingTicker SYSTEM_TICKER = new SleepingTicker() {
-
       @Override
       public long read() {
         return systemTicker().read();

@@ -19,6 +19,7 @@ package com.google.common.collect;
 import static org.truth0.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.testing.AnEnum;
 import com.google.common.collect.testing.Helpers;
 import com.google.common.collect.testing.MapTestSuiteBuilder;
@@ -26,22 +27,19 @@ import com.google.common.collect.testing.TestEnumMapGenerator;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import org.truth0.subjects.CollectionSubject;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Tests for {@code ImmutableEnumMap}.
  *
  * @author Louis Wasserman
  */
-@GwtCompatible
+@GwtCompatible(emulated = true)
 public class ImmutableEnumMapTest extends TestCase {
   public static class ImmutableEnumMapGenerator extends TestEnumMapGenerator {
     @Override
@@ -54,6 +52,7 @@ public class ImmutableEnumMapTest extends TestCase {
     }
   }
 
+  @GwtIncompatible("suite")
   public static Test suite() {
     TestSuite suite = new TestSuite();
     suite.addTest(MapTestSuiteBuilder.using(new ImmutableEnumMapGenerator())
@@ -75,15 +74,9 @@ public class ImmutableEnumMapTest extends TestCase {
     ImmutableMap<AnEnum, String> map = Maps.immutableEnumMap(
         ImmutableMap.of(AnEnum.C, "c", AnEnum.A, "a", AnEnum.E, "e"));
 
-    assertThat(map.entrySet()).has().allOf(
+    ASSERT.that(map.entrySet()).has().exactly(
         Helpers.mapEntry(AnEnum.A, "a"),
         Helpers.mapEntry(AnEnum.C, "c"),
         Helpers.mapEntry(AnEnum.E, "e")).inOrder();
-  }
-
-  // Hack for JDK5 type inference.
-  private static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> assertThat(
-      Collection<T> collection) {
-    return ASSERT.<T, Collection<T>>that(collection);
   }
 }

@@ -43,6 +43,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.annotation.Nullable;
@@ -69,7 +70,6 @@ public final class Sets {
    * {@code removeAll} implementation.
    */
   abstract static class ImprovedAbstractSet<E> extends AbstractSet<E> {
-
     @Override
     public boolean removeAll(Collection<?> c) {
       return removeAllImpl(this, c);
@@ -94,8 +94,8 @@ public final class Sets {
    */
   // http://code.google.com/p/google-web-toolkit/issues/detail?id=3028
   @GwtCompatible(serializable = true)
-  public static <E extends Enum<E>> ImmutableSet<E> immutableEnumSet(E anElement,
-      E... otherElements) {
+  public static <E extends Enum<E>> ImmutableSet<E> immutableEnumSet(
+      E anElement, E... otherElements) {
     return ImmutableEnumSet.asImmutable(EnumSet.of(anElement, otherElements));
   }
 
@@ -112,7 +112,8 @@ public final class Sets {
    */
   // http://code.google.com/p/google-web-toolkit/issues/detail?id=3028
   @GwtCompatible(serializable = true)
-  public static <E extends Enum<E>> ImmutableSet<E> immutableEnumSet(Iterable<E> elements) {
+  public static <E extends Enum<E>> ImmutableSet<E> immutableEnumSet(
+      Iterable<E> elements) {
     if (elements instanceof ImmutableEnumSet) {
       return (ImmutableEnumSet<E>) elements;
     } else if (elements instanceof Collection) {
@@ -140,7 +141,8 @@ public final class Sets {
    * exception on an empty collection, and it may be called on any iterable, not
    * just a {@code Collection}.
    */
-  public static <E extends Enum<E>> EnumSet<E> newEnumSet(Iterable<E> iterable, Class<E> elementType) {
+  public static <E extends Enum<E>> EnumSet<E> newEnumSet(Iterable<E> iterable,
+      Class<E> elementType) {
     EnumSet<E> set = EnumSet.noneOf(elementType);
     Iterables.addAll(set, iterable);
     return set;
@@ -214,7 +216,8 @@ public final class Sets {
    * @return a new {@code HashSet} containing those elements (minus duplicates)
    */
   public static <E> HashSet<E> newHashSet(Iterable<? extends E> elements) {
-    return (elements instanceof Collection) ? new HashSet<E>(Collections2.cast(elements))
+    return (elements instanceof Collection)
+        ? new HashSet<E>(Collections2.cast(elements))
         : newHashSet(elements.iterator());
   }
 
@@ -233,9 +236,43 @@ public final class Sets {
    */
   public static <E> HashSet<E> newHashSet(Iterator<? extends E> elements) {
     HashSet<E> set = newHashSet();
-    while (elements.hasNext()) {
-      set.add(elements.next());
-    }
+    Iterators.addAll(set, elements);
+    return set;
+  }
+
+  /**
+   * Creates a thread-safe set backed by a hash map. The set is backed by a
+   * {@link ConcurrentHashMap} instance, and thus carries the same concurrency
+   * guarantees.
+   *
+   * <p>Unlike {@code HashSet}, this class does NOT allow {@code null} to be
+   * used as an element. The set is serializable.
+   *
+   * @return a new, empty thread-safe {@code Set}
+   * @since 15.0
+   */
+  public static <E> Set<E> newConcurrentHashSet() {
+    return newSetFromMap(new ConcurrentHashMap<E, Boolean>());
+  }
+
+  /**
+   * Creates a thread-safe set backed by a hash map and containing the given
+   * elements. The set is backed by a {@link ConcurrentHashMap} instance, and
+   * thus carries the same concurrency guarantees.
+   *
+   * <p>Unlike {@code HashSet}, this class does NOT allow {@code null} to be
+   * used as an element. The set is serializable.
+   *
+   * @param elements the elements that the set should contain
+   * @return a new thread-safe set containing those elements (minus duplicates)
+   * @throws NullPointerException if {@code elements} or any of its contents is
+   *      null
+   * @since 15.0
+   */
+  public static <E> Set<E> newConcurrentHashSet(
+      Iterable<? extends E> elements) {
+    Set<E> set = newConcurrentHashSet();
+    Iterables.addAll(set, elements);
     return set;
   }
 
@@ -267,7 +304,8 @@ public final class Sets {
    * @throws IllegalArgumentException if {@code expectedSize} is negative
    * @since 11.0
    */
-  public static <E> LinkedHashSet<E> newLinkedHashSetWithExpectedSize(int expectedSize) {
+  public static <E> LinkedHashSet<E> newLinkedHashSetWithExpectedSize(
+      int expectedSize) {
     return new LinkedHashSet<E>(Maps.capacity(expectedSize));
   }
 
@@ -282,14 +320,13 @@ public final class Sets {
    * @return a new {@code LinkedHashSet} containing those elements (minus
    *     duplicates)
    */
-  public static <E> LinkedHashSet<E> newLinkedHashSet(Iterable<? extends E> elements) {
+  public static <E> LinkedHashSet<E> newLinkedHashSet(
+      Iterable<? extends E> elements) {
     if (elements instanceof Collection) {
       return new LinkedHashSet<E>(Collections2.cast(elements));
     }
     LinkedHashSet<E> set = newLinkedHashSet();
-    for (E element : elements) {
-      set.add(element);
-    }
+    Iterables.addAll(set, elements);
     return set;
   }
 
@@ -323,11 +360,10 @@ public final class Sets {
    * @param elements the elements that the set should contain
    * @return a new {@code TreeSet} containing those elements (minus duplicates)
    */
-  public static <E extends Comparable> TreeSet<E> newTreeSet(Iterable<? extends E> elements) {
+  public static <E extends Comparable> TreeSet<E> newTreeSet(
+      Iterable<? extends E> elements) {
     TreeSet<E> set = newTreeSet();
-    for (E element : elements) {
-      set.add(element);
-    }
+    Iterables.addAll(set, elements);
     return set;
   }
 
@@ -357,7 +393,7 @@ public final class Sets {
    * @since 8.0
    */
   public static <E> Set<E> newIdentityHashSet() {
-    return Sets.newSetFromMap(Maps.<E, Boolean> newIdentityHashMap());
+    return Sets.newSetFromMap(Maps.<E, Boolean>newIdentityHashMap());
   }
 
   /**
@@ -382,11 +418,13 @@ public final class Sets {
    * @since 12.0
    */
   @GwtIncompatible("CopyOnWriteArraySet")
-  public static <E> CopyOnWriteArraySet<E> newCopyOnWriteArraySet(Iterable<? extends E> elements) {
+  public static <E> CopyOnWriteArraySet<E> newCopyOnWriteArraySet(
+      Iterable<? extends E> elements) {
     // We copy elements to an ArrayList first, rather than incurring the
     // quadratic cost of adding them to the COWAS directly.
-    Collection<? extends E> elementsCollection = (elements instanceof Collection) ? Collections2
-        .cast(elements) : Lists.newArrayList(elements);
+    Collection<? extends E> elementsCollection = (elements instanceof Collection)
+        ? Collections2.cast(elements)
+        : Lists.newArrayList(elements);
     return new CopyOnWriteArraySet<E>(elementsCollection);
   }
 
@@ -405,7 +443,8 @@ public final class Sets {
    * @throws IllegalArgumentException if {@code collection} is not an
    *     {@code EnumSet} instance and contains no elements
    */
-  public static <E extends Enum<E>> EnumSet<E> complementOf(Collection<E> collection) {
+  public static <E extends Enum<E>> EnumSet<E> complementOf(
+      Collection<E> collection) {
     if (collection instanceof EnumSet) {
       return EnumSet.complementOf((EnumSet<E>) collection);
     }
@@ -427,26 +466,20 @@ public final class Sets {
    * @return a new, modifiable {@code EnumSet} initially containing all the
    *     values of the enum not present in the given collection
    */
-  public static <E extends Enum<E>> EnumSet<E> complementOf(Collection<E> collection, Class<E> type) {
+  public static <E extends Enum<E>> EnumSet<E> complementOf(
+      Collection<E> collection, Class<E> type) {
     checkNotNull(collection);
-    return (collection instanceof EnumSet) ? EnumSet.complementOf((EnumSet<E>) collection)
+    return (collection instanceof EnumSet)
+        ? EnumSet.complementOf((EnumSet<E>) collection)
         : makeComplementByHand(collection, type);
   }
 
-  private static <E extends Enum<E>> EnumSet<E> makeComplementByHand(Collection<E> collection,
-      Class<E> type) {
+  private static <E extends Enum<E>> EnumSet<E> makeComplementByHand(
+      Collection<E> collection, Class<E> type) {
     EnumSet<E> result = EnumSet.allOf(type);
     result.removeAll(collection);
     return result;
   }
-
-  /*
-   * Regarding newSetForMap() and SetFromMap:
-   *
-   * Written by Doug Lea with assistance from members of JCP JSR-166
-   * Expert Group and released to the public domain, as explained at
-   * http://creativecommons.org/licenses/publicdomain
-   */
 
   /**
    * Returns a set backed by the specified map. The resulting set displays
@@ -471,7 +504,7 @@ public final class Sets {
    *   Set<Object> identityHashSet = Sets.newSetFromMap(
    *       new IdentityHashMap<Object, Boolean>());}</pre>
    *
-   * This method has the same behavior as the JDK 6 method
+   * <p>This method has the same behavior as the JDK 6 method
    * {@code Collections.newSetFromMap()}. The returned set is serializable if
    * the backing map is.
    *
@@ -640,44 +673,35 @@ public final class Sets {
    * {@code union = Sets.union(union, anotherSet);}, since iterating over the resulting
    * set has a cubic complexity to the depth of the nesting.
    */
-  public static <E> SetView<E> union(final Set<? extends E> set1, final Set<? extends E> set2) {
+  public static <E> SetView<E> union(
+      final Set<? extends E> set1, final Set<? extends E> set2) {
     checkNotNull(set1, "set1");
     checkNotNull(set2, "set2");
 
     final Set<? extends E> set2minus1 = difference(set2, set1);
 
     return new SetView<E>() {
-      @Override
-      public int size() {
+      @Override public int size() {
         return set1.size() + set2minus1.size();
       }
-
-      @Override
-      public boolean isEmpty() {
+      @Override public boolean isEmpty() {
         return set1.isEmpty() && set2.isEmpty();
       }
-
-      @Override
-      public Iterator<E> iterator() {
-        return Iterators.unmodifiableIterator(Iterators.concat(set1.iterator(),
-            set2minus1.iterator()));
+      @Override public Iterator<E> iterator() {
+        return Iterators.unmodifiableIterator(
+            Iterators.concat(set1.iterator(), set2minus1.iterator()));
       }
-
-      @Override
-      public boolean contains(Object object) {
+      @Override public boolean contains(Object object) {
         return set1.contains(object) || set2.contains(object);
       }
-
-      @Override
-      public <S extends Set<E>> S copyInto(S set) {
+      @Override public <S extends Set<E>> S copyInto(S set) {
         set.addAll(set1);
         set.addAll(set2);
         return set;
       }
-
-      @Override
-      public ImmutableSet<E> immutableCopy() {
-        return new ImmutableSet.Builder<E>().addAll(set1).addAll(set2).build();
+      @Override public ImmutableSet<E> immutableCopy() {
+        return new ImmutableSet.Builder<E>()
+            .addAll(set1).addAll(set2).build();
       }
     };
   }
@@ -706,37 +730,30 @@ public final class Sets {
    *   Set<String> badStrings = (Set) Sets.intersection(
    *       aFewBadObjects, manyBadStrings);}</pre>
    *
-   * This is unfortunate, but should come up only very rarely.
+   * <p>This is unfortunate, but should come up only very rarely.
    */
-  public static <E> SetView<E> intersection(final Set<E> set1, final Set<?> set2) {
+  public static <E> SetView<E> intersection(
+      final Set<E> set1, final Set<?> set2) {
     checkNotNull(set1, "set1");
     checkNotNull(set2, "set2");
 
     final Predicate<Object> inSet2 = Predicates.in(set2);
     return new SetView<E>() {
-      @Override
-      public Iterator<E> iterator() {
+      @Override public Iterator<E> iterator() {
         return Iterators.filter(set1.iterator(), inSet2);
       }
-
-      @Override
-      public int size() {
+      @Override public int size() {
         return Iterators.size(iterator());
       }
-
-      @Override
-      public boolean isEmpty() {
+      @Override public boolean isEmpty() {
         return !iterator().hasNext();
       }
-
-      @Override
-      public boolean contains(Object object) {
+      @Override public boolean contains(Object object) {
         return set1.contains(object) && set2.contains(object);
       }
-
-      @Override
-      public boolean containsAll(Collection<?> collection) {
-        return set1.containsAll(collection) && set2.containsAll(collection);
+      @Override public boolean containsAll(Collection<?> collection) {
+        return set1.containsAll(collection)
+            && set2.containsAll(collection);
       }
     };
   }
@@ -752,29 +769,23 @@ public final class Sets {
    * on different equivalence relations (as {@code HashSet}, {@code TreeSet},
    * and the keySet of an {@code IdentityHashMap} all are).
    */
-  public static <E> SetView<E> difference(final Set<E> set1, final Set<?> set2) {
+  public static <E> SetView<E> difference(
+      final Set<E> set1, final Set<?> set2) {
     checkNotNull(set1, "set1");
     checkNotNull(set2, "set2");
 
     final Predicate<Object> notInSet2 = Predicates.not(Predicates.in(set2));
     return new SetView<E>() {
-      @Override
-      public Iterator<E> iterator() {
+      @Override public Iterator<E> iterator() {
         return Iterators.filter(set1.iterator(), notInSet2);
       }
-
-      @Override
-      public int size() {
+      @Override public int size() {
         return Iterators.size(iterator());
       }
-
-      @Override
-      public boolean isEmpty() {
+      @Override public boolean isEmpty() {
         return set2.containsAll(set1);
       }
-
-      @Override
-      public boolean contains(Object element) {
+      @Override public boolean contains(Object element) {
         return set1.contains(element) && !set2.contains(element);
       }
     };
@@ -792,7 +803,8 @@ public final class Sets {
    *
    * @since 3.0
    */
-  public static <E> SetView<E> symmetricDifference(Set<? extends E> set1, Set<? extends E> set2) {
+  public static <E> SetView<E> symmetricDifference(
+      Set<? extends E> set1, Set<? extends E> set2) {
     checkNotNull(set1, "set1");
     checkNotNull(set2, "set2");
 
@@ -827,7 +839,8 @@ public final class Sets {
    * functionality.)
    */
   // TODO(kevinb): how to omit that last sentence when building GWT javadoc?
-  public static <E> Set<E> filter(Set<E> unfiltered, Predicate<? super E> predicate) {
+  public static <E> Set<E> filter(
+      Set<E> unfiltered, Predicate<? super E> predicate) {
     if (unfiltered instanceof SortedSet) {
       return filter((SortedSet<E>) unfiltered, predicate);
     }
@@ -835,25 +848,27 @@ public final class Sets {
       // Support clear(), removeAll(), and retainAll() when filtering a filtered
       // collection.
       FilteredSet<E> filtered = (FilteredSet<E>) unfiltered;
-      Predicate<E> combinedPredicate = Predicates.<E> and(filtered.predicate, predicate);
-      return new FilteredSet<E>((Set<E>) filtered.unfiltered, combinedPredicate);
+      Predicate<E> combinedPredicate
+          = Predicates.<E>and(filtered.predicate, predicate);
+      return new FilteredSet<E>(
+          (Set<E>) filtered.unfiltered, combinedPredicate);
     }
 
-    return new FilteredSet<E>(checkNotNull(unfiltered), checkNotNull(predicate));
+    return new FilteredSet<E>(
+        checkNotNull(unfiltered), checkNotNull(predicate));
   }
 
-  private static class FilteredSet<E> extends FilteredCollection<E> implements Set<E> {
+  private static class FilteredSet<E> extends FilteredCollection<E>
+      implements Set<E> {
     FilteredSet(Set<E> unfiltered, Predicate<? super E> predicate) {
       super(unfiltered, predicate);
     }
 
-    @Override
-    public boolean equals(@Nullable Object object) {
+    @Override public boolean equals(@Nullable Object object) {
       return equalsImpl(this, object);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
       return hashCodeImpl(this);
     }
   }
@@ -887,45 +902,61 @@ public final class Sets {
    *
    * @since 11.0
    */
-  public static <E> SortedSet<E> filter(SortedSet<E> unfiltered, Predicate<? super E> predicate) {
+  public static <E> SortedSet<E> filter(
+      SortedSet<E> unfiltered, Predicate<? super E> predicate) {
+    return Platform.setsFilterSortedSet(unfiltered, predicate);
+  }
+
+  static <E> SortedSet<E> filterSortedIgnoreNavigable(
+      SortedSet<E> unfiltered, Predicate<? super E> predicate) {
     if (unfiltered instanceof FilteredSet) {
       // Support clear(), removeAll(), and retainAll() when filtering a filtered
       // collection.
       FilteredSet<E> filtered = (FilteredSet<E>) unfiltered;
-      Predicate<E> combinedPredicate = Predicates.<E> and(filtered.predicate, predicate);
-      return new FilteredSortedSet<E>((SortedSet<E>) filtered.unfiltered, combinedPredicate);
+      Predicate<E> combinedPredicate
+          = Predicates.<E>and(filtered.predicate, predicate);
+      return new FilteredSortedSet<E>(
+          (SortedSet<E>) filtered.unfiltered, combinedPredicate);
     }
 
-    return new FilteredSortedSet<E>(checkNotNull(unfiltered), checkNotNull(predicate));
+    return new FilteredSortedSet<E>(
+        checkNotNull(unfiltered), checkNotNull(predicate));
   }
 
-  private static class FilteredSortedSet<E> extends FilteredSet<E> implements SortedSet<E> {
+  private static class FilteredSortedSet<E> extends FilteredSet<E>
+      implements SortedSet<E> {
 
     FilteredSortedSet(SortedSet<E> unfiltered, Predicate<? super E> predicate) {
       super(unfiltered, predicate);
     }
 
+    @Override
     public Comparator<? super E> comparator() {
       return ((SortedSet<E>) unfiltered).comparator();
     }
 
+    @Override
     public SortedSet<E> subSet(E fromElement, E toElement) {
       return new FilteredSortedSet<E>(((SortedSet<E>) unfiltered).subSet(fromElement, toElement),
           predicate);
     }
 
+    @Override
     public SortedSet<E> headSet(E toElement) {
       return new FilteredSortedSet<E>(((SortedSet<E>) unfiltered).headSet(toElement), predicate);
     }
 
+    @Override
     public SortedSet<E> tailSet(E fromElement) {
       return new FilteredSortedSet<E>(((SortedSet<E>) unfiltered).tailSet(fromElement), predicate);
     }
 
+    @Override
     public E first() {
       return iterator().next();
     }
 
+    @Override
     public E last() {
       SortedSet<E> sortedUnfiltered = (SortedSet<E>) unfiltered;
       while (true) {
@@ -948,7 +979,7 @@ public final class Sets {
    *       ImmutableSet.of(1, 2),
    *       ImmutableSet.of("A", "B", "C")))}</pre>
    *
-   * returns a set containing six lists:
+   * <p>returns a set containing six lists:
    *
    * <ul>
    * <li>{@code ImmutableList.of(1, "A")}
@@ -959,7 +990,7 @@ public final class Sets {
    * <li>{@code ImmutableList.of(2, "C")}
    * </ul>
    *
-   * The result is guaranteed to be in the "traditional", lexicographical
+   * <p>The result is guaranteed to be in the "traditional", lexicographical
    * order for Cartesian products that you would get from nesting for loops:
    * <pre>   {@code
    *
@@ -971,7 +1002,7 @@ public final class Sets {
    *     }
    *   }}</pre>
    *
-   * Note that if any input set is empty, the Cartesian product will also be
+   * <p>Note that if any input set is empty, the Cartesian product will also be
    * empty. If no sets at all are provided (an empty list), the resulting
    * Cartesian product has one element, an empty list (counter-intuitive, but
    * mathematically consistent).
@@ -993,12 +1024,8 @@ public final class Sets {
    *     or any element of a provided set is null
    * @since 2.0
    */
-  public static <B> Set<List<B>> cartesianProduct(List<? extends Set<? extends B>> sets) {
-    for (Set<? extends B> set : sets) {
-      if (set.isEmpty()) {
-        return ImmutableSet.of();
-      }
-    }
+  public static <B> Set<List<B>> cartesianProduct(
+      List<? extends Set<? extends B>> sets) {
     return CartesianSet.create(sets);
   }
 
@@ -1012,7 +1039,7 @@ public final class Sets {
    *       ImmutableSet.of(1, 2),
    *       ImmutableSet.of("A", "B", "C"))}</pre>
    *
-   * returns a set containing six lists:
+   * <p>returns a set containing six lists:
    *
    * <ul>
    * <li>{@code ImmutableList.of(1, "A")}
@@ -1023,7 +1050,7 @@ public final class Sets {
    * <li>{@code ImmutableList.of(2, "C")}
    * </ul>
    *
-   * The result is guaranteed to be in the "traditional", lexicographical
+   * <p>The result is guaranteed to be in the "traditional", lexicographical
    * order for Cartesian products that you would get from nesting for loops:
    * <pre>   {@code
    *
@@ -1035,7 +1062,7 @@ public final class Sets {
    *     }
    *   }}</pre>
    *
-   * Note that if any input set is empty, the Cartesian product will also be
+   * <p>Note that if any input set is empty, the Cartesian product will also be
    * empty. If no sets at all are provided (an empty list), the resulting
    * Cartesian product has one element, an empty list (counter-intuitive, but
    * mathematically consistent).
@@ -1057,18 +1084,19 @@ public final class Sets {
    *     or any element of a provided set is null
    * @since 2.0
    */
-  public static <B> Set<List<B>> cartesianProduct(Set<? extends B>... sets) {
+  public static <B> Set<List<B>> cartesianProduct(
+      Set<? extends B>... sets) {
     return cartesianProduct(Arrays.asList(sets));
   }
 
-  private static final class CartesianSet<E> extends ForwardingCollection<List<E>> implements
-      Set<List<E>> {
+  private static final class CartesianSet<E>
+      extends ForwardingCollection<List<E>> implements Set<List<E>> {
     private transient final ImmutableList<ImmutableSet<E>> axes;
     private transient final CartesianList<E> delegate;
 
     static <E> Set<List<E>> create(List<? extends Set<? extends E>> sets) {
-      ImmutableList.Builder<ImmutableSet<E>> axesBuilder = new ImmutableList.Builder<ImmutableSet<E>>(
-          sets.size());
+      ImmutableList.Builder<ImmutableSet<E>> axesBuilder =
+          new ImmutableList.Builder<ImmutableSet<E>>(sets.size());
       for (Set<? extends E> set : sets) {
         ImmutableSet<E> copy = ImmutableSet.copyOf(set);
         if (copy.isEmpty()) {
@@ -1079,10 +1107,12 @@ public final class Sets {
       final ImmutableList<ImmutableSet<E>> axes = axesBuilder.build();
       ImmutableList<List<E>> listAxes = new ImmutableList<List<E>>() {
 
+        @Override
         public int size() {
           return axes.size();
         }
 
+        @Override
         public List<E> get(int index) {
           return axes.get(index).asList();
         }
@@ -1095,7 +1125,8 @@ public final class Sets {
       return new CartesianSet<E>(axes, new CartesianList<E>(listAxes));
     }
 
-    private CartesianSet(ImmutableList<ImmutableSet<E>> axes, CartesianList<E> delegate) {
+    private CartesianSet(
+        ImmutableList<ImmutableSet<E>> axes, CartesianList<E> delegate) {
       this.axes = axes;
       this.delegate = delegate;
     }
@@ -1105,8 +1136,7 @@ public final class Sets {
       return delegate;
     }
 
-    @Override
-    public boolean equals(@Nullable Object object) {
+    @Override public boolean equals(@Nullable Object object) {
       // Warning: this is broken if size() == 0, so it is critical that we
       // substitute an empty ImmutableSet to the user in place of this
       if (object instanceof CartesianSet) {
@@ -1157,7 +1187,7 @@ public final class Sets {
    * n} is of size {@code 2^n}, its memory usage is only {@code O(n)}. When the
    * power set is constructed, the input set is merely copied. Only as the
    * power set is iterated are the individual subsets created, and these subsets
-   * themselves occupy only a few bytes of memory regardless of their size.
+   * themselves occupy only a small constant amount of memory.
    *
    * @param set the set of elements to construct a power set from
    * @return the power set, as an immutable set of immutable sets
@@ -1170,89 +1200,92 @@ public final class Sets {
    */
   @GwtCompatible(serializable = false)
   public static <E> Set<Set<E>> powerSet(Set<E> set) {
-    ImmutableSet<E> input = ImmutableSet.copyOf(set);
-    checkArgument(input.size() <= 30, "Too many elements to create power set: %s > 30",
-        input.size());
-    return new PowerSet<E>(input);
+    return new PowerSet<E>(set);
   }
 
-  private static final class PowerSet<E> extends AbstractSet<Set<E>> {
-    final ImmutableSet<E> inputSet;
-    final ImmutableList<E> inputList;
-    final int powerSetSize;
+  private static final class SubSet<E> extends AbstractSet<E> {
+    private final ImmutableMap<E, Integer> inputSet;
+    private final int mask;
 
-    PowerSet(ImmutableSet<E> input) {
-      this.inputSet = input;
-      this.inputList = input.asList();
-      this.powerSetSize = 1 << input.size();
+    SubSet(ImmutableMap<E, Integer> inputSet, int mask) {
+      this.inputSet = inputSet;
+      this.mask = mask;
     }
 
     @Override
-    public int size() {
-      return powerSetSize;
-    }
+    public Iterator<E> iterator() {
+      return new UnmodifiableIterator<E>() {
+        final ImmutableList<E> elements = inputSet.keySet().asList();
+        int remainingSetBits = mask;
 
-    @Override
-    public boolean isEmpty() {
-      return false;
-    }
-
-    @Override
-    public Iterator<Set<E>> iterator() {
-      return new AbstractIndexedListIterator<Set<E>>(powerSetSize) {
         @Override
-        protected Set<E> get(final int setBits) {
-          return new AbstractSet<E>() {
-            @Override
-            public int size() {
-              return Integer.bitCount(setBits);
-            }
+        public boolean hasNext() {
+          return remainingSetBits != 0;
+        }
 
-            @Override
-            public Iterator<E> iterator() {
-              return new BitFilteredSetIterator<E>(inputList, setBits);
-            }
-          };
+        @Override
+        public E next() {
+          int index = Integer.numberOfTrailingZeros(remainingSetBits);
+          if (index == 32) {
+            throw new NoSuchElementException();
+          }
+          remainingSetBits &= ~(1 << index);
+          return elements.get(index);
         }
       };
     }
 
-    private static final class BitFilteredSetIterator<E> extends UnmodifiableIterator<E> {
-      final ImmutableList<E> input;
-      int remainingSetBits;
-
-      BitFilteredSetIterator(ImmutableList<E> input, int allSetBits) {
-        this.input = input;
-        this.remainingSetBits = allSetBits;
-      }
-
-      public boolean hasNext() {
-        return remainingSetBits != 0;
-      }
-
-      public E next() {
-        int index = Integer.numberOfTrailingZeros(remainingSetBits);
-        if (index == 32) {
-          throw new NoSuchElementException();
-        }
-
-        int currentElementMask = 1 << index;
-        remainingSetBits &= ~currentElementMask;
-        return input.get(index);
-      }
+    @Override
+    public int size() {
+      return Integer.bitCount(mask);
     }
 
     @Override
-    public boolean contains(@Nullable Object obj) {
+    public boolean contains(@Nullable Object o) {
+      Integer index = inputSet.get(o);
+      return index != null && (mask & (1 << index)) != 0;
+    }
+  }
+
+  private static final class PowerSet<E> extends AbstractSet<Set<E>> {
+    final ImmutableMap<E, Integer> inputSet;
+
+    PowerSet(Set<E> input) {
+      ImmutableMap.Builder<E, Integer> builder = ImmutableMap.builder();
+      int i = 0;
+      for (E e : checkNotNull(input)) {
+        builder.put(e, i++);
+      }
+      this.inputSet = builder.build();
+      checkArgument(inputSet.size() <= 30,
+          "Too many elements to create power set: %s > 30", inputSet.size());
+    }
+
+    @Override public int size() {
+      return 1 << inputSet.size();
+    }
+
+    @Override public boolean isEmpty() {
+      return false;
+    }
+
+    @Override public Iterator<Set<E>> iterator() {
+      return new AbstractIndexedListIterator<Set<E>>(size()) {
+        @Override protected Set<E> get(final int setBits) {
+          return new SubSet<E>(inputSet, setBits);
+        }
+      };
+    }
+
+    @Override public boolean contains(@Nullable Object obj) {
       if (obj instanceof Set) {
         Set<?> set = (Set<?>) obj;
-        return inputSet.containsAll(set);
+        return inputSet.keySet().containsAll(set);
       }
       return false;
     }
 
-    @Override
-    public boolean equals(@Nullable Object obj) {
+    @Override public boolean equals(@Nullable Object obj) {
       if (obj instanceof PowerSet) {
         PowerSet<?> that = (PowerSet<?>) obj;
         return inputSet.equals(that.inputSet);
@@ -1260,18 +1293,16 @@ public final class Sets {
       return super.equals(obj);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
       /*
        * The sum of the sums of the hash codes in each subset is just the sum of
        * each input element's hash code times the number of sets that element
        * appears in. Each element appears in exactly half of the 2^n sets, so:
        */
-      return inputSet.hashCode() << (inputSet.size() - 1);
+      return inputSet.keySet().hashCode() << (inputSet.size() - 1);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       return "powerSet(" + inputSet + ")";
     }
   }
@@ -1335,24 +1366,9 @@ public final class Sets {
      * http://code.google.com/p/guava-libraries/issues/detail?id=1013
      */
     if (collection instanceof Set && collection.size() > set.size()) {
-      Iterator<?> setIterator = set.iterator();
-      boolean changed = false;
-      while (setIterator.hasNext()) {
-        if (collection.contains(setIterator.next())) {
-          changed = true;
-          setIterator.remove();
-        }
-      }
-      return changed;
+      return Iterators.removeAll(set.iterator(), collection);
     } else {
       return removeAllImpl(set, collection.iterator());
     }
-  }
-
-  /**
-   * Used to avoid http://bugs.sun.com/view_bug.do?bug_id=6558557
-   */
-  static <T> SortedSet<T> cast(Iterable<T> iterable) {
-    return (SortedSet<T>) iterable;
   }
 }

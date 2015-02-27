@@ -32,65 +32,52 @@ import javax.annotation.Nullable;
  * @author Jared Levy
  */
 @GwtCompatible(serializable = true, emulated = true)
-@SuppressWarnings("serial")
-// uses writeReplace(), not default serialization
+@SuppressWarnings("serial") // uses writeReplace(), not default serialization
 class EmptyImmutableSortedSet<E> extends ImmutableSortedSet<E> {
   EmptyImmutableSortedSet(Comparator<? super E> comparator) {
     super(comparator);
   }
 
+  @Override
   public int size() {
     return 0;
   }
 
-  @Override
-  public boolean isEmpty() {
+  @Override public boolean isEmpty() {
     return true;
   }
 
-  @Override
-  public boolean contains(@Nullable Object target) {
+  @Override public boolean contains(@Nullable Object target) {
     return false;
   }
 
-  @Override
-  public boolean containsAll(Collection<?> targets) {
+  @Override public boolean containsAll(Collection<?> targets) {
     return targets.isEmpty();
   }
 
-  @Override
-  public UnmodifiableIterator<E> iterator() {
+  @Override public UnmodifiableIterator<E> iterator() {
     return Iterators.emptyIterator();
   }
 
-  @Override
   @GwtIncompatible("NavigableSet")
-  public UnmodifiableIterator<E> descendingIterator() {
+  @Override public UnmodifiableIterator<E> descendingIterator() {
     return Iterators.emptyIterator();
   }
 
-  @Override
-  boolean isPartialView() {
+  @Override boolean isPartialView() {
     return false;
   }
 
-  @Override
-  public ImmutableList<E> asList() {
+  @Override public ImmutableList<E> asList() {
     return ImmutableList.of();
   }
 
   @Override
-  public Object[] toArray() {
-    return ObjectArrays.EMPTY_ARRAY;
+  int copyIntoArray(Object[] dst, int offset) {
+    return offset;
   }
 
-  @Override
-  public <T> T[] toArray(T[] a) {
-    return asList().toArray(a);
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
+  @Override public boolean equals(@Nullable Object object) {
     if (object instanceof Set) {
       Set<?> that = (Set<?>) object;
       return that.isEmpty();
@@ -98,13 +85,11 @@ class EmptyImmutableSortedSet<E> extends ImmutableSortedSet<E> {
     return false;
   }
 
-  @Override
-  public int hashCode() {
+  @Override public int hashCode() {
     return 0;
   }
 
-  @Override
-  public String toString() {
+  @Override public String toString() {
     return "[]";
   }
 
@@ -124,8 +109,8 @@ class EmptyImmutableSortedSet<E> extends ImmutableSortedSet<E> {
   }
 
   @Override
-  ImmutableSortedSet<E> subSetImpl(E fromElement, boolean fromInclusive, E toElement,
-      boolean toInclusive) {
+  ImmutableSortedSet<E> subSetImpl(
+      E fromElement, boolean fromInclusive, E toElement, boolean toInclusive) {
     return this;
   }
 
@@ -134,8 +119,7 @@ class EmptyImmutableSortedSet<E> extends ImmutableSortedSet<E> {
     return this;
   }
 
-  @Override
-  int indexOf(@Nullable Object target) {
+  @Override int indexOf(@Nullable Object target) {
     return -1;
   }
 

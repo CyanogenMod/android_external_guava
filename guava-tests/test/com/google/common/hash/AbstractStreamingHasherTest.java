@@ -200,7 +200,7 @@ public class AbstractStreamingHasherTest extends TestCase {
     }
 
     @Override HashCode makeHash() {
-      return HashCodes.fromBytes(out.toByteArray());
+      return HashCode.fromBytes(out.toByteArray());
     }
 
     @Override protected void process(ByteBuffer bb) {
@@ -251,7 +251,7 @@ public class AbstractStreamingHasherTest extends TestCase {
   private static class Control extends AbstractNonStreamingHashFunction {
     @Override
     public HashCode hashBytes(byte[] input) {
-      return HashCodes.fromBytes(input);
+      return HashCode.fromBytes(input);
     }
 
     @Override

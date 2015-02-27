@@ -24,10 +24,11 @@ import com.google.common.collect.testing.features.MapFeature;
 import com.google.common.collect.testing.google.SetMultimapTestSuiteBuilder;
 import com.google.common.collect.testing.google.TestStringSetMultimapGenerator;
 
-import java.util.Map.Entry;
-
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
+
+import java.util.Map.Entry;
 
 /**
  * Unit tests for {@link HashMultimap}.
@@ -35,7 +36,7 @@ import junit.framework.TestSuite;
  * @author Jared Levy
  */
 @GwtCompatible(emulated = true)
-public class HashMultimapTest extends AbstractSetMultimapTest {
+public class HashMultimapTest extends TestCase {
 
   @GwtIncompatible("suite")
   public static Test suite() {
@@ -54,17 +55,15 @@ public class HashMultimapTest extends AbstractSetMultimapTest {
         .withFeatures(
             MapFeature.ALLOWS_NULL_KEYS,
             MapFeature.ALLOWS_NULL_VALUES,
+            MapFeature.ALLOWS_ANY_NULL_QUERIES,
             MapFeature.GENERAL_PURPOSE,
             MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
             CollectionFeature.SERIALIZABLE,
             CollectionSize.ANY)
         .createTestSuite());
     suite.addTestSuite(HashMultimapTest.class);
     return suite;
-  }
-
-  @Override protected Multimap<String, Integer> create() {
-    return HashMultimap.create();
   }
 
   /*
@@ -81,7 +80,10 @@ public class HashMultimapTest extends AbstractSetMultimapTest {
   }
 
   public void testCreateFromMultimap() {
-    Multimap<String, Integer> multimap = createSample();
+    HashMultimap<String, Integer> multimap = HashMultimap.create();
+    multimap.put("foo", 1);
+    multimap.put("bar", 2);
+    multimap.put("foo", 3);
     HashMultimap<String, Integer> copy = HashMultimap.create(multimap);
     assertEquals(multimap, copy);
     assertEquals(2, copy.expectedValuesPerKey);

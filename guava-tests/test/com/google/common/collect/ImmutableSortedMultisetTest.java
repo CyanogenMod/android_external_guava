@@ -31,19 +31,20 @@ import com.google.common.collect.testing.google.UnmodifiableCollectionTests;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import org.easymock.EasyMock;
-import org.truth0.subjects.CollectionSubject;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Tests for {@link ImmutableSortedMultiset}.
@@ -421,13 +422,13 @@ public class ImmutableSortedMultisetTest extends TestCase {
   public void testSerialization_multiple() {
     Collection<String> c = ImmutableSortedMultiset.of("a", "b", "a");
     Collection<String> copy = SerializableTester.reserializeAndAssert(c);
-    assertThat(copy).has().allOf("a", "a", "b").inOrder();
+    ASSERT.that(copy).has().exactly("a", "a", "b").inOrder();
   }
 
   public void testSerialization_elementSet() {
     Multiset<String> c = ImmutableSortedMultiset.of("a", "b", "a");
     Collection<String> copy = SerializableTester.reserializeAndAssert(c.elementSet());
-    assertThat(copy).has().allOf("a", "b").inOrder();
+    ASSERT.that(copy).has().exactly("a", "b").inOrder();
   }
 
   public void testSerialization_entrySet() {
@@ -439,13 +440,13 @@ public class ImmutableSortedMultisetTest extends TestCase {
     Collection<String> c = ImmutableSortedMultiset.of("a", "b", "a");
     assertEquals(c, ImmutableSortedMultiset.of("a", "b", "a"));
     assertEquals(c, ImmutableSortedMultiset.of("a", "a", "b"));
-    assertThat(c).isNotEqualTo(ImmutableSortedMultiset.of("a", "b"));
-    assertThat(c).isNotEqualTo(ImmutableSortedMultiset.of("a", "b", "c", "d"));
+    ASSERT.that(c).isNotEqualTo(ImmutableSortedMultiset.of("a", "b"));
+    ASSERT.that(c).isNotEqualTo(ImmutableSortedMultiset.of("a", "b", "c", "d"));
   }
 
   public void testIterationOrder() {
     Collection<String> c = ImmutableSortedMultiset.of("a", "b", "a");
-    assertThat(c).has().allOf("a", "a", "b").inOrder();
+    ASSERT.that(c).has().exactly("a", "a", "b").inOrder();
   }
 
   public void testMultisetWrites() {
@@ -465,31 +466,64 @@ public class ImmutableSortedMultisetTest extends TestCase {
   }
 
   public void testCopyOfDefensiveCopy() {
+    // Depending on JDK version, either toArray() or toArray(T[]) may be called... use this class
+    // rather than mocking to ensure that one of those methods is called.
+    class TestArrayList<E> extends ArrayList<E> {
+      boolean toArrayCalled = false;
+
+      @Override
+      public Object[] toArray() {
+        toArrayCalled = true;
+        return super.toArray();
+      }
+
+      @Override
+      public <T> T[] toArray(T[] a) {
+        toArrayCalled = true;
+        return super.toArray(a);
+      }
+    }
+
     // Test that toArray() is used to make a defensive copy in copyOf(), so concurrently modified
     // synchronized collections can be safely copied.
-    @SuppressWarnings("unchecked")
-    Collection<String> toCopy = EasyMock.createMock(Collection.class);
-    EasyMock.expect(toCopy.toArray()).andReturn(new Object[0]);
-    EasyMock.replay(toCopy);
+    TestArrayList<String> toCopy = new TestArrayList<String>();
     ImmutableSortedMultiset<String> multiset =
         ImmutableSortedMultiset.copyOf(Ordering.natural(), toCopy);
-    EasyMock.verify(toCopy);
+    assertTrue(toCopy.toArrayCalled);
   }
 
   @SuppressWarnings("unchecked")
   public void testCopyOfSortedDefensiveCopy() {
+    // Depending on JDK version, either toArray() or toArray(T[]) may be called... use this class
+    // rather than mocking to ensure that one of those methods is called.
+    class TestHashSet<E> extends HashSet<E> {
+      boolean toArrayCalled = false;
+
+      @Override
+      public Object[] toArray() {
+        toArrayCalled = true;
+        return super.toArray();
+      }
+
+      @Override
+      public <T> T[] toArray(T[] a) {
+        toArrayCalled = true;
+        return super.toArray(a);
+      }
+    }
+
     // Test that toArray() is used to make a defensive copy in copyOf(), so concurrently modified
     // synchronized collections can be safely copied.
     SortedMultiset<String> toCopy = EasyMock.createMock(SortedMultiset.class);
-    Set<Entry<String>> entrySet = EasyMock.createMock(Set.class);
+    TestHashSet<Entry<String>> entrySet = new TestHashSet<Entry<String>>();
     EasyMock.expect((Comparator<Comparable>) toCopy.comparator())
       .andReturn(Ordering.natural());
     EasyMock.expect(toCopy.entrySet()).andReturn(entrySet);
-    EasyMock.expect(entrySet.toArray()).andReturn(new Object[0]);
-    EasyMock.replay(toCopy, entrySet);
+    EasyMock.replay(toCopy);
     ImmutableSortedMultiset<String> multiset =
         ImmutableSortedMultiset.copyOfSorted(toCopy);
-    EasyMock.verify(toCopy, entrySet);
+    EasyMock.verify(toCopy);
+    assertTrue(entrySet.toArrayCalled);
   }
 
   private static class IntegerDiv10 implements Comparable<IntegerDiv10> {
@@ -520,11 +554,5 @@ public class ImmutableSortedMultisetTest extends TestCase {
     Multiset<IntegerDiv10> copy = ImmutableSortedMultiset.copyOf(original);
     assertTrue(copy.contains(eleven));
     assertTrue(copy.contains(twelve));
-  }
-
-  // Hack for JDK5 type inference.
-  private static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> assertThat(
-      Collection<T> collection) {
-    return ASSERT.<T, Collection<T>>that(collection);
   }
 }

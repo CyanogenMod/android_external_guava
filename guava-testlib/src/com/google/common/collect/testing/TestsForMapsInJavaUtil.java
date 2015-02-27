@@ -116,6 +116,7 @@ public class TestsForMapsInJavaUtil {
         .withFeatures(
             MapFeature.ALLOWS_NULL_KEYS,
             MapFeature.ALLOWS_NULL_VALUES,
+            MapFeature.ALLOWS_ANY_NULL_QUERIES,
             CollectionFeature.SERIALIZABLE,
             CollectionSize.ONE)
         .suppressing(suppressForSingletonMap())
@@ -135,7 +136,9 @@ public class TestsForMapsInJavaUtil {
             MapFeature.GENERAL_PURPOSE,
             MapFeature.ALLOWS_NULL_KEYS,
             MapFeature.ALLOWS_NULL_VALUES,
+            MapFeature.ALLOWS_ANY_NULL_QUERIES,
             MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
             CollectionFeature.SERIALIZABLE,
             CollectionSize.ANY)
         .suppressing(suppressForHashMap())
@@ -155,15 +158,15 @@ public class TestsForMapsInJavaUtil {
             MapFeature.GENERAL_PURPOSE,
             MapFeature.ALLOWS_NULL_KEYS,
             MapFeature.ALLOWS_NULL_VALUES,
+            MapFeature.ALLOWS_ANY_NULL_QUERIES,
             MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
             CollectionFeature.KNOWN_ORDER,
             CollectionFeature.SERIALIZABLE,
             CollectionSize.ANY)
         .suppressing(suppressForLinkedHashMap())
         .createTestSuite();
   }
-
-
 
   public Test testsForEnumMap() {
     return MapTestSuiteBuilder
@@ -179,6 +182,7 @@ public class TestsForMapsInJavaUtil {
             MapFeature.GENERAL_PURPOSE,
             MapFeature.ALLOWS_NULL_VALUES,
             MapFeature.RESTRICTS_KEYS,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
             CollectionFeature.KNOWN_ORDER,
             CollectionFeature.SERIALIZABLE,
             CollectionSize.ANY)
@@ -197,6 +201,7 @@ public class TestsForMapsInJavaUtil {
         .named("ConcurrentHashMap")
         .withFeatures(
             MapFeature.GENERAL_PURPOSE,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
             CollectionFeature.SERIALIZABLE,
             CollectionSize.ANY)
         .suppressing(suppressForConcurrentHashMap())

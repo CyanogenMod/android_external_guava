@@ -21,6 +21,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.testing.SerializableTester.reserialize;
 import static com.google.common.testing.SerializableTester.reserializeAndAssert;
 import static java.util.Arrays.asList;
+import static org.truth0.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
@@ -29,9 +30,11 @@ import com.google.common.base.Functions;
 import com.google.common.collect.Ordering.ArbitraryOrdering;
 import com.google.common.collect.Ordering.IncomparableValueException;
 import com.google.common.collect.testing.Helpers;
+import com.google.common.primitives.Ints;
 import com.google.common.testing.EqualsTester;
-import com.google.common.testing.FluentAsserts;
 import com.google.common.testing.NullPointerTester;
+
+import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,8 +45,6 @@ import java.util.Random;
 import java.util.RandomAccess;
 
 import javax.annotation.Nullable;
-
-import junit.framework.TestCase;
 
 /**
  * Unit tests for {@code Ordering}.
@@ -156,7 +157,7 @@ public class OrderingTest extends TestCase {
         = Ordering.explicit(2, 8, 6, 1, 7, 5, 3, 4, 0, 9);
     List<Integer> list = Arrays.asList(0, 3, 5, 6, 7, 8, 9);
     Collections.sort(list, c);
-    FluentAsserts.assertThat(list).has().allOf(8, 6, 7, 5, 3, 0, 9).inOrder();
+    ASSERT.that(list).has().exactly(8, 6, 7, 5, 3, 0, 9).inOrder();
     reserializeAndAssert(c);
   }
 
@@ -831,25 +832,29 @@ public class OrderingTest extends TestCase {
 
   // should periodically try increasing this, but it makes the test run long
   private static final int RECURSE_DEPTH = 2;
-
+  
   public void testCombinationsExhaustively_startingFromNatural() {
     testExhaustively(Ordering.<String>natural(), "a", "b", "d");
   }
-
+  
+  @GwtIncompatible("too slow")
   public void testCombinationsExhaustively_startingFromExplicit() {
     testExhaustively(Ordering.explicit("a", "b", "c", "d"),
         "a", "b", "d");
   }
-
+  
+  @GwtIncompatible("too slow")
   public void testCombinationsExhaustively_startingFromUsingToString() {
     testExhaustively(Ordering.usingToString(), 1, 12, 2);
   }
 
+  @GwtIncompatible("too slow")
   public void testCombinationsExhaustively_startingFromFromComparator() {
     testExhaustively(Ordering.from(String.CASE_INSENSITIVE_ORDER),
         "A", "b", "C", "d");
   }
-
+  
+  @GwtIncompatible("too slow")
   public void testCombinationsExhaustively_startingFromArbitrary() {
     Ordering<Object> arbitrary = Ordering.arbitrary();
     Object[] array = {1, "foo", new Object()};
@@ -1084,7 +1089,7 @@ public class OrderingTest extends TestCase {
     // order of 't'.
     @Override
     public int compareTo(Composite<T> that) {
-      return rank < that.rank ? -1 : rank > that.rank ? 1 : 0;
+      return Ints.compare(rank, that.rank);
     }
 
     static <T> Function<Composite<T>, T> getValueFunction() {

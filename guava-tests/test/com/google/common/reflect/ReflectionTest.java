@@ -18,11 +18,11 @@ package com.google.common.reflect;
 
 import com.google.common.testing.NullPointerTester;
 
+import junit.framework.TestCase;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Map;
-
-import junit.framework.TestCase;
 
 /** Tests for {@link Reflection} */
 public class ReflectionTest extends TestCase {

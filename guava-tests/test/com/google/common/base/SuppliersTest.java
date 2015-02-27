@@ -24,6 +24,8 @@ import com.google.common.collect.Lists;
 import com.google.common.testing.ClassSanityTester;
 import com.google.common.testing.EqualsTester;
 
+import junit.framework.TestCase;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,8 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import junit.framework.TestCase;
 
 /**
  * Tests com.google.common.base.Suppliers.

@@ -24,14 +24,14 @@ import com.google.common.collect.testing.features.MapFeature;
 import com.google.common.collect.testing.google.BiMapTestSuiteBuilder;
 import com.google.common.collect.testing.google.TestStringBiMapGenerator;
 
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
 /**
  * Tests for {@link HashBiMap}.
@@ -59,8 +59,10 @@ public class HashBiMapTest extends TestCase {
       .named("HashBiMap")
       .withFeatures(CollectionSize.ANY,
           CollectionFeature.SERIALIZABLE,
+          CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
           MapFeature.ALLOWS_NULL_KEYS,
           MapFeature.ALLOWS_NULL_VALUES,
+          MapFeature.ALLOWS_ANY_NULL_QUERIES,
           MapFeature.GENERAL_PURPOSE)
       .createTestSuite());
     suite.addTestSuite(HashBiMapTest.class);

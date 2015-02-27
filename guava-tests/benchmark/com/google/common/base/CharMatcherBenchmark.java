@@ -16,9 +16,9 @@
 
 package com.google.common.base;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.base.BenchmarkHelpers.SampleMatcherConfig;
 import com.google.common.collect.Lists;
 
@@ -30,14 +30,12 @@ import java.util.Random;
 /**
  * Benchmark for the {@link CharMatcher} class.
  *
- * <p>Example of running the benchmark, overriding one parameter:
- *
  *
  * @author David Beaumont
  * @author Kevin Bourrillion
  * @author David Richter
  */
-public class CharMatcherBenchmark extends SimpleBenchmark {
+public class CharMatcherBenchmark {
 
   // Caliper injects params automatically
 
@@ -71,7 +69,7 @@ public class CharMatcherBenchmark extends SimpleBenchmark {
   private String string;
 
   // Caliper invokes setUp() after injecting params
-  @Override protected void setUp() {
+  @BeforeExperiment void setUp() {
     this.matcher = precomputed ? config.matcher.precomputed() : config.matcher;
     if (size == Size.SMALL) {
       BitSet tmp = new BitSet();
@@ -85,7 +83,7 @@ public class CharMatcherBenchmark extends SimpleBenchmark {
 
   // Caliper recognizes int-parameter methods beginning with "time"
 
-  public int timeTrimAndCollapseFromString(int reps) {
+  @Benchmark int trimAndCollapseFromString(int reps) {
     int dummy = 0;
     for (int i = 0; i < reps; i++) {
       dummy += matcher.trimAndCollapseFrom(string, '!').length();
@@ -93,7 +91,7 @@ public class CharMatcherBenchmark extends SimpleBenchmark {
     return dummy;
   }
 
-  public int timeMatches(int reps) {
+  @Benchmark int matches(int reps) {
     int dummy = 0;
     for (int i = 0; i < reps; i++) {
       dummy += matcher.matches(string.charAt(i % string.length())) ? 1 : 0;
@@ -142,10 +140,6 @@ public class CharMatcherBenchmark extends SimpleBenchmark {
 
   private static char randomCharFrom(String s, Random rand) {
     return s.charAt(rand.nextInt(s.length()));
-  }
-
-  public static void main(String[] args) {
-    Runner.main(CharMatcherBenchmark.class, args);
   }
 
   /**

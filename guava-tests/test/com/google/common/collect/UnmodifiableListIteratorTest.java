@@ -18,11 +18,11 @@ package com.google.common.collect;
 
 import com.google.common.annotations.GwtCompatible;
 
+import junit.framework.TestCase;
+
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
-
-import junit.framework.TestCase;
 
 /**
  * Tests for UnmodifiableListIterator.
@@ -91,8 +91,9 @@ public class UnmodifiableListIteratorTest extends TestCase {
         return i;
       }
       @Override public String previous() {
-        if(!hasPrevious())
+        if (!hasPrevious()) {
           throw new NoSuchElementException();
+        }
         return array[--i];
       }
       @Override public int previousIndex() {

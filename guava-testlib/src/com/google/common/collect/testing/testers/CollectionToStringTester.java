@@ -16,6 +16,7 @@
 
 package com.google.common.collect.testing.testers;
 
+import static com.google.common.collect.testing.features.CollectionFeature.ALLOWS_NULL_VALUES;
 import static com.google.common.collect.testing.features.CollectionFeature.KNOWN_ORDER;
 import static com.google.common.collect.testing.features.CollectionFeature.NON_STANDARD_TOSTRING;
 import static com.google.common.collect.testing.features.CollectionSize.ONE;
@@ -32,8 +33,6 @@ import com.google.common.collect.testing.features.CollectionSize;
  * A generic JUnit test which tests {@code toString()} operations on a
  * collection. Can't be invoked directly; please see
  * {@link com.google.common.collect.testing.CollectionTestSuiteBuilder}.
- *
- * <p>This class is GWT compatible.
  *
  * @author Kevin Bourrillion
  */
@@ -65,5 +64,12 @@ public class CollectionToStringTester<E> extends AbstractCollectionTester<E> {
     String expected = Helpers.copyToList(getOrderedElements()).toString();
     assertEquals("collection.toString() incorrect",
         expected, collection.toString());
+  }
+
+  @CollectionSize.Require(absent = ZERO)
+  @CollectionFeature.Require(ALLOWS_NULL_VALUES)
+  public void testToString_null() {
+    initCollectionWithNullElement();
+    testToString_minimal();
   }
 }

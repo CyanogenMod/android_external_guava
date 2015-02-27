@@ -21,9 +21,9 @@ import static com.google.common.math.MathBenchmarking.ARRAY_SIZE;
 import static com.google.common.math.MathBenchmarking.randomDouble;
 import static com.google.common.math.MathBenchmarking.randomPositiveDouble;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.math.DoubleMath;
 
 import java.math.RoundingMode;
@@ -33,7 +33,7 @@ import java.math.RoundingMode;
  *
  * @author Louis Wasserman
  */
-public class DoubleMathRoundingBenchmark extends SimpleBenchmark {
+public class DoubleMathRoundingBenchmark {
   private static final double[] doubleInIntRange = new double[ARRAY_SIZE];
   private static final double[] doubleInLongRange = new double[ARRAY_SIZE];
   private static final double[] positiveDoubles = new double[ARRAY_SIZE];
@@ -41,8 +41,8 @@ public class DoubleMathRoundingBenchmark extends SimpleBenchmark {
   @Param({"DOWN", "UP", "FLOOR", "CEILING", "HALF_EVEN", "HALF_UP", "HALF_DOWN"})
   RoundingMode mode;
 
-  @Override
-  protected void setUp() {
+  @BeforeExperiment
+  void setUp() {
     for (int i = 0; i < ARRAY_SIZE; i++) {
       doubleInIntRange[i] = randomDouble(Integer.SIZE - 2);
       doubleInLongRange[i] = randomDouble(Long.SIZE - 2);
@@ -50,7 +50,7 @@ public class DoubleMathRoundingBenchmark extends SimpleBenchmark {
     }
   }
 
-  public int timeRoundToInt(int reps) {
+  @Benchmark int roundToInt(int reps) {
     int tmp = 0;
     for (int i = 0; i < reps; i++) {
       int j = i & ARRAY_MASK;
@@ -59,7 +59,7 @@ public class DoubleMathRoundingBenchmark extends SimpleBenchmark {
     return tmp;
   }
 
-  public long timeRoundToLong(int reps) {
+  @Benchmark long roundToLong(int reps) {
     long tmp = 0;
     for (int i = 0; i < reps; i++) {
       int j = i & ARRAY_MASK;
@@ -68,7 +68,7 @@ public class DoubleMathRoundingBenchmark extends SimpleBenchmark {
     return tmp;
   }
 
-  public int timeRoundToBigInteger(int reps) {
+  @Benchmark int roundToBigInteger(int reps) {
     int tmp = 0;
     for (int i = 0; i < reps; i++) {
       int j = i & ARRAY_MASK;
@@ -77,16 +77,12 @@ public class DoubleMathRoundingBenchmark extends SimpleBenchmark {
     return tmp;
   }
 
-  public int timeLog2Round(int reps) {
+  @Benchmark int log2Round(int reps) {
     int tmp = 0;
     for (int i = 0; i < reps; i++) {
       int j = i & ARRAY_MASK;
       tmp += DoubleMath.log2(positiveDoubles[j], mode);
     }
     return tmp;
-  }
-
-  public static void main(String[] args) {
-    Runner.main(DoubleMathRoundingBenchmark.class, args);
   }
 }

@@ -13,6 +13,8 @@
 
 package com.google.common.util.concurrent;
 
+import junit.framework.*;
+
 import java.util.Arrays;
 
 /**
@@ -23,8 +25,8 @@ public class AtomicDoubleArrayTest extends JSR166TestCase {
   private static final double[] VALUES = {
     Double.NEGATIVE_INFINITY,
     -Double.MAX_VALUE,
-    Long.MIN_VALUE,
-    Integer.MIN_VALUE,
+    (double) Long.MIN_VALUE,
+    (double) Integer.MIN_VALUE,
     -Math.PI,
     -1.0,
     -Double.MIN_VALUE,
@@ -33,8 +35,8 @@ public class AtomicDoubleArrayTest extends JSR166TestCase {
     Double.MIN_VALUE,
     1.0,
     Math.PI,
-    Integer.MAX_VALUE,
-    Long.MAX_VALUE,
+    (double) Integer.MAX_VALUE,
+    (double) Long.MAX_VALUE,
     Double.MAX_VALUE,
     Double.POSITIVE_INFINITY,
     Double.NaN,
@@ -200,7 +202,6 @@ public class AtomicDoubleArrayTest extends JSR166TestCase {
     final AtomicDoubleArray a = new AtomicDoubleArray(1);
     a.set(0, 1.0);
     Thread t = newStartedThread(new CheckedRunnable() {
-        @Override
         public void realRun() {
           while (!a.compareAndSet(0, 2.0, 3.0)) {
             Thread.yield();
@@ -288,7 +289,6 @@ public class AtomicDoubleArrayTest extends JSR166TestCase {
     final AtomicDoubleArray aa;
     volatile long counts;
     Counter(AtomicDoubleArray a) { aa = a; }
-    @Override
     public void realRun() {
       for (;;) {
         boolean done = true;
@@ -317,7 +317,7 @@ public class AtomicDoubleArrayTest extends JSR166TestCase {
       public void testCountingInMultipleThreads() throws InterruptedException {
     final AtomicDoubleArray aa = new AtomicDoubleArray(SIZE);
     for (int i = 0; i < SIZE; i++) {
-      aa.set(i, COUNTDOWN);
+      aa.set(i, (double) COUNTDOWN);
     }
     Counter c1 = new Counter(aa);
     Counter c2 = new Counter(aa);
@@ -334,7 +334,7 @@ public class AtomicDoubleArrayTest extends JSR166TestCase {
   public void testSerialization() throws Exception {
     AtomicDoubleArray x = new AtomicDoubleArray(SIZE);
     for (int i = 0; i < SIZE; i++) {
-      x.set(i, -i);
+      x.set(i, (double) -i);
     }
     AtomicDoubleArray y = serialClone(x);
     assertTrue(x != y);

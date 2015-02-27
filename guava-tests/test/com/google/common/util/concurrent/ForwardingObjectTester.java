@@ -22,10 +22,10 @@ import com.google.common.collect.ForwardingObject;
 import com.google.common.collect.Iterables;
 import com.google.common.testing.ForwardingWrapperTester;
 
+import org.easymock.EasyMock;
+
 import java.lang.reflect.Method;
 import java.util.Arrays;
-
-import org.easymock.EasyMock;
 
 /**
  * Tester for typical subclass of {@link ForwardingObject} by using EasyMock partial mocks.

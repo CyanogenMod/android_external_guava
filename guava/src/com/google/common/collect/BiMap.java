@@ -47,7 +47,7 @@ public interface BiMap<K, V> extends Map<K, V> {
    *     different key in this bimap. The bimap will remain unmodified in this
    *     event. To avoid this exception, call {@link #forcePut} instead.
    */
-
+  @Override
   V put(@Nullable K key, @Nullable V value);
 
   /**
@@ -81,7 +81,7 @@ public interface BiMap<K, V> extends Map<K, V> {
    *     entry fails. Note that some map entries may have been added to the
    *     bimap before the exception was thrown.
    */
-
+  @Override
   void putAll(Map<? extends K, ? extends V> map);
 
   // Views
@@ -93,7 +93,7 @@ public interface BiMap<K, V> extends Map<K, V> {
    * instead of the {@link java.util.Collection} specified in the {@link Map}
    * interface.
    */
-
+  @Override
   Set<V> values();
 
   /**

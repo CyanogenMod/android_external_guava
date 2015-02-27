@@ -16,15 +16,23 @@
 
 package com.google.common.hash;
 
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.base.Charsets;
 import com.google.common.hash.AbstractStreamingHashFunction.AbstractStreamingHasher;
+import com.google.common.testing.EqualsTester;
+import com.google.common.testing.SerializableTester;
+
+import junit.framework.TestCase;
+
+import org.mockito.InOrder;
 
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
-import junit.framework.TestCase;
+import java.nio.charset.Charset;
+import java.util.Arrays;
 
 /**
  * Tests for HashExtractors.
@@ -33,9 +41,9 @@ import junit.framework.TestCase;
  */
 public class FunnelsTest extends TestCase {
   public void testForBytes() {
-    PrimitiveSink bytePrimitiveSink = mock(PrimitiveSink.class);
-    Funnels.byteArrayFunnel().funnel(new byte[] { 4, 3, 2, 1 }, bytePrimitiveSink);
-    verify(bytePrimitiveSink).putBytes(new byte[] { 4, 3, 2, 1 });
+    PrimitiveSink primitiveSink = mock(PrimitiveSink.class);
+    Funnels.byteArrayFunnel().funnel(new byte[] { 4, 3, 2, 1 }, primitiveSink);
+    verify(primitiveSink).putBytes(new byte[] { 4, 3, 2, 1 });
   }
 
   public void testForBytes_null() {
@@ -43,20 +51,34 @@ public class FunnelsTest extends TestCase {
   }
 
   public void testForStrings() {
-    PrimitiveSink bytePrimitiveSink = mock(PrimitiveSink.class);
-    Funnels.stringFunnel().funnel("test", bytePrimitiveSink);
-    verify(bytePrimitiveSink).putString("test");
+    PrimitiveSink primitiveSink = mock(PrimitiveSink.class);
+    Funnels.unencodedCharsFunnel().funnel("test", primitiveSink);
+    verify(primitiveSink).putUnencodedChars("test");
   }
 
   public void testForStrings_null() {
-    assertNullsThrowException(Funnels.stringFunnel());
+    assertNullsThrowException(Funnels.unencodedCharsFunnel());
+  }
+
+  public void testForStringsCharset() {
+    for (Charset charset : Charset.availableCharsets().values()) {
+      PrimitiveSink primitiveSink = mock(PrimitiveSink.class);
+      Funnels.stringFunnel(charset).funnel("test", primitiveSink);
+      verify(primitiveSink).putString("test", charset);
+    }
+  }
+
+  public void testForStringsCharset_null() {
+    for (Charset charset : Charset.availableCharsets().values()) {
+      assertNullsThrowException(Funnels.stringFunnel(charset));
+    }
   }
 
   public void testForInts() {
     Integer value = 1234;
-    PrimitiveSink bytePrimitiveSink = mock(PrimitiveSink.class);
-    Funnels.integerFunnel().funnel(value, bytePrimitiveSink);
-    verify(bytePrimitiveSink).putInt(1234);
+    PrimitiveSink primitiveSink = mock(PrimitiveSink.class);
+    Funnels.integerFunnel().funnel(value, primitiveSink);
+    verify(primitiveSink).putInt(1234);
   }
 
   public void testForInts_null() {
@@ -65,17 +87,30 @@ public class FunnelsTest extends TestCase {
 
   public void testForLongs() {
     Long value = 1234L;
-    PrimitiveSink bytePrimitiveSink = mock(PrimitiveSink.class);
-    Funnels.longFunnel().funnel(value, bytePrimitiveSink);
-    verify(bytePrimitiveSink).putLong(1234);
+    PrimitiveSink primitiveSink = mock(PrimitiveSink.class);
+    Funnels.longFunnel().funnel(value, primitiveSink);
+    verify(primitiveSink).putLong(1234);
   }
 
   public void testForLongs_null() {
     assertNullsThrowException(Funnels.longFunnel());
   }
 
+  public void testSequential() {
+    @SuppressWarnings("unchecked")
+    Funnel<Object> elementFunnel = mock(Funnel.class);
+    PrimitiveSink primitiveSink = mock(PrimitiveSink.class);
+    Funnel<Iterable<? extends Object>> sequential = Funnels.sequentialFunnel(elementFunnel);
+    sequential.funnel(Arrays.asList("foo", "bar", "baz", "quux"), primitiveSink);
+    InOrder inOrder = inOrder(elementFunnel);
+    inOrder.verify(elementFunnel).funnel("foo", primitiveSink);
+    inOrder.verify(elementFunnel).funnel("bar", primitiveSink);
+    inOrder.verify(elementFunnel).funnel("baz", primitiveSink);
+    inOrder.verify(elementFunnel).funnel("quux", primitiveSink);
+  }
+
   private static void assertNullsThrowException(Funnel<?> funnel) {
-    PrimitiveSink bytePrimitiveSink = new AbstractStreamingHasher(4, 4) {
+    PrimitiveSink primitiveSink = new AbstractStreamingHasher(4, 4) {
       @Override HashCode makeHash() { throw new UnsupportedOperationException(); }
 
       @Override protected void process(ByteBuffer bb) {
@@ -85,11 +120,11 @@ public class FunnelsTest extends TestCase {
       }
     };
     try {
-      funnel.funnel(null, bytePrimitiveSink);
+      funnel.funnel(null, primitiveSink);
       fail();
     } catch (NullPointerException ok) {}
   }
-  
+
   public void testAsOutputStream() throws Exception {
     PrimitiveSink sink = mock(PrimitiveSink.class);
     OutputStream out = Funnels.asOutputStream(sink);
@@ -100,5 +135,41 @@ public class FunnelsTest extends TestCase {
     verify(sink).putByte((byte) 255);
     verify(sink).putBytes(bytes);
     verify(sink).putBytes(bytes, 1, 2);
+  }
+
+  public void testSerialization() {
+    assertSame(
+        Funnels.byteArrayFunnel(),
+        SerializableTester.reserialize(Funnels.byteArrayFunnel()));
+    assertSame(
+        Funnels.integerFunnel(),
+        SerializableTester.reserialize(Funnels.integerFunnel()));
+    assertSame(
+        Funnels.longFunnel(),
+        SerializableTester.reserialize(Funnels.longFunnel()));
+    assertSame(
+        Funnels.unencodedCharsFunnel(),
+        SerializableTester.reserialize(Funnels.unencodedCharsFunnel()));
+    assertEquals(
+        Funnels.sequentialFunnel(Funnels.integerFunnel()),
+        SerializableTester.reserialize(Funnels.sequentialFunnel(Funnels.integerFunnel())));
+    assertEquals(
+        Funnels.stringFunnel(Charsets.US_ASCII),
+        SerializableTester.reserialize(Funnels.stringFunnel(Charsets.US_ASCII)));
+  }
+
+  public void testEquals() {
+     new EqualsTester()
+       .addEqualityGroup(Funnels.byteArrayFunnel())
+       .addEqualityGroup(Funnels.integerFunnel())
+       .addEqualityGroup(Funnels.longFunnel())
+       .addEqualityGroup(Funnels.unencodedCharsFunnel())
+       .addEqualityGroup(Funnels.stringFunnel(Charsets.UTF_8))
+       .addEqualityGroup(Funnels.stringFunnel(Charsets.US_ASCII))
+       .addEqualityGroup(Funnels.sequentialFunnel(Funnels.integerFunnel()),
+           SerializableTester.reserialize(Funnels.sequentialFunnel(
+               Funnels.integerFunnel())))
+       .addEqualityGroup(Funnels.sequentialFunnel(Funnels.longFunnel()))
+       .testEquals();
   }
 }

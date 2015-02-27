@@ -22,13 +22,13 @@ import com.google.common.collect.testing.Helpers;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
+import junit.framework.TestCase;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
-import junit.framework.TestCase;
 
 /**
  * Unit test for {@link Booleans}.
@@ -286,6 +286,14 @@ public class BooleansTest extends TestCase {
       fail();
     } catch (IndexOutOfBoundsException expected) {
     }
+  }
+
+  public void testCountTrue() {
+    assertEquals(0, Booleans.countTrue());
+    assertEquals(0, Booleans.countTrue(false));
+    assertEquals(1, Booleans.countTrue(true));
+    assertEquals(3, Booleans.countTrue(false, true, false, true, false, true));
+    assertEquals(1, Booleans.countTrue(false, false, true, false, false));
   }
 
   @GwtIncompatible("NullPointerTester")

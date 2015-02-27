@@ -46,13 +46,15 @@ public final class Suppliers {
    * {@code function} to that value. Note that the resulting supplier will not
    * call {@code supplier} or invoke {@code function} until it is called.
    */
-  public static <F, T> Supplier<T> compose(Function<? super F, T> function, Supplier<F> supplier) {
+  public static <F, T> Supplier<T> compose(
+      Function<? super F, T> function, Supplier<F> supplier) {
     Preconditions.checkNotNull(function);
     Preconditions.checkNotNull(supplier);
     return new SupplierComposition<F, T>(function, supplier);
   }
 
-  private static class SupplierComposition<F, T> implements Supplier<T>, Serializable {
+  private static class SupplierComposition<F, T>
+      implements Supplier<T>, Serializable {
     final Function<? super F, T> function;
     final Supplier<F> supplier;
 
@@ -61,12 +63,11 @@ public final class Suppliers {
       this.supplier = supplier;
     }
 
-    public T get() {
+    @Override public T get() {
       return function.apply(supplier.get());
     }
 
-    @Override
-    public boolean equals(@Nullable Object obj) {
+    @Override public boolean equals(@Nullable Object obj) {
       if (obj instanceof SupplierComposition) {
         SupplierComposition<?, ?> that = (SupplierComposition<?, ?>) obj;
         return function.equals(that.function) && supplier.equals(that.supplier);
@@ -74,13 +75,11 @@ public final class Suppliers {
       return false;
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
       return Objects.hashCode(function, supplier);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       return "Suppliers.compose(" + function + ", " + supplier + ")";
     }
 
@@ -101,8 +100,9 @@ public final class Suppliers {
    * memoize}, it is returned directly.
    */
   public static <T> Supplier<T> memoize(Supplier<T> delegate) {
-    return (delegate instanceof MemoizingSupplier) ? delegate : new MemoizingSupplier<T>(
-        Preconditions.checkNotNull(delegate));
+    return (delegate instanceof MemoizingSupplier)
+        ? delegate
+        : new MemoizingSupplier<T>(Preconditions.checkNotNull(delegate));
   }
 
   @VisibleForTesting
@@ -117,7 +117,7 @@ public final class Suppliers {
       this.delegate = delegate;
     }
 
-    public T get() {
+    @Override public T get() {
       // A 2-field variant of Double Checked Locking.
       if (!initialized) {
         synchronized (this) {
@@ -132,8 +132,7 @@ public final class Suppliers {
       return value;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       return "Suppliers.memoize(" + delegate + ")";
     }
 
@@ -158,26 +157,27 @@ public final class Suppliers {
    * @throws IllegalArgumentException if {@code duration} is not positive
    * @since 2.0
    */
-  public static <T> Supplier<T> memoizeWithExpiration(Supplier<T> delegate, long duration,
-      TimeUnit unit) {
+  public static <T> Supplier<T> memoizeWithExpiration(
+      Supplier<T> delegate, long duration, TimeUnit unit) {
     return new ExpiringMemoizingSupplier<T>(delegate, duration, unit);
   }
 
-  @VisibleForTesting
-  static class ExpiringMemoizingSupplier<T> implements Supplier<T>, Serializable {
+  @VisibleForTesting static class ExpiringMemoizingSupplier<T>
+      implements Supplier<T>, Serializable {
     final Supplier<T> delegate;
     final long durationNanos;
     transient volatile T value;
     // The special value 0 means "not yet initialized".
     transient volatile long expirationNanos;
 
-    ExpiringMemoizingSupplier(Supplier<T> delegate, long duration, TimeUnit unit) {
+    ExpiringMemoizingSupplier(
+        Supplier<T> delegate, long duration, TimeUnit unit) {
       this.delegate = Preconditions.checkNotNull(delegate);
       this.durationNanos = unit.toNanos(duration);
       Preconditions.checkArgument(duration > 0);
     }
 
-    public T get() {
+    @Override public T get() {
       // Another variant of Double Checked Locking.
       //
       // We use two volatile reads.  We could reduce this to one by
@@ -188,7 +188,7 @@ public final class Suppliers {
       long now = Platform.systemNanoTime();
       if (nanos == 0 || now - nanos >= 0) {
         synchronized (this) {
-          if (nanos == expirationNanos) { // recheck for lost race
+          if (nanos == expirationNanos) {  // recheck for lost race
             T t = delegate.get();
             value = t;
             nanos = now + durationNanos;
@@ -202,11 +202,11 @@ public final class Suppliers {
       return value;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       // This is a little strange if the unit the user provided was not NANOS,
       // but we don't want to store the unit just for toString
-      return "Suppliers.memoizeWithExpiration(" + delegate + ", " + durationNanos + ", NANOS)";
+      return "Suppliers.memoizeWithExpiration(" + delegate + ", " +
+          durationNanos + ", NANOS)";
     }
 
     private static final long serialVersionUID = 0;
@@ -219,19 +219,19 @@ public final class Suppliers {
     return new SupplierOfInstance<T>(instance);
   }
 
-  private static class SupplierOfInstance<T> implements Supplier<T>, Serializable {
+  private static class SupplierOfInstance<T>
+      implements Supplier<T>, Serializable {
     final T instance;
 
     SupplierOfInstance(@Nullable T instance) {
       this.instance = instance;
     }
 
-    public T get() {
+    @Override public T get() {
       return instance;
     }
 
-    @Override
-    public boolean equals(@Nullable Object obj) {
+    @Override public boolean equals(@Nullable Object obj) {
       if (obj instanceof SupplierOfInstance) {
         SupplierOfInstance<?> that = (SupplierOfInstance<?>) obj;
         return Objects.equal(instance, that.instance);
@@ -239,13 +239,11 @@ public final class Suppliers {
       return false;
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
       return Objects.hashCode(instance);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       return "Suppliers.ofInstance(" + instance + ")";
     }
 
@@ -260,21 +258,21 @@ public final class Suppliers {
     return new ThreadSafeSupplier<T>(Preconditions.checkNotNull(delegate));
   }
 
-  private static class ThreadSafeSupplier<T> implements Supplier<T>, Serializable {
+  private static class ThreadSafeSupplier<T>
+      implements Supplier<T>, Serializable {
     final Supplier<T> delegate;
 
     ThreadSafeSupplier(Supplier<T> delegate) {
       this.delegate = delegate;
     }
 
-    public T get() {
+    @Override public T get() {
       synchronized (delegate) {
         return delegate.get();
       }
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       return "Suppliers.synchronizedSupplier(" + delegate + ")";
     }
 
@@ -288,21 +286,23 @@ public final class Suppliers {
    * @since 8.0
    */
   @Beta
-  //SupplierFunction works for any T.
-  @SuppressWarnings({ "unchecked", "rawtypes" })
   public static <T> Function<Supplier<T>, T> supplierFunction() {
-    return (Function) SupplierFunction.INSTANCE;
+    @SuppressWarnings("unchecked") // implementation is "fully variant"
+    SupplierFunction<T> sf = (SupplierFunction<T>) SupplierFunctionImpl.INSTANCE;
+    return sf;
   }
 
-  private enum SupplierFunction implements Function<Supplier<?>, Object> {
+  private interface SupplierFunction<T> extends Function<Supplier<T>, T> {}
+
+  private enum SupplierFunctionImpl implements SupplierFunction<Object> {
     INSTANCE;
 
-    public Object apply(Supplier<?> input) {
+    // Note: This makes T a "pass-through type"
+    @Override public Object apply(Supplier<Object> input) {
       return input.get();
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       return "Suppliers.supplierFunction()";
     }
   }

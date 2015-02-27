@@ -16,9 +16,11 @@
 
 package com.google.common.collect;
 
+import static com.google.common.collect.Lists.newArrayList;
+
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.collect.CollectionBenchmarkSampleData.Element;
 
 import java.util.Collection;
@@ -28,12 +30,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A microbenchmark that tests the performance of get() on various map
+ * A microbenchmark that tests the performance of get() and iteration on various map
  * implementations.  Forked from {@link SetContainsBenchmark}.
  *
  * @author Nicholaus Shupe
  */
-public class MapBenchmark extends SimpleBenchmark {
+public class MapBenchmark {
   @Param({"Hash", "LinkedHM", "MapMaker1", "Immutable"})
   private Impl impl;
 
@@ -139,7 +141,7 @@ public class MapBenchmark extends SimpleBenchmark {
 
     abstract Map<Element, Element> create(Collection<Element> contents);
   }
-
+  
   @Param({"5", "50", "500", "5000", "50000"})
   private int size;
 
@@ -163,13 +165,13 @@ public class MapBenchmark extends SimpleBenchmark {
 
   private Collection<Element> values;
 
-  @Override public void setUp() {
-    CollectionBenchmarkSampleData sampleData =
+  @BeforeExperiment void setUp() {
+    CollectionBenchmarkSampleData sampleData = 
         new CollectionBenchmarkSampleData(
             isUserTypeFast, random, hitRate, size);
 
     if (sortedData) {
-      List<Element> valueList = Lists.newArrayList(sampleData.getValuesInSet());
+      List<Element> valueList = newArrayList(sampleData.getValuesInSet());
       Collections.sort(valueList);
       values = valueList;
     } else {
@@ -179,7 +181,7 @@ public class MapBenchmark extends SimpleBenchmark {
     this.queries = sampleData.getQueries();
   }
 
-  public boolean timeGet(int reps) {
+  @Benchmark boolean get(int reps) {
     // Paranoia: acting on hearsay that accessing fields might be slow
     // Should write a benchmark to test that!
     Map<Element, Element> map = mapToTest;
@@ -196,7 +198,7 @@ public class MapBenchmark extends SimpleBenchmark {
     return dummy;
   }
 
-  public int timeCreateAndPopulate(int reps) {
+  @Benchmark int createAndPopulate(int reps) {
     int dummy = 0;
     for (int i = 0; i < reps; i++) {
       dummy += impl.create(values).size();
@@ -204,7 +206,29 @@ public class MapBenchmark extends SimpleBenchmark {
     return dummy;
   }
 
-  public static void main(String[] args) throws Exception {
-    Runner.main(MapBenchmark.class, args);
+  @Benchmark boolean iterateWithEntrySet(int reps) {
+    Map<Element, Element> map = mapToTest;
+
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+      for (Map.Entry<Element, Element> entry : map.entrySet()) {
+        dummy ^= entry.getKey() != entry.getValue();
+      }
+    }
+    return dummy;
+  }
+
+  @Benchmark boolean iterateWithKeySetAndGet(int reps) {
+    Map<Element, Element> map = mapToTest;
+
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+      for (Element key : map.keySet()) {
+        Element value = map.get(key);
+        dummy ^= key != value;
+      }
+    }
+    return dummy;
+
   }
 }

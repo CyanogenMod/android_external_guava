@@ -42,6 +42,7 @@
  * <li>{@link com.google.common.base.Predicate},
  *     {@link com.google.common.base.Predicates}
  * <li>{@link com.google.common.base.Equivalence}
+ * <li>{@link com.google.common.base.Converter}
  * <li>{@link com.google.common.base.Supplier},
  *     {@link com.google.common.base.Suppliers}
  * </ul>
@@ -63,4 +64,3 @@
 package com.google.common.base;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-

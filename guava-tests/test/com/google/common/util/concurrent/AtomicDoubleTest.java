@@ -13,6 +13,7 @@
 
 package com.google.common.util.concurrent;
 
+import junit.framework.*;
 
 /**
  * Unit test for {@link AtomicDouble}.
@@ -22,8 +23,8 @@ public class AtomicDoubleTest extends JSR166TestCase {
   private static final double[] VALUES = {
     Double.NEGATIVE_INFINITY,
     -Double.MAX_VALUE,
-    Long.MIN_VALUE,
-    Integer.MIN_VALUE,
+    (double) Long.MIN_VALUE,
+    (double) Integer.MIN_VALUE,
     -Math.PI,
     -1.0,
     -Double.MIN_VALUE,
@@ -32,8 +33,8 @@ public class AtomicDoubleTest extends JSR166TestCase {
     Double.MIN_VALUE,
     1.0,
     Math.PI,
-    Integer.MAX_VALUE,
-    Long.MAX_VALUE,
+    (double) Integer.MAX_VALUE,
+    (double) Long.MAX_VALUE,
     Double.MAX_VALUE,
     Double.POSITIVE_INFINITY,
     Double.NaN,
@@ -117,7 +118,6 @@ public class AtomicDoubleTest extends JSR166TestCase {
       public void testCompareAndSetInMultipleThreads() throws Exception {
     final AtomicDouble at = new AtomicDouble(1.0);
     Thread t = newStartedThread(new CheckedRunnable() {
-        @Override
         public void realRun() {
           while (!at.compareAndSet(2.0, 3.0)) {
             Thread.yield();
@@ -195,9 +195,10 @@ public class AtomicDoubleTest extends JSR166TestCase {
   public void testSerialization() throws Exception {
     AtomicDouble a = new AtomicDouble();
     AtomicDouble b = serialClone(a);
-    assertTrue(a != b);
+    assertNotSame(a, b);
     a.set(-22.0);
     AtomicDouble c = serialClone(a);
+    assertNotSame(b, c);
     assertBitEquals(-22.0, a.get());
     assertBitEquals(0.0, b.get());
     assertBitEquals(-22.0, c.get());

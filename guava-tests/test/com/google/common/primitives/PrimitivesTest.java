@@ -19,9 +19,9 @@ package com.google.common.primitives;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.testing.NullPointerTester;
 
-import java.util.Set;
-
 import junit.framework.TestCase;
+
+import java.util.Set;
 
 /**
  * Unit test for {@link Primitives}.

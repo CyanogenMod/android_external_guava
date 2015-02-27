@@ -74,9 +74,8 @@ public abstract class Optional<T> implements Serializable {
   /**
    * Returns an {@code Optional} instance with no contained reference.
    */
-  @SuppressWarnings("unchecked")
   public static <T> Optional<T> absent() {
-    return (Optional<T>) Absent.INSTANCE;
+    return Absent.withType();
   }
 
   /**
@@ -91,7 +90,9 @@ public abstract class Optional<T> implements Serializable {
    * reference; otherwise returns {@link Optional#absent}.
    */
   public static <T> Optional<T> fromNullable(@Nullable T nullableReference) {
-    return (nullableReference == null) ? Optional.<T> absent() : new Present<T>(nullableReference);
+    return (nullableReference == null)
+        ? Optional.<T>absent()
+        : new Present<T>(nullableReference);
   }
 
   Optional() {}
@@ -127,7 +128,7 @@ public abstract class Optional<T> implements Serializable {
    *   Optional<? extends Number> first = numbers.first();
    *   Number value = first.or(0.5); // error}</pre>
    *
-   * As a workaround, it is always safe to cast an {@code Optional<? extends T>} to {@code
+   * <p>As a workaround, it is always safe to cast an {@code Optional<? extends T>} to {@code
    * Optional<T>}. Casting either of the above example {@code Optional} instances to {@code
    * Optional<Number>} (where {@code Number} is the desired output type) solves the problem:
    * <pre>   {@code
@@ -188,14 +189,12 @@ public abstract class Optional<T> implements Serializable {
    * are absent. Note that {@code Optional} instances of differing parameterized types can
    * be equal.
    */
-
   @Override
   public abstract boolean equals(@Nullable Object object);
 
   /**
    * Returns a hash code for this instance.
    */
-
   @Override
   public abstract int hashCode();
 
@@ -203,7 +202,6 @@ public abstract class Optional<T> implements Serializable {
    * Returns a string representation for this instance. The form of this string
    * representation is unspecified.
    */
-
   @Override
   public abstract String toString();
 
@@ -219,11 +217,11 @@ public abstract class Optional<T> implements Serializable {
       final Iterable<? extends Optional<? extends T>> optionals) {
     checkNotNull(optionals);
     return new Iterable<T>() {
-
+      @Override
       public Iterator<T> iterator() {
         return new AbstractIterator<T>() {
-          private final Iterator<? extends Optional<? extends T>> iterator = checkNotNull(optionals
-              .iterator());
+          private final Iterator<? extends Optional<? extends T>> iterator =
+              checkNotNull(optionals.iterator());
 
           @Override
           protected T computeNext() {

@@ -5,10 +5,10 @@
   <parent>
     <groupId>com.google.guava</groupId>
     <artifactId>guava-parent-jdk5</artifactId>
-    <version>14.0.1</version>
+    <version>17.0</version>
   </parent>
   <artifactId>guava-jdk5</artifactId>
-  <name>Guava: Google Core Libraries for Java</name>
+  <name>Guava: Google Core Libraries for Java (JDK5 Backport)</name>
   <packaging>bundle</packaging>
   <description>
     Guava is a suite of core and expanded libraries that include
@@ -22,9 +22,9 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <version>1.3.9</version>
-      <scope>provided</scope>
+      <optional>true</optional><!-- needed only for annotations -->
     </dependency>
+    <!-- TODO(cpovirk): want this only for dependency plugin but seems not to work there? Maven runs without failure, but the resulting Javadoc is missing the hoped-for inherited text -->
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>guava-bootstrap-jdk5</artifactId>
@@ -34,15 +34,6 @@
   </dependencies>
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.4</version>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -70,67 +61,46 @@
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
         <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
-          <fork>true</fork>
           <!-- Prepend guava-bootstrap to avoid an API incompatibility between JDK5 and JDK6 -->
-          <compilerArgument>-Xbootclasspath/p:${project.build.directory}/dependency/guava-bootstrap-${project.version}.jar</compilerArgument>
+          <compilerArgument>-Xbootclasspath/p:${project.build.directory}/dependency/guava-bootstrap-jdk5-${project.version}.jar</compilerArgument>
         </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.1.2</version>
+      </plugin>
+      <!-- TODO(cpovirk): include JDK sources when building testlib doc, too -->
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>attach-sources</id>
-            <phase>post-integration-test</phase>
-            <goals><goal>jar</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-         <executions>
-           <execution>
             <id>prep-guava-bootstrap</id>
             <phase>process-sources</phase>
             <goals><goal>copy-dependencies</goal></goals>
             <configuration>
-              <includeArtifactIds>guava-bootstrap</includeArtifactIds>
-              <excludeTransitive>true</excludeTransitive>
-              <includeScope>provided</includeScope>
+              <includeArtifactIds>guava-bootstrap-jdk5</includeArtifactIds>
             </configuration>
           </execution>
-         </executions>      
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.7</version>
-        <configuration>
-          <signature>
-            <groupId>org.codehaus.mojo.signature</groupId>
-            <artifactId>java16-sun</artifactId>
-            <version>1.0</version>
-          </signature>
-        </configuration>
-        <executions>
           <execution>
-            <id>check-java16-sun</id>
-            <phase>test</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
+            <id>unpack-jdk-sources</id>
+            <phase>site</phase>
+            <goals><goal>unpack-dependencies</goal></goals>
+            <configuration>
+              <includeArtifactIds>srczip</includeArtifactIds>
+              <overWrite>true</overWrite>
+              <outputDirectory>${project.build.directory}/jdk-sources</outputDirectory>
+              <silent>false</silent>
+            </configuration>
           </execution>
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>animal-sniffer-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.8</version>
         <configuration>
           <encoding>UTF-8</encoding>
           <docencoding>UTF-8</docencoding>
@@ -140,9 +110,16 @@
           <linksource>true</linksource>
           <links>
             <link>http://jsr-305.googlecode.com/svn/trunk/javadoc</link>
+            <link>http://docs.oracle.com/javase/7/docs/api/</link>
           </links>
+          <!-- TODO(cpovirk): can we use includeDependencySources and a local com.oracle.java:jdk-lib:noversion:sources instead of all this unzipping and manual sourcepath modification? -->
+          <sourcepath>${project.build.sourceDirectory}:${project.build.directory}/jdk-sources</sourcepath>
+          <subpackages>com.google.common</subpackages>
         </configuration>
         <executions>
+          <execution>
+            <id>attach-docs</id>
+          </execution>
           <execution>
             <id>generate-javadoc-site-report</id>
             <phase>site</phase>
@@ -166,8 +143,25 @@
         </executions>
       </plugin>
     </plugins>
-    <finalName>${project.artifactId}-${project.version}</finalName>
-    <sourceDirectory>src</sourceDirectory>
-    <testSourceDirectory>disabled</testSourceDirectory>
   </build>
+  <profiles>
+    <profile>
+      <id>srczip</id>
+      <activation>
+        <file>
+          <exists>${java.home}/../src.zip</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>jdk</groupId>
+          <artifactId>srczip</artifactId>
+          <version>999</version>
+          <scope>system</scope>
+          <systemPath>${java.home}/../src.zip</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

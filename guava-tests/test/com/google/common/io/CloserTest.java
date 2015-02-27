@@ -25,6 +25,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.testing.TestLogHandler;
 
+import junit.framework.TestCase;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -32,8 +34,6 @@ import java.util.List;
 import java.util.logging.LogRecord;
 
 import javax.annotation.Nullable;
-
-import junit.framework.TestCase;
 
 /**
  * Tests for {@link Closer}.
@@ -352,6 +352,12 @@ public class CloserTest extends TestCase {
     assertEquals(2, suppressed.size());
 
     assertEquals(ImmutableSet.of(c1Exception, c2Exception), suppressed);
+  }
+
+  public void testNullCloseable() throws IOException {
+    Closer closer = Closer.create();
+    closer.register(null);
+    closer.close();
   }
 
   static Throwable[] getSuppressed(Throwable throwable) {

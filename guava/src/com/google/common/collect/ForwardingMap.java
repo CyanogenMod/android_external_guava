@@ -56,70 +56,80 @@ import javax.annotation.Nullable;
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible
-public abstract class ForwardingMap<K, V> extends ForwardingObject implements Map<K, V> {
+public abstract class ForwardingMap<K, V> extends ForwardingObject
+    implements Map<K, V> {
   // TODO(user): identify places where thread safety is actually lost
 
   /** Constructor for use by subclasses. */
   protected ForwardingMap() {}
 
-  @Override
-  protected abstract Map<K, V> delegate();
+  @Override protected abstract Map<K, V> delegate();
 
+  @Override
   public int size() {
     return delegate().size();
   }
 
+  @Override
   public boolean isEmpty() {
     return delegate().isEmpty();
   }
 
+  @Override
   public V remove(Object object) {
     return delegate().remove(object);
   }
 
+  @Override
   public void clear() {
     delegate().clear();
   }
 
+  @Override
   public boolean containsKey(@Nullable Object key) {
     return delegate().containsKey(key);
   }
 
+  @Override
   public boolean containsValue(@Nullable Object value) {
     return delegate().containsValue(value);
   }
 
+  @Override
   public V get(@Nullable Object key) {
     return delegate().get(key);
   }
 
+  @Override
   public V put(K key, V value) {
     return delegate().put(key, value);
   }
 
+  @Override
   public void putAll(Map<? extends K, ? extends V> map) {
     delegate().putAll(map);
   }
 
+  @Override
   public Set<K> keySet() {
     return delegate().keySet();
   }
 
+  @Override
   public Collection<V> values() {
     return delegate().values();
   }
 
+  @Override
   public Set<Entry<K, V>> entrySet() {
     return delegate().entrySet();
   }
 
-  @Override
-  public boolean equals(@Nullable Object object) {
+  @Override public boolean equals(@Nullable Object object) {
     return object == this || delegate().equals(object);
   }
 
-  @Override
-  public int hashCode() {
+  @Override public int hashCode() {
     return delegate().hashCode();
   }
 
@@ -147,8 +157,7 @@ public abstract class ForwardingMap<K, V> extends ForwardingObject implements Ma
    *
    * @since 7.0
    */
-  @Beta
-  protected V standardRemove(@Nullable Object key) {
+  @Beta protected V standardRemove(@Nullable Object key) {
     Iterator<Entry<K, V>> entryIterator = entrySet().iterator();
     while (entryIterator.hasNext()) {
       Entry<K, V> entry = entryIterator.next();
@@ -186,11 +195,8 @@ public abstract class ForwardingMap<K, V> extends ForwardingObject implements Ma
   @Beta
   protected class StandardKeySet extends Maps.KeySet<K, V> {
     /** Constructor for use by subclasses. */
-    public StandardKeySet() {}
-
-    @Override
-    Map<K, V> map() {
-      return ForwardingMap.this;
+    public StandardKeySet() {
+      super(ForwardingMap.this);
     }
   }
 
@@ -202,8 +208,7 @@ public abstract class ForwardingMap<K, V> extends ForwardingObject implements Ma
    *
    * @since 7.0
    */
-  @Beta
-  protected boolean standardContainsKey(@Nullable Object key) {
+  @Beta protected boolean standardContainsKey(@Nullable Object key) {
     return Maps.containsKeyImpl(this, key);
   }
 
@@ -220,11 +225,8 @@ public abstract class ForwardingMap<K, V> extends ForwardingObject implements Ma
   @Beta
   protected class StandardValues extends Maps.Values<K, V> {
     /** Constructor for use by subclasses. */
-    public StandardValues() {}
-
-    @Override
-    Map<K, V> map() {
-      return ForwardingMap.this;
+    public StandardValues() {
+      super(ForwardingMap.this);
     }
   }
 

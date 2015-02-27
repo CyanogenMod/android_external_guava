@@ -17,6 +17,7 @@
 package com.google.common.collect;
 
 import static java.util.Arrays.asList;
+import static org.truth0.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
@@ -30,11 +31,8 @@ import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSet
 import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSetDescendingGenerator;
 import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSetExplicitComparator;
 import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSetExplicitSuperclassComparatorGenerator;
-import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSetHeadsetGenerator;
 import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSetReversedOrderGenerator;
 import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSetSubsetAsListGenerator;
-import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSetSubsetGenerator;
-import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSetTailsetGenerator;
 import com.google.common.collect.testing.google.SetGenerators.ImmutableSortedSetUnhashableGenerator;
 import com.google.common.collect.testing.testers.SetHashCodeTester;
 import com.google.common.testing.NullPointerTester;
@@ -42,8 +40,6 @@ import com.google.common.testing.SerializableTester;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import org.truth0.Truth;
-import org.truth0.subjects.CollectionSubject;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -70,30 +66,6 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     suite.addTest(SortedSetTestSuiteBuilder.using(
         new ImmutableSortedSetCopyOfGenerator())
         .named(ImmutableSortedSetTest.class.getName())
-        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
-            CollectionFeature.SERIALIZABLE,
-            CollectionFeature.ALLOWS_NULL_QUERIES)
-            .createTestSuite());
-
-    suite.addTest(SortedSetTestSuiteBuilder.using(
-        new ImmutableSortedSetHeadsetGenerator())
-        .named(ImmutableSortedSetTest.class.getName() + ", headset")
-        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
-            CollectionFeature.SERIALIZABLE,
-            CollectionFeature.ALLOWS_NULL_QUERIES)
-            .createTestSuite());
-
-    suite.addTest(SortedSetTestSuiteBuilder.using(
-        new ImmutableSortedSetTailsetGenerator())
-        .named(ImmutableSortedSetTest.class.getName() + ", tailset")
-        .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
-            CollectionFeature.SERIALIZABLE,
-            CollectionFeature.ALLOWS_NULL_QUERIES)
-            .createTestSuite());
-
-    suite.addTest(SortedSetTestSuiteBuilder.using(
-        new ImmutableSortedSetSubsetGenerator())
-        .named(ImmutableSortedSetTest.class.getName() + ", subset")
         .withFeatures(CollectionSize.ANY, CollectionFeature.KNOWN_ORDER,
             CollectionFeature.SERIALIZABLE,
             CollectionFeature.ALLOWS_NULL_QUERIES)
@@ -334,7 +306,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
 
   public void testOf_ordering() {
     SortedSet<String> set = of("e", "a", "f", "b", "d", "c");
-    ASSERT.that(set).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set).has().exactly("a", "b", "c", "d", "e", "f").inOrder();
   }
 
   /*
@@ -383,7 +355,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
 
   public void testOf_ordering_dupes() {
     SortedSet<String> set = of("e", "a", "e", "f", "b", "b", "d", "a", "c");
-    ASSERT.that(set).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set).has().exactly("a", "b", "c", "d", "e", "f").inOrder();
   }
 
   public void testOf_comparator() {
@@ -394,8 +366,8 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
   public void testOf_headSet() {
     SortedSet<String> set = of("e", "f", "b", "d", "c");
     assertTrue(set.headSet("e") instanceof ImmutableSortedSet);
-    ASSERT.that(set.headSet("e")).has().allOf("b", "c", "d").inOrder();
-    ASSERT.that(set.headSet("g")).has().allOf("b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set.headSet("e")).has().exactly("b", "c", "d").inOrder();
+    ASSERT.that(set.headSet("g")).has().exactly("b", "c", "d", "e", "f").inOrder();
     assertSame(of(), set.headSet("a"));
     assertSame(of(), set.headSet("b"));
   }
@@ -403,16 +375,16 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
   public void testOf_tailSet() {
     SortedSet<String> set = of("e", "f", "b", "d", "c");
     assertTrue(set.tailSet("e") instanceof ImmutableSortedSet);
-    ASSERT.that(set.tailSet("e")).has().allOf("e", "f").inOrder();
-    ASSERT.that(set.tailSet("a")).has().allOf("b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set.tailSet("e")).has().exactly("e", "f").inOrder();
+    ASSERT.that(set.tailSet("a")).has().exactly("b", "c", "d", "e", "f").inOrder();
     assertSame(of(), set.tailSet("g"));
   }
 
   public void testOf_subSet() {
     SortedSet<String> set = of("e", "f", "b", "d", "c");
     assertTrue(set.subSet("c", "e") instanceof ImmutableSortedSet);
-    ASSERT.that(set.subSet("c", "e")).has().allOf("c", "d").inOrder();
-    ASSERT.that(set.subSet("a", "g")).has().allOf("b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set.subSet("c", "e")).has().exactly("c", "d").inOrder();
+    ASSERT.that(set.subSet("a", "g")).has().exactly("b", "c", "d", "e", "f").inOrder();
     assertSame(of(), set.subSet("a", "b"));
     assertSame(of(), set.subSet("g", "h"));
     assertSame(of(), set.subSet("c", "c"));
@@ -452,14 +424,14 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
   public void testExplicit_ordering() {
     SortedSet<String> set = ImmutableSortedSet.orderedBy(STRING_LENGTH).add(
         "in", "the", "quick", "jumped", "over", "a").build();
-    ASSERT.that(set).has().allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+    ASSERT.that(set).has().exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
   }
 
   public void testExplicit_ordering_dupes() {
     SortedSet<String> set = ImmutableSortedSet.orderedBy(STRING_LENGTH).add(
         "in", "the", "quick", "brown", "fox", "jumped",
         "over", "a", "lazy", "dog").build();
-    ASSERT.that(set).has().allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+    ASSERT.that(set).has().exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
   }
 
   public void testExplicit_contains() {
@@ -489,9 +461,9 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
         "in", "the", "quick", "jumped", "over", "a").build();
     assertTrue(set.headSet("a") instanceof ImmutableSortedSet);
     assertTrue(set.headSet("fish") instanceof ImmutableSortedSet);
-    ASSERT.that(set.headSet("fish")).has().allOf("a", "in", "the").inOrder();
+    ASSERT.that(set.headSet("fish")).has().exactly("a", "in", "the").inOrder();
     ASSERT.that(set.headSet("california")).has()
-        .allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+        .exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
     assertTrue(set.headSet("a").isEmpty());
     assertTrue(set.headSet("").isEmpty());
   }
@@ -501,9 +473,9 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
         "in", "the", "quick", "jumped", "over", "a").build();
     assertTrue(set.tailSet("california") instanceof ImmutableSortedSet);
     assertTrue(set.tailSet("fish") instanceof ImmutableSortedSet);
-    ASSERT.that(set.tailSet("fish")).has().allOf("over", "quick", "jumped").inOrder();
+    ASSERT.that(set.tailSet("fish")).has().exactly("over", "quick", "jumped").inOrder();
     ASSERT.that(
-        set.tailSet("a")).has().allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+        set.tailSet("a")).has().exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
     assertTrue(set.tailSet("california").isEmpty());
   }
 
@@ -512,9 +484,9 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
         "in", "the", "quick", "jumped", "over", "a").build();
     assertTrue(set.subSet("the", "quick") instanceof ImmutableSortedSet);
     assertTrue(set.subSet("", "b") instanceof ImmutableSortedSet);
-    ASSERT.that(set.subSet("the", "quick")).has().allOf("the", "over").inOrder();
+    ASSERT.that(set.subSet("the", "quick")).has().exactly("the", "over").inOrder();
     ASSERT.that(set.subSet("a", "california"))
-        .has().allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+        .has().exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
     assertTrue(set.subSet("", "b").isEmpty());
     assertTrue(set.subSet("vermont", "california").isEmpty());
     assertTrue(set.subSet("aaa", "zzz").isEmpty());
@@ -558,13 +530,13 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
   public void testCopyOf_ordering() {
     SortedSet<String> set =
         copyOf(asList("e", "a", "f", "b", "d", "c"));
-    ASSERT.that(set).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set).has().exactly("a", "b", "c", "d", "e", "f").inOrder();
   }
 
   public void testCopyOf_ordering_dupes() {
     SortedSet<String> set =
         copyOf(asList("e", "a", "e", "f", "b", "b", "d", "a", "c"));
-    ASSERT.that(set).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set).has().exactly("a", "b", "c", "d", "e", "f").inOrder();
   }
 
   public void testCopyOf_subSet() {
@@ -595,13 +567,13 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
 
   public void testCopyOf_iterator_ordering() {
     SortedSet<String> set = copyOf(asIterator("e", "a", "f", "b", "d", "c"));
-    ASSERT.that(set).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set).has().exactly("a", "b", "c", "d", "e", "f").inOrder();
   }
 
   public void testCopyOf_iterator_ordering_dupes() {
     SortedSet<String> set =
         copyOf(asIterator("e", "a", "e", "f", "b", "b", "d", "a", "c"));
-    ASSERT.that(set).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set).has().exactly("a", "b", "c", "d", "e", "f").inOrder();
   }
 
   public void testCopyOf_iterator_comparator() {
@@ -612,7 +584,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
   public void testCopyOf_sortedSet_ordering() {
     SortedSet<String> set =
         copyOf(Sets.newTreeSet(asList("e", "a", "f", "b", "d", "c")));
-    ASSERT.that(set).has().allOf("a", "b", "c", "d", "e", "f").inOrder();
+    ASSERT.that(set).has().exactly("a", "b", "c", "d", "e", "f").inOrder();
   }
 
   public void testCopyOf_sortedSet_comparator() {
@@ -624,7 +596,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     SortedSet<String> set =
         ImmutableSortedSet.copyOf(STRING_LENGTH, asList(
             "in", "the", "quick", "jumped", "over", "a"));
-    ASSERT.that(set).has().allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+    ASSERT.that(set).has().exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
   }
 
   public void testCopyOfExplicit_ordering_dupes() {
@@ -632,7 +604,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
         ImmutableSortedSet.copyOf(STRING_LENGTH, asList(
             "in", "the", "quick", "brown", "fox", "jumped", "over", "a",
             "lazy", "dog"));
-    ASSERT.that(set).has().allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+    ASSERT.that(set).has().exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
   }
 
   public void testCopyOfExplicit_comparator() {
@@ -646,7 +618,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     SortedSet<String> set =
         ImmutableSortedSet.copyOf(STRING_LENGTH, asIterator(
             "in", "the", "quick", "jumped", "over", "a"));
-    ASSERT.that(set).has().allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+    ASSERT.that(set).has().exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
   }
 
   public void testCopyOfExplicit_iterator_ordering_dupes() {
@@ -654,7 +626,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
         ImmutableSortedSet.copyOf(STRING_LENGTH, asIterator(
             "in", "the", "quick", "brown", "fox", "jumped", "over", "a",
             "lazy", "dog"));
-    ASSERT.that(set).has().allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+    ASSERT.that(set).has().exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
   }
 
   public void testCopyOfExplicit_iterator_comparator() {
@@ -668,14 +640,14 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     SortedSet<String> input = Sets.newTreeSet(STRING_LENGTH);
     Collections.addAll(input, "in", "the", "quick", "jumped", "over", "a");
     SortedSet<String> set = copyOf(input);
-    ASSERT.that(set).has().allOf("a", "in", "jumped", "over", "quick", "the").inOrder();
+    ASSERT.that(set).has().exactly("a", "in", "jumped", "over", "quick", "the").inOrder();
   }
 
   public void testCopyOfSorted_natural_ordering() {
     SortedSet<String> input = Sets.newTreeSet(
         asList("in", "the", "quick", "jumped", "over", "a"));
     SortedSet<String> set = ImmutableSortedSet.copyOfSorted(input);
-    ASSERT.that(set).has().allOf("a", "in", "jumped", "over", "quick", "the").inOrder();
+    ASSERT.that(set).has().exactly("a", "in", "jumped", "over", "quick", "the").inOrder();
   }
 
   public void testCopyOfSorted_natural_comparator() {
@@ -689,7 +661,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     SortedSet<String> input = Sets.newTreeSet(STRING_LENGTH);
     Collections.addAll(input, "in", "the", "quick", "jumped", "over", "a");
     SortedSet<String> set = ImmutableSortedSet.copyOfSorted(input);
-    ASSERT.that(set).has().allOf("a", "in", "the", "over", "quick", "jumped").inOrder();
+    ASSERT.that(set).has().exactly("a", "in", "the", "over", "quick", "jumped").inOrder();
     assertSame(STRING_LENGTH, set.comparator());
   }
 
@@ -776,7 +748,8 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
 
   @GwtIncompatible("SerializableTester")
   public void testDifferentComparator_serialization() {
-    Comparator<Comparable<?>> comparator = Collections.reverseOrder();
+    // don't use Collections.reverseOrder(); it didn't reserialize to the same instance in JDK5
+    Comparator<Comparable<?>> comparator = Ordering.natural().reverse();
     SortedSet<String> set = new ImmutableSortedSet.Builder<String>(comparator)
         .add("a", "b", "c").build();
     SortedSet<String> copy = SerializableTester.reserializeAndAssert(set);
@@ -787,7 +760,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
   public void testReverseOrder() {
     SortedSet<String> set = ImmutableSortedSet.<String>reverseOrder()
         .add("a", "b", "c").build();
-    ASSERT.that(set).has().allOf("c", "b", "a").inOrder();
+    ASSERT.that(set).has().exactly("c", "b", "a").inOrder();
     assertEquals(Ordering.natural().reverse(), set.comparator());
   }
 
@@ -802,13 +775,13 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
   public void testSupertypeComparator() {
     SortedSet<Integer> set = new ImmutableSortedSet.Builder<Integer>(TO_STRING)
         .add(3, 12, 101, 44).build();
-    ASSERT.that(set).has().allOf(101, 12, 3, 44).inOrder();
+    ASSERT.that(set).has().exactly(101, 12, 3, 44).inOrder();
   }
 
   public void testSupertypeComparatorSubtypeElements() {
     SortedSet<Number> set = new ImmutableSortedSet.Builder<Number>(TO_STRING)
         .add(3, 12, 101, 44).build();
-    ASSERT.that(set).has().allOf(101, 12, 3, 44).inOrder();
+    ASSERT.that(set).has().exactly(101, 12, 3, 44).inOrder();
   }
 
   @Override <E extends Comparable<E>> ImmutableSortedSet.Builder<E> builder() {
@@ -929,7 +902,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     assertEquals(-1, list.lastIndexOf("chicken"));
   }
 
-  private static final <E> Iterator<E> asIterator(E... elements) {
+  private static <E> Iterator<E> asIterator(E... elements) {
     return asList(elements).iterator();
   }
 
@@ -950,7 +923,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     Arrays.sort(strings);
     for (int i = 0; i < strings.length; i++) {
       ASSERT.that(set.headSet(strings[i], true))
-          .has().allFrom(sortedNumberNames(0, i + 1)).inOrder();
+          .has().exactlyAs(sortedNumberNames(0, i + 1)).inOrder();
     }
   }
 
@@ -959,7 +932,8 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     ImmutableSortedSet<String> set = ImmutableSortedSet.copyOf(strings);
     Arrays.sort(strings);
     for (int i = 0; i < strings.length; i++) {
-      ASSERT.that(set.headSet(strings[i], false)).has().allFrom(sortedNumberNames(0, i)).inOrder();
+      ASSERT.that(set.headSet(strings[i], false)).has().exactlyAs(
+          sortedNumberNames(0, i)).inOrder();
     }
   }
 
@@ -968,7 +942,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     ImmutableSortedSet<String> set = ImmutableSortedSet.copyOf(strings);
     Arrays.sort(strings);
     for (int i = 0; i < strings.length; i++) {
-      ASSERT.that(set.tailSet(strings[i], true)).has().allFrom(
+      ASSERT.that(set.tailSet(strings[i], true)).has().exactlyAs(
           sortedNumberNames(i, strings.length)).inOrder();
     }
   }
@@ -978,7 +952,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     ImmutableSortedSet<String> set = ImmutableSortedSet.copyOf(strings);
     Arrays.sort(strings);
     for (int i = 0; i < strings.length; i++) {
-      ASSERT.that(set.tailSet(strings[i], false)).has().allFrom(
+      ASSERT.that(set.tailSet(strings[i], false)).has().exactlyAs(
           sortedNumberNames(i + 1, strings.length)).inOrder();
     }
   }
@@ -990,7 +964,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     for (int i = 0; i < strings.length; i++) {
       for (int j = i; j < strings.length; j++) {
         ASSERT.that(set.subSet(strings[i], false, strings[j], false))
-            .has().allFrom(sortedNumberNames(Math.min(i + 1, j), j)).inOrder();
+            .has().exactlyAs(sortedNumberNames(Math.min(i + 1, j), j)).inOrder();
       }
     }
   }
@@ -1002,7 +976,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     for (int i = 0; i < strings.length; i++) {
       for (int j = i; j < strings.length; j++) {
         ASSERT.that(set.subSet(strings[i], true, strings[j], false))
-            .has().allFrom(sortedNumberNames(i, j)).inOrder();
+            .has().exactlyAs(sortedNumberNames(i, j)).inOrder();
       }
     }
   }
@@ -1014,7 +988,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     for (int i = 0; i < strings.length; i++) {
       for (int j = i; j < strings.length; j++) {
         ASSERT.that(set.subSet(strings[i], false, strings[j], true))
-            .has().allFrom(sortedNumberNames(i + 1, j + 1)).inOrder();
+            .has().exactlyAs(sortedNumberNames(i + 1, j + 1)).inOrder();
       }
     }
   }
@@ -1026,7 +1000,7 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     for (int i = 0; i < strings.length; i++) {
       for (int j = i; j < strings.length; j++) {
         ASSERT.that(set.subSet(strings[i], true, strings[j], true))
-            .has().allFrom(sortedNumberNames(i, j + 1)).inOrder();
+            .has().exactlyAs(sortedNumberNames(i, j + 1)).inOrder();
       }
     }
   }
@@ -1059,13 +1033,4 @@ public class ImmutableSortedSetTest extends AbstractImmutableSetTest {
     ImmutableSortedSet.Builder<SuperComparableExample> natural = ImmutableSortedSet.naturalOrder();
     ImmutableSortedSet.Builder<SuperComparableExample> reverse = ImmutableSortedSet.reverseOrder();
   }
-
-  // Hack for JDK5 type inference.
-  private static class ASSERT {
-    private static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> that(
-        Collection<T> collection) {
-      return Truth.ASSERT.<T, Collection<T>>that(collection);
-    }
-  }
-
 }

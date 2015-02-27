@@ -141,7 +141,9 @@ public class AtomicDoubleArray implements java.io.Serializable {
    * the actual value was not equal to the expected value.
    */
   public final boolean compareAndSet(int i, double expect, double update) {
-    return longs.compareAndSet(i, doubleToRawLongBits(expect), doubleToRawLongBits(update));
+    return longs.compareAndSet(i,
+                               doubleToRawLongBits(expect),
+                               doubleToRawLongBits(update));
   }
 
   /**
@@ -162,7 +164,9 @@ public class AtomicDoubleArray implements java.io.Serializable {
    * @return true if successful
    */
   public final boolean weakCompareAndSet(int i, double expect, double update) {
-    return longs.weakCompareAndSet(i, doubleToRawLongBits(expect), doubleToRawLongBits(update));
+    return longs.weakCompareAndSet(i,
+                                   doubleToRawLongBits(expect),
+                                   doubleToRawLongBits(update));
   }
 
   /**
@@ -207,7 +211,6 @@ public class AtomicDoubleArray implements java.io.Serializable {
    * Returns the String representation of the current values of array.
    * @return the String representation of the current values of array
    */
-  @Override
   public String toString() {
     int iMax = length() - 1;
     if (iMax == -1) {
@@ -232,7 +235,8 @@ public class AtomicDoubleArray implements java.io.Serializable {
    * @serialData The length of the array is emitted (int), followed by all
    *             of its elements (each a {@code double}) in the proper order.
    */
-  private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException {
+  private void writeObject(java.io.ObjectOutputStream s)
+      throws java.io.IOException {
     s.defaultWriteObject();
 
     // Write out array length
@@ -248,8 +252,8 @@ public class AtomicDoubleArray implements java.io.Serializable {
   /**
    * Reconstitutes the instance from a stream (that is, deserializes it).
    */
-  private void readObject(java.io.ObjectInputStream s) throws java.io.IOException,
-      ClassNotFoundException {
+  private void readObject(java.io.ObjectInputStream s)
+      throws java.io.IOException, ClassNotFoundException {
     s.defaultReadObject();
 
     // Read in array length and allocate array

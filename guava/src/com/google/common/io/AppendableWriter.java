@@ -51,24 +51,22 @@ class AppendableWriter extends Writer {
    * Abstract methods from Writer
    */
 
-  @Override
-  public void write(char cbuf[], int off, int len) throws IOException {
+  @Override public void write(char cbuf[], int off, int len)
+      throws IOException {
     checkNotClosed();
     // It turns out that creating a new String is usually as fast, or faster
     // than wrapping cbuf in a light-weight CharSequence.
     target.append(new String(cbuf, off, len));
   }
 
-  @Override
-  public void flush() throws IOException {
+  @Override public void flush() throws IOException {
     checkNotClosed();
     if (target instanceof Flushable) {
       ((Flushable) target).flush();
     }
   }
 
-  @Override
-  public void close() throws IOException {
+  @Override public void close() throws IOException {
     this.closed = true;
     if (target instanceof Closeable) {
       ((Closeable) target).close();
@@ -80,41 +78,36 @@ class AppendableWriter extends Writer {
    * unnecessary strings.
    */
 
-  @Override
-  public void write(int c) throws IOException {
+  @Override public void write(int c) throws IOException {
     checkNotClosed();
     target.append((char) c);
   }
 
-  @Override
-  public void write(@Nullable String str) throws IOException {
+  @Override public void write(@Nullable String str) throws IOException {
     checkNotClosed();
     target.append(str);
   }
 
-  @Override
-  public void write(@Nullable String str, int off, int len) throws IOException {
+  @Override public void write(@Nullable String str, int off, int len) throws IOException {
     checkNotClosed();
     // tricky: append takes start, end pair...
     target.append(str, off, off + len);
   }
 
-  @Override
-  public Writer append(char c) throws IOException {
+  @Override public Writer append(char c) throws IOException {
     checkNotClosed();
     target.append(c);
     return this;
   }
 
-  @Override
-  public Writer append(@Nullable CharSequence charSeq) throws IOException {
+  @Override public Writer append(@Nullable CharSequence charSeq) throws IOException {
     checkNotClosed();
     target.append(charSeq);
     return this;
   }
 
-  @Override
-  public Writer append(@Nullable CharSequence charSeq, int start, int end) throws IOException {
+  @Override public Writer append(@Nullable CharSequence charSeq, int start, int end)
+      throws IOException {
     checkNotClosed();
     target.append(charSeq, start, end);
     return this;

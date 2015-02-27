@@ -25,6 +25,7 @@ import static com.google.common.collect.MapMakerInternalMapTest.checkEvictionQue
 import static com.google.common.collect.MapMakerInternalMapTest.checkExpirationTimes;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.collect.MapMaker.ComputingMapAdapter;
 import com.google.common.collect.MapMaker.RemovalCause;
 import com.google.common.collect.MapMakerInternalMap.ReferenceEntry;
@@ -34,6 +35,8 @@ import com.google.common.collect.MapMakerInternalMapTest.DummyValueReference;
 import com.google.common.collect.MapMakerInternalMapTest.QueuingRemovalListener;
 import com.google.common.testing.NullPointerTester;
 
+import junit.framework.TestCase;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -42,8 +45,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-
-import junit.framework.TestCase;
 
 /**
  * @author Charles Fry
@@ -71,12 +72,7 @@ public class ComputingConcurrentHashMapTest extends TestCase {
   // constructor tests
 
   public void testComputingFunction() {
-    Function<Object, Object> computingFunction = new Function<Object, Object>() {
-      @Override
-      public Object apply(Object from) {
-        return from;
-      }
-    };
+    Function<Object, Object> computingFunction = Functions.identity();
     ComputingConcurrentHashMap<Object, Object> map =
         makeComputingMap(createMapMaker(), computingFunction);
     assertSame(computingFunction, map.computingFunction);

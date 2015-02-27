@@ -24,21 +24,17 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
-import com.google.common.collect.testing.google.MultisetIteratorTester;
 import com.google.common.collect.testing.google.MultisetTestSuiteBuilder;
-import com.google.common.collect.testing.google.MultisetWritesTester;
 import com.google.common.collect.testing.google.SortedMultisetTestSuiteBuilder;
 import com.google.common.collect.testing.google.TestStringMultisetGenerator;
-import com.google.common.collect.testing.testers.CollectionIteratorTester;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Collection tests on wrappers from {@link Multisets}.
@@ -94,11 +90,9 @@ public class MultisetsCollectionTest extends TestCase {
         .withFeatures(CollectionSize.ANY,
             CollectionFeature.ALLOWS_NULL_VALUES,
             CollectionFeature.KNOWN_ORDER,
-            CollectionFeature.GENERAL_PURPOSE)
+            CollectionFeature.SUPPORTS_ADD,
+            CollectionFeature.SUPPORTS_REMOVE)
         .named("Multiset.filter[Multiset, Predicate]")
-        .suppressing(CollectionIteratorTester.getIteratorKnownOrderRemoveSupportedMethod(),
-            MultisetIteratorTester.getIteratorKnownOrderRemoveSupportedMethod(),
-            MultisetWritesTester.getEntrySetIteratorMethod())
         .createTestSuite());
 
     return suite;
@@ -240,7 +234,7 @@ public class MultisetsCollectionTest extends TestCase {
       @Override
       protected Multiset<String> create(String[] elements) {
         Multiset<String> multiset = LinkedHashMultiset.create();
-        multiset.addAll(Arrays.asList(elements));
+        Collections.addAll(multiset, elements);
         multiset.addAll(ELEMENTS_TO_FILTER_OUT);
         return Multisets.filter(multiset, PREDICATE);
       }

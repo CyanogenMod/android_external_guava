@@ -5,10 +5,10 @@
   <parent>
     <groupId>com.google.guava</groupId>
     <artifactId>guava-parent-jdk5</artifactId>
-    <version>14.0.1</version>
+    <version>17.0</version>
   </parent>
   <artifactId>guava-tests-jdk5</artifactId>
-  <name>Guava Unit Tests</name>
+  <name>Guava Unit Tests (JDK5 Backport)</name>
   <description>
     The unit tests for the Guava libraries - separated into a
     separate artifact to allow for the testlibs to depend on guava
@@ -16,74 +16,66 @@
   </description>
   <dependencies>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <version>1.3.9</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>guava-jdk5</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>guava-testlib-jdk5</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>guava-bootstrap-jdk5</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.8.2</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.easymock</groupId>
       <artifactId>easymock</artifactId>
-      <version>3.0</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>1.8.5</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.truth0</groupId>
       <artifactId>truth</artifactId>
-      <version>0.10</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <!-- Use current Guava being built in maven only -->
-          <groupId>${project.groupId}</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.google.caliper</groupId>
       <artifactId>caliper</artifactId>
-      <version>0.5-rc1</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
         <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
+          <!-- Prepend guava-bootstrap to avoid an API incompatibility between JDK5 and JDK6 -->
+          <compilerArgument>-Xbootclasspath/p:${project.build.directory}/dependency/guava-bootstrap-jdk5-${project.version}.jar</compilerArgument>
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>prep-guava-bootstrap</id>
+            <phase>process-sources</phase>
+            <goals><goal>copy-dependencies</goal></goals>
+            <configuration>
+              <includeArtifactIds>guava-bootstrap-jdk5</includeArtifactIds>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.1.2</version>
         <executions>
           <execution>
             <id>attach-test-sources</id>
@@ -92,6 +84,23 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.3.1</version>
+        <executions>
+          <execution>
+            <goals><goal>test-jar</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>animal-sniffer-maven-plugin</artifactId>
+      </plugin>
+      <!-- TODO(cpovirk): reenable after a matching Caliper snapshot is pushed to Maven Central
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -109,15 +118,7 @@
           </execution>
         </executions>
       </plugin>
+      -->
     </plugins>
-    <testResources>
-      <testResource>
-        <directory>${basedir}/test</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </testResource>
-    </testResources>
-    <testSourceDirectory>test</testSourceDirectory>
   </build>
 </project>

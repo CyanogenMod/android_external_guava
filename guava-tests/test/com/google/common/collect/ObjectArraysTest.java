@@ -16,16 +16,17 @@
 
 package com.google.common.collect;
 
+import static org.truth0.Truth.ASSERT;
+
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
-import com.google.common.testing.FluentAsserts;
 import com.google.common.testing.NullPointerTester;
+
+import junit.framework.TestCase;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
-
-import junit.framework.TestCase;
 
 /**
  * Unit test for {@code ObjectArrays}.
@@ -97,7 +98,7 @@ public class ObjectArraysTest extends TestCase {
     String[] result = ObjectArrays.concat(
         new String[0], new String[] { "a", "b" }, String.class);
     assertEquals(String[].class, result.getClass());
-    FluentAsserts.assertThat(result).has().allOf("a", "b").inOrder();
+    ASSERT.that(result).has().exactly("a", "b").inOrder();
   }
 
   @GwtIncompatible("ObjectArrays.concat(Object[], Object[], Class)")
@@ -105,7 +106,7 @@ public class ObjectArraysTest extends TestCase {
     String[] result = ObjectArrays.concat(
         new String[] { "a", "b" }, new String[0], String.class);
     assertEquals(String[].class, result.getClass());
-    FluentAsserts.assertThat(result).has().allOf("a", "b").inOrder();
+    ASSERT.that(result).has().exactly("a", "b").inOrder();
   }
 
   @GwtIncompatible("ObjectArrays.concat(Object[], Object[], Class)")
@@ -113,7 +114,7 @@ public class ObjectArraysTest extends TestCase {
     String[] result = ObjectArrays.concat(
         new String[] { "a", "b" }, new String[] { "c", "d" }, String.class);
     assertEquals(String[].class, result.getClass());
-    FluentAsserts.assertThat(result).has().allOf("a", "b", "c", "d").inOrder();
+    ASSERT.that(result).has().exactly("a", "b", "c", "d").inOrder();
   }
 
   @GwtIncompatible("ObjectArrays.concat(Object[], Object[], Class)")
@@ -151,8 +152,8 @@ public class ObjectArraysTest extends TestCase {
 
   private void doTestToArrayImpl2(List<Integer> list, Integer[] array1,
       boolean expectModify) {
-    Integer[] starting = Platform.clone(array1);
-    Integer[] array2 = Platform.clone(array1);
+    Integer[] starting = ObjectArrays.arraysCopyOf(array1, array1.length);
+    Integer[] array2 = ObjectArrays.arraysCopyOf(array1, array1.length);
     Object[] reference = list.toArray(array1);
 
     Object[] target = ObjectArrays.toArrayImpl(list, array2);
@@ -169,32 +170,32 @@ public class ObjectArraysTest extends TestCase {
 
   public void testPrependZeroElements() {
     String[] result = ObjectArrays.concat("foo", new String[] {});
-    FluentAsserts.assertThat(result).has().item("foo");
+    ASSERT.that(result).has().item("foo");
   }
 
   public void testPrependOneElement() {
     String[] result = ObjectArrays.concat("foo", new String[] { "bar" });
-    FluentAsserts.assertThat(result).has().allOf("foo", "bar").inOrder();
+    ASSERT.that(result).has().exactly("foo", "bar").inOrder();
   }
 
   public void testPrependTwoElements() {
     String[] result = ObjectArrays.concat("foo", new String[] { "bar", "baz" });
-    FluentAsserts.assertThat(result).has().allOf("foo", "bar", "baz").inOrder();
+    ASSERT.that(result).has().exactly("foo", "bar", "baz").inOrder();
   }
 
   public void testAppendZeroElements() {
     String[] result = ObjectArrays.concat(new String[] {}, "foo");
-    FluentAsserts.assertThat(result).has().item("foo");
+    ASSERT.that(result).has().item("foo");
   }
 
   public void testAppendOneElement() {
     String[] result = ObjectArrays.concat(new String[] { "foo" }, "bar");
-    FluentAsserts.assertThat(result).has().allOf("foo", "bar").inOrder();
+    ASSERT.that(result).has().exactly("foo", "bar").inOrder();
   }
 
   public void testAppendTwoElements() {
     String[] result = ObjectArrays.concat(new String[] { "foo", "bar" }, "baz");
-    FluentAsserts.assertThat(result).has().allOf("foo", "bar", "baz").inOrder();
+    ASSERT.that(result).has().exactly("foo", "bar", "baz").inOrder();
   }
 
   public void testEmptyArrayToEmpty() {
@@ -216,20 +217,6 @@ public class ObjectArraysTest extends TestCase {
   public void testNonEmptyToLonger() {
     checkArrayEquals(new String[10],
         ObjectArrays.newArray(new String[] { "a", "b", "c", "d", "e" }, 10));
-  }
-
-  public void testCloneEmptyArray() {
-    checkArrayEquals(new String[0], Platform.clone(new String[0]));
-  }
-
-  public void testCloneSingletonArray() {
-    checkArrayEquals(
-        new String[] { "a" }, Platform.clone(new String[] { "a" }));
-  }
-  
-  public void testCloneMultipleElementArray() {
-    checkArrayEquals(
-        new String[] { "a", "b", "c" }, Platform.clone(new String[] { "a", "b", "c" }));
   }
 
   private static void checkArrayEquals(Object[] expected, Object[] actual) {

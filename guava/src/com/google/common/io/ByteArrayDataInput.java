@@ -33,33 +33,33 @@ import java.io.IOException;
  * @since 1.0
  */
 public interface ByteArrayDataInput extends DataInput {
-  void readFully(byte b[]);
+  @Override void readFully(byte b[]);
 
-  void readFully(byte b[], int off, int len);
+  @Override void readFully(byte b[], int off, int len);
 
-  int skipBytes(int n);
+  @Override int skipBytes(int n);
 
-  boolean readBoolean();
+  @Override boolean readBoolean();
 
-  byte readByte();
+  @Override byte readByte();
 
-  int readUnsignedByte();
+  @Override int readUnsignedByte();
 
-  short readShort();
+  @Override short readShort();
 
-  int readUnsignedShort();
+  @Override int readUnsignedShort();
 
-  char readChar();
+  @Override char readChar();
 
-  int readInt();
+  @Override int readInt();
 
-  long readLong();
+  @Override long readLong();
 
-  float readFloat();
+  @Override float readFloat();
 
-  double readDouble();
+  @Override double readDouble();
 
-  String readLine();
+  @Override String readLine();
 
-  String readUTF();
+  @Override String readUTF();
 }

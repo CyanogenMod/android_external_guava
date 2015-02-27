@@ -16,9 +16,9 @@
 
 package com.google.common.collect;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.base.Function;
 import com.google.common.collect.ForwardingQueue;
 import com.google.common.collect.MinMaxPriorityQueue;
@@ -35,7 +35,7 @@ import java.util.Random;
  * 
  * @author Sverre Sundsdal
  */
-public class MinMaxPriorityQueueBenchmark extends SimpleBenchmark {
+public class MinMaxPriorityQueueBenchmark {
   @Param private ComparatorType comparator;
 
   // TODO(kevinb): add 1000000 back when we have the ability to throw
@@ -48,21 +48,21 @@ public class MinMaxPriorityQueueBenchmark extends SimpleBenchmark {
 
   private final Random random = new Random();
 
-  @Override public void setUp() {
+  @BeforeExperiment void setUp() {
     queue = heap.create(comparator.get());
     for (int i = 0; i < size; i++) {
       queue.add(random.nextInt());
     }
   }
   
-  public void timePollAndAdd(int reps) {
+  @Benchmark void pollAndAdd(int reps) {
     for (int i = 0; i < reps; i++) {
       // TODO(kevinb): precompute random #s?
       queue.add(queue.poll() ^ random.nextInt()); 
     }
   }
 
-  public void timePopulate(int reps) {
+  @Benchmark void populate(int reps) {
     for (int i = 0; i < reps; i++) {
       queue.clear();
       for (int j = 0; j < size; j++) {
@@ -146,9 +146,5 @@ public class MinMaxPriorityQueueBenchmark extends SimpleBenchmark {
       }
     };
     public abstract Comparator<Integer> get();
-  }
-
-  public static void main(String [] args) {
-    Runner.main(MinMaxPriorityQueueBenchmark.class, args);
   }
 }

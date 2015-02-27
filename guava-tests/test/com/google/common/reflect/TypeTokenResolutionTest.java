@@ -21,6 +21,8 @@ import static org.truth0.Truth.ASSERT;
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
 
+import junit.framework.TestCase;
+
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -29,8 +31,6 @@ import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import junit.framework.TestCase;
 
 /**
  * Unit test for {@link TypeToken} and {@link TypeResolver}.
@@ -124,7 +124,7 @@ public class TypeTokenResolutionTest extends TestCase {
         parameterized.parameterizedType());
     assertEquals(TypeTokenResolutionTest.class, resolved.getOwnerType());
     assertEquals(Bar.class, resolved.getRawType());
-    ASSERT.<Type, List<Type>>that(resolved.getActualTypeArguments()).has().item(String.class);
+    ASSERT.that(resolved.getActualTypeArguments()).has().item(String.class);
   }
   
   private interface StringListPredicate extends Predicate<List<String>> {}
@@ -543,5 +543,21 @@ public class TypeTokenResolutionTest extends TestCase {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public void testTwoStageResolution() {
+    class ForTwoStageResolution<A extends Number> {
+      <B extends A> void verifyTwoStageResolution() {
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        Type type = new TypeToken<B>(getClass()) {}
+            // B's bound may have already resolved to something.
+            // Make sure it can still further resolve when given a context.
+            .where(new TypeParameter<B>() {}, (Class) Integer.class)
+            .getType();
+        assertEquals(Integer.class, type);
+      }
+    }
+    new ForTwoStageResolution<Integer>().verifyTwoStageResolution();
+    new ForTwoStageResolution<Integer>() {}.verifyTwoStageResolution();
   }
 }

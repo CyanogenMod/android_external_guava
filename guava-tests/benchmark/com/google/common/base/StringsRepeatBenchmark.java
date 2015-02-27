@@ -16,9 +16,9 @@
 
 package com.google.common.base;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.base.Strings;
 
 /**
@@ -26,17 +26,17 @@ import com.google.common.base.Strings;
  *
  * @author Mike Cripps
  */
-public class StringsRepeatBenchmark extends SimpleBenchmark {
+public class StringsRepeatBenchmark {
   @Param({"1", "5", "25", "125"}) int count;
   @Param({"1", "10"}) int length;
 
   private String originalString;
 
-  @Override protected void setUp() {
+  @BeforeExperiment void setUp() {
     originalString = Strings.repeat("x", length);
   }
 
-  public void timeOldRepeat(int reps) {
+  @Benchmark void oldRepeat(int reps) {
     for (int i = 0; i < reps; i++) {
       String x = oldRepeat(originalString, count);
       if (x.length() != (originalString.length() * count)) {
@@ -44,7 +44,7 @@ public class StringsRepeatBenchmark extends SimpleBenchmark {
       }
     }
   }
-  public void timeMikeRepeat(int reps) {
+  @Benchmark void mikeRepeat(int reps) {
     for (int i = 0; i < reps; i++) {
       String x = mikeRepeat(originalString, count);
       if (x.length() != (originalString.length() * count)) {
@@ -52,7 +52,7 @@ public class StringsRepeatBenchmark extends SimpleBenchmark {
       }
     }
   }
-  public void timeMartinRepeat(int reps) {
+  @Benchmark void martinRepeat(int reps) {
     for (int i = 0; i < reps; i++) {
       String x = martinRepeat(originalString, count);
       if (x.length() != (originalString.length() * count)) {
@@ -61,7 +61,7 @@ public class StringsRepeatBenchmark extends SimpleBenchmark {
     }
   }
 
-  private static final String mikeRepeat(String string, int count) {
+  private static String mikeRepeat(String string, int count) {
     final int len = string.length();
     char[] strCopy = new char[len * Integer.highestOneBit(count)];
     string.getChars(0, len, strCopy, 0);
@@ -84,7 +84,7 @@ public class StringsRepeatBenchmark extends SimpleBenchmark {
     return new String(array);
   }
 
-  private static final String oldRepeat(String string, int count) {
+  private static String oldRepeat(String string, int count) {
     // If this multiplication overflows, a NegativeArraySizeException or
     // OutOfMemoryError is not far behind
     final int len = string.length();
@@ -96,7 +96,7 @@ public class StringsRepeatBenchmark extends SimpleBenchmark {
     return new String(array);
   }
 
-  private static final String martinRepeat(String string, int count) {
+  private static String martinRepeat(String string, int count) {
     final int len = string.length();
     final int size = len * count;
     final char[] array = new char[size];
@@ -108,9 +108,4 @@ public class StringsRepeatBenchmark extends SimpleBenchmark {
     System.arraycopy(array, 0, array, n, size - n);
     return new String(array);
   }
-
-  public static void main(String[] args) {
-    Runner.main(StringsRepeatBenchmark.class, args);
-  }
-
 }

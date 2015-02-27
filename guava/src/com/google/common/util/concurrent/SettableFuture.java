@@ -48,7 +48,6 @@ public final class SettableFuture<V> extends AbstractFuture<V> {
    * @param value the value the future should hold.
    * @return true if the value was successfully set.
    */
-
   @Override
   public boolean set(@Nullable V value) {
     return super.set(value);
@@ -64,7 +63,6 @@ public final class SettableFuture<V> extends AbstractFuture<V> {
    * @param throwable the exception the future should hold.
    * @return true if the exception was successfully set.
    */
-
   @Override
   public boolean setException(Throwable throwable) {
     return super.setException(throwable);

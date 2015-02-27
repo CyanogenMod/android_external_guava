@@ -15,7 +15,7 @@
 package com.google.common.collect;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.CollectPreconditions.checkRemove;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Equivalence;
@@ -68,8 +68,8 @@ import javax.annotation.concurrent.GuardedBy;
  * @author Charles Fry
  * @author Doug Lea ({@code ConcurrentHashMap})
  */
-class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V>,
-    Serializable {
+class MapMakerInternalMap<K, V>
+    extends AbstractMap<K, V> implements ConcurrentMap<K, V>, Serializable {
 
   /*
    * The basic strategy is to subdivide the table among Segments, each of which itself is a
@@ -209,8 +209,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     ticker = builder.getTicker();
 
     removalListener = builder.getRemovalListener();
-    removalNotificationQueue = (removalListener == NullListener.INSTANCE) ? MapMakerInternalMap
-        .<RemovalNotification<K, V>> discardingQueue()
+    removalNotificationQueue = (removalListener == NullListener.INSTANCE)
+        ? MapMakerInternalMap.<RemovalNotification<K, V>>discardingQueue()
         : new ConcurrentLinkedQueue<RemovalNotification<K, V>>();
 
     int initialCapacity = Math.min(builder.getInitialCapacity(), MAXIMUM_CAPACITY);
@@ -223,7 +223,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     // && (concurrencyLevel > maximumSize || segmentCount > concurrencyLevel)
     int segmentShift = 0;
     int segmentCount = 1;
-    while (segmentCount < concurrencyLevel && (!evictsBySize() || segmentCount * 2 <= maximumSize)) {
+    while (segmentCount < concurrencyLevel
+        && (!evictsBySize() || segmentCount * 2 <= maximumSize)) {
       ++segmentShift;
       segmentCount <<= 1;
     }
@@ -250,11 +251,13 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
         if (i == remainder) {
           maximumSegmentSize--;
         }
-        this.segments[i] = createSegment(segmentSize, maximumSegmentSize);
+        this.segments[i] =
+            createSegment(segmentSize, maximumSegmentSize);
       }
     } else {
       for (int i = 0; i < this.segments.length; ++i) {
-        this.segments[i] = createSegment(segmentSize, MapMaker.UNSET_INT);
+        this.segments[i] =
+            createSegment(segmentSize, MapMaker.UNSET_INT);
       }
     }
   }
@@ -290,10 +293,9 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
      */
 
     STRONG {
-
       @Override
-      <K, V> ValueReference<K, V> referenceValue(Segment<K, V> segment, ReferenceEntry<K, V> entry,
-          V value) {
+      <K, V> ValueReference<K, V> referenceValue(
+          Segment<K, V> segment, ReferenceEntry<K, V> entry, V value) {
         return new StrongValueReference<K, V>(value);
       }
 
@@ -304,10 +306,9 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     },
 
     SOFT {
-
       @Override
-      <K, V> ValueReference<K, V> referenceValue(Segment<K, V> segment, ReferenceEntry<K, V> entry,
-          V value) {
+      <K, V> ValueReference<K, V> referenceValue(
+          Segment<K, V> segment, ReferenceEntry<K, V> entry, V value) {
         return new SoftValueReference<K, V>(segment.valueReferenceQueue, value, entry);
       }
 
@@ -318,10 +319,9 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     },
 
     WEAK {
-
       @Override
-      <K, V> ValueReference<K, V> referenceValue(Segment<K, V> segment, ReferenceEntry<K, V> entry,
-          V value) {
+      <K, V> ValueReference<K, V> referenceValue(
+          Segment<K, V> segment, ReferenceEntry<K, V> entry, V value) {
         return new WeakValueReference<K, V>(segment.valueReferenceQueue, value, entry);
       }
 
@@ -334,8 +334,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     /**
      * Creates a reference for the given value according to this value strength.
      */
-    abstract <K, V> ValueReference<K, V> referenceValue(Segment<K, V> segment,
-        ReferenceEntry<K, V> entry, V value);
+    abstract <K, V> ValueReference<K, V> referenceValue(
+        Segment<K, V> segment, ReferenceEntry<K, V> entry, V value);
 
     /**
      * Returns the default equivalence strategy used to compare and hash keys or values referenced
@@ -350,56 +350,52 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
    */
   enum EntryFactory {
     STRONG {
-
       @Override
-      <K, V> ReferenceEntry<K, V> newEntry(Segment<K, V> segment, K key, int hash,
-          @Nullable ReferenceEntry<K, V> next) {
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
         return new StrongEntry<K, V>(key, hash, next);
       }
     },
     STRONG_EXPIRABLE {
-
       @Override
-      <K, V> ReferenceEntry<K, V> newEntry(Segment<K, V> segment, K key, int hash,
-          @Nullable ReferenceEntry<K, V> next) {
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
         return new StrongExpirableEntry<K, V>(key, hash, next);
       }
 
       @Override
-      <K, V> ReferenceEntry<K, V> copyEntry(Segment<K, V> segment, ReferenceEntry<K, V> original,
-          ReferenceEntry<K, V> newNext) {
+      <K, V> ReferenceEntry<K, V> copyEntry(
+          Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
         ReferenceEntry<K, V> newEntry = super.copyEntry(segment, original, newNext);
         copyExpirableEntry(original, newEntry);
         return newEntry;
       }
     },
     STRONG_EVICTABLE {
-
       @Override
-      <K, V> ReferenceEntry<K, V> newEntry(Segment<K, V> segment, K key, int hash,
-          @Nullable ReferenceEntry<K, V> next) {
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
         return new StrongEvictableEntry<K, V>(key, hash, next);
       }
 
       @Override
-      <K, V> ReferenceEntry<K, V> copyEntry(Segment<K, V> segment, ReferenceEntry<K, V> original,
-          ReferenceEntry<K, V> newNext) {
+      <K, V> ReferenceEntry<K, V> copyEntry(
+          Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
         ReferenceEntry<K, V> newEntry = super.copyEntry(segment, original, newNext);
         copyEvictableEntry(original, newEntry);
         return newEntry;
       }
     },
     STRONG_EXPIRABLE_EVICTABLE {
-
       @Override
-      <K, V> ReferenceEntry<K, V> newEntry(Segment<K, V> segment, K key, int hash,
-          @Nullable ReferenceEntry<K, V> next) {
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
         return new StrongExpirableEvictableEntry<K, V>(key, hash, next);
       }
 
       @Override
-      <K, V> ReferenceEntry<K, V> copyEntry(Segment<K, V> segment, ReferenceEntry<K, V> original,
-          ReferenceEntry<K, V> newNext) {
+      <K, V> ReferenceEntry<K, V> copyEntry(
+          Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
         ReferenceEntry<K, V> newEntry = super.copyEntry(segment, original, newNext);
         copyExpirableEntry(original, newEntry);
         copyEvictableEntry(original, newEntry);
@@ -408,56 +404,52 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     },
 
     WEAK {
-
       @Override
-      <K, V> ReferenceEntry<K, V> newEntry(Segment<K, V> segment, K key, int hash,
-          @Nullable ReferenceEntry<K, V> next) {
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
         return new WeakEntry<K, V>(segment.keyReferenceQueue, key, hash, next);
       }
     },
     WEAK_EXPIRABLE {
-
       @Override
-      <K, V> ReferenceEntry<K, V> newEntry(Segment<K, V> segment, K key, int hash,
-          @Nullable ReferenceEntry<K, V> next) {
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
         return new WeakExpirableEntry<K, V>(segment.keyReferenceQueue, key, hash, next);
       }
 
       @Override
-      <K, V> ReferenceEntry<K, V> copyEntry(Segment<K, V> segment, ReferenceEntry<K, V> original,
-          ReferenceEntry<K, V> newNext) {
+      <K, V> ReferenceEntry<K, V> copyEntry(
+          Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
         ReferenceEntry<K, V> newEntry = super.copyEntry(segment, original, newNext);
         copyExpirableEntry(original, newEntry);
         return newEntry;
       }
     },
     WEAK_EVICTABLE {
-
       @Override
-      <K, V> ReferenceEntry<K, V> newEntry(Segment<K, V> segment, K key, int hash,
-          @Nullable ReferenceEntry<K, V> next) {
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
         return new WeakEvictableEntry<K, V>(segment.keyReferenceQueue, key, hash, next);
       }
 
       @Override
-      <K, V> ReferenceEntry<K, V> copyEntry(Segment<K, V> segment, ReferenceEntry<K, V> original,
-          ReferenceEntry<K, V> newNext) {
+      <K, V> ReferenceEntry<K, V> copyEntry(
+          Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
         ReferenceEntry<K, V> newEntry = super.copyEntry(segment, original, newNext);
         copyEvictableEntry(original, newEntry);
         return newEntry;
       }
     },
     WEAK_EXPIRABLE_EVICTABLE {
-
       @Override
-      <K, V> ReferenceEntry<K, V> newEntry(Segment<K, V> segment, K key, int hash,
-          @Nullable ReferenceEntry<K, V> next) {
+      <K, V> ReferenceEntry<K, V> newEntry(
+          Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
         return new WeakExpirableEvictableEntry<K, V>(segment.keyReferenceQueue, key, hash, next);
       }
 
       @Override
-      <K, V> ReferenceEntry<K, V> copyEntry(Segment<K, V> segment, ReferenceEntry<K, V> original,
-          ReferenceEntry<K, V> newNext) {
+      <K, V> ReferenceEntry<K, V> copyEntry(
+          Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
         ReferenceEntry<K, V> newEntry = super.copyEntry(segment, original, newNext);
         copyExpirableEntry(original, newEntry);
         copyEvictableEntry(original, newEntry);
@@ -495,8 +487,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
      * @param hash of the key
      * @param next entry in the same bucket
      */
-    abstract <K, V> ReferenceEntry<K, V> newEntry(Segment<K, V> segment, K key, int hash,
-        @Nullable ReferenceEntry<K, V> next);
+    abstract <K, V> ReferenceEntry<K, V> newEntry(
+        Segment<K, V> segment, K key, int hash, @Nullable ReferenceEntry<K, V> next);
 
     /**
      * Copies an entry, assigning it a new {@code next} entry.
@@ -505,8 +497,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
      * @param newNext entry in the same bucket
      */
     @GuardedBy("Segment.this")
-    <K, V> ReferenceEntry<K, V> copyEntry(Segment<K, V> segment, ReferenceEntry<K, V> original,
-        ReferenceEntry<K, V> newNext) {
+    <K, V> ReferenceEntry<K, V> copyEntry(
+        Segment<K, V> segment, ReferenceEntry<K, V> original, ReferenceEntry<K, V> newNext) {
       return newEntry(segment, original.getKey(), original.getHash(), newNext);
     }
 
@@ -561,8 +553,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
      *
      * <p>{@code value} may be null only for a loading reference.
      */
-    ValueReference<K, V> copyFor(ReferenceQueue<V> queue, @Nullable V value,
-        ReferenceEntry<K, V> entry);
+    ValueReference<K, V> copyFor(
+        ReferenceQueue<V> queue, @Nullable V value, ReferenceEntry<K, V> entry);
 
     /**
      * Clears this reference object.
@@ -584,36 +576,40 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
    * Placeholder. Indicates that the value hasn't been set yet.
    */
   static final ValueReference<Object, Object> UNSET = new ValueReference<Object, Object>() {
-
+    @Override
     public Object get() {
       return null;
     }
 
+    @Override
     public ReferenceEntry<Object, Object> getEntry() {
       return null;
     }
 
+    @Override
     public ValueReference<Object, Object> copyFor(ReferenceQueue<Object> queue,
         @Nullable Object value, ReferenceEntry<Object, Object> entry) {
       return this;
     }
 
+    @Override
     public boolean isComputingReference() {
       return false;
     }
 
+    @Override
     public Object waitForValue() {
       return null;
     }
 
+    @Override
     public void clear(ValueReference<Object, Object> newValue) {}
   };
 
   /**
    * Singleton placeholder that indicates a value is being computed.
    */
-  @SuppressWarnings("unchecked")
-  // impl never uses a parameter or returns any non-null value
+  @SuppressWarnings("unchecked") // impl never uses a parameter or returns any non-null value
   static <K, V> ValueReference<K, V> unset() {
     return (ValueReference<K, V>) UNSET;
   }
@@ -723,134 +719,164 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
   private enum NullEntry implements ReferenceEntry<Object, Object> {
     INSTANCE;
 
+    @Override
     public ValueReference<Object, Object> getValueReference() {
       return null;
     }
 
+    @Override
     public void setValueReference(ValueReference<Object, Object> valueReference) {}
 
+    @Override
     public ReferenceEntry<Object, Object> getNext() {
       return null;
     }
 
+    @Override
     public int getHash() {
       return 0;
     }
 
+    @Override
     public Object getKey() {
       return null;
     }
 
+    @Override
     public long getExpirationTime() {
       return 0;
     }
 
+    @Override
     public void setExpirationTime(long time) {}
 
+    @Override
     public ReferenceEntry<Object, Object> getNextExpirable() {
       return this;
     }
 
+    @Override
     public void setNextExpirable(ReferenceEntry<Object, Object> next) {}
 
+    @Override
     public ReferenceEntry<Object, Object> getPreviousExpirable() {
       return this;
     }
 
+    @Override
     public void setPreviousExpirable(ReferenceEntry<Object, Object> previous) {}
 
+    @Override
     public ReferenceEntry<Object, Object> getNextEvictable() {
       return this;
     }
 
+    @Override
     public void setNextEvictable(ReferenceEntry<Object, Object> next) {}
 
+    @Override
     public ReferenceEntry<Object, Object> getPreviousEvictable() {
       return this;
     }
 
+    @Override
     public void setPreviousEvictable(ReferenceEntry<Object, Object> previous) {}
   }
 
   abstract static class AbstractReferenceEntry<K, V> implements ReferenceEntry<K, V> {
-
+    @Override
     public ValueReference<K, V> getValueReference() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setValueReference(ValueReference<K, V> valueReference) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getNext() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public int getHash() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public K getKey() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public long getExpirationTime() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setExpirationTime(long time) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getNextExpirable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setNextExpirable(ReferenceEntry<K, V> next) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getPreviousExpirable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setPreviousExpirable(ReferenceEntry<K, V> previous) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getNextEvictable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setNextEvictable(ReferenceEntry<K, V> next) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getPreviousEvictable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setPreviousEvictable(ReferenceEntry<K, V> previous) {
       throw new UnsupportedOperationException();
     }
   }
 
-  @SuppressWarnings("unchecked")
-  // impl never uses a parameter or returns any non-null value
+  @SuppressWarnings("unchecked") // impl never uses a parameter or returns any non-null value
   static <K, V> ReferenceEntry<K, V> nullEntry() {
     return (ReferenceEntry<K, V>) NullEntry.INSTANCE;
   }
 
   static final Queue<? extends Object> DISCARDING_QUEUE = new AbstractQueue<Object>() {
-
+    @Override
     public boolean offer(Object o) {
       return true;
     }
 
+    @Override
     public Object peek() {
       return null;
     }
 
+    @Override
     public Object poll() {
       return null;
     }
@@ -869,8 +895,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
   /**
    * Queue that discards all elements.
    */
-  @SuppressWarnings("unchecked")
-  // impl never uses a parameter or returns any non-null value
+  @SuppressWarnings("unchecked") // impl never uses a parameter or returns any non-null value
   static <E> Queue<E> discardingQueue() {
     return (Queue) DISCARDING_QUEUE;
   }
@@ -895,50 +920,61 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       this.next = next;
     }
 
+    @Override
     public K getKey() {
       return this.key;
     }
 
     // null expiration
 
+    @Override
     public long getExpirationTime() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setExpirationTime(long time) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getNextExpirable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setNextExpirable(ReferenceEntry<K, V> next) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getPreviousExpirable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setPreviousExpirable(ReferenceEntry<K, V> previous) {
       throw new UnsupportedOperationException();
     }
 
     // null eviction
 
+    @Override
     public ReferenceEntry<K, V> getNextEvictable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setNextEvictable(ReferenceEntry<K, V> next) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getPreviousEvictable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setPreviousEvictable(ReferenceEntry<K, V> previous) {
       throw new UnsupportedOperationException();
     }
@@ -949,27 +985,31 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     final ReferenceEntry<K, V> next;
     volatile ValueReference<K, V> valueReference = unset();
 
+    @Override
     public ValueReference<K, V> getValueReference() {
       return valueReference;
     }
 
+    @Override
     public void setValueReference(ValueReference<K, V> valueReference) {
       ValueReference<K, V> previous = this.valueReference;
       this.valueReference = valueReference;
       previous.clear(valueReference);
     }
 
+    @Override
     public int getHash() {
       return hash;
     }
 
+    @Override
     public ReferenceEntry<K, V> getNext() {
       return next;
     }
   }
 
-  static final class StrongExpirableEntry<K, V> extends StrongEntry<K, V> implements
-      ReferenceEntry<K, V> {
+  static final class StrongExpirableEntry<K, V> extends StrongEntry<K, V>
+      implements ReferenceEntry<K, V> {
     StrongExpirableEntry(K key, int hash, @Nullable ReferenceEntry<K, V> next) {
       super(key, hash, next);
     }
@@ -1015,8 +1055,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     }
   }
 
-  static final class StrongEvictableEntry<K, V> extends StrongEntry<K, V> implements
-      ReferenceEntry<K, V> {
+  static final class StrongEvictableEntry<K, V>
+      extends StrongEntry<K, V> implements ReferenceEntry<K, V> {
     StrongEvictableEntry(K key, int hash, @Nullable ReferenceEntry<K, V> next) {
       super(key, hash, next);
     }
@@ -1050,8 +1090,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     }
   }
 
-  static final class StrongExpirableEvictableEntry<K, V> extends StrongEntry<K, V> implements
-      ReferenceEntry<K, V> {
+  static final class StrongExpirableEvictableEntry<K, V>
+      extends StrongEntry<K, V> implements ReferenceEntry<K, V> {
     StrongExpirableEvictableEntry(K key, int hash, @Nullable ReferenceEntry<K, V> next) {
       super(key, hash, next);
     }
@@ -1135,50 +1175,60 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       this.next = next;
     }
 
+    @Override
     public K getKey() {
       return get();
     }
 
     // null expiration
-
+    @Override
     public long getExpirationTime() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setExpirationTime(long time) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getNextExpirable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setNextExpirable(ReferenceEntry<K, V> next) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getPreviousExpirable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setPreviousExpirable(ReferenceEntry<K, V> previous) {
       throw new UnsupportedOperationException();
     }
 
     // null eviction
 
+    @Override
     public ReferenceEntry<K, V> getNextEvictable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setNextEvictable(ReferenceEntry<K, V> next) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getPreviousEvictable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setPreviousEvictable(ReferenceEntry<K, V> previous) {
       throw new UnsupportedOperationException();
     }
@@ -1189,28 +1239,33 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     final ReferenceEntry<K, V> next;
     volatile ValueReference<K, V> valueReference = unset();
 
+    @Override
     public ValueReference<K, V> getValueReference() {
       return valueReference;
     }
 
+    @Override
     public void setValueReference(ValueReference<K, V> valueReference) {
       ValueReference<K, V> previous = this.valueReference;
       this.valueReference = valueReference;
       previous.clear(valueReference);
     }
 
+    @Override
     public int getHash() {
       return hash;
     }
 
+    @Override
     public ReferenceEntry<K, V> getNext() {
       return next;
     }
   }
 
-  static final class SoftExpirableEntry<K, V> extends SoftEntry<K, V> implements
-      ReferenceEntry<K, V> {
-    SoftExpirableEntry(ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
+  static final class SoftExpirableEntry<K, V>
+      extends SoftEntry<K, V> implements ReferenceEntry<K, V> {
+    SoftExpirableEntry(
+        ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
       super(queue, key, hash, next);
     }
 
@@ -1255,9 +1310,10 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     }
   }
 
-  static final class SoftEvictableEntry<K, V> extends SoftEntry<K, V> implements
-      ReferenceEntry<K, V> {
-    SoftEvictableEntry(ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
+  static final class SoftEvictableEntry<K, V>
+      extends SoftEntry<K, V> implements ReferenceEntry<K, V> {
+    SoftEvictableEntry(
+        ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
       super(queue, key, hash, next);
     }
 
@@ -1290,10 +1346,10 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     }
   }
 
-  static final class SoftExpirableEvictableEntry<K, V> extends SoftEntry<K, V> implements
-      ReferenceEntry<K, V> {
-    SoftExpirableEvictableEntry(ReferenceQueue<K> queue, K key, int hash,
-        @Nullable ReferenceEntry<K, V> next) {
+  static final class SoftExpirableEvictableEntry<K, V>
+      extends SoftEntry<K, V> implements ReferenceEntry<K, V> {
+    SoftExpirableEvictableEntry(
+        ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
       super(queue, key, hash, next);
     }
 
@@ -1376,50 +1432,61 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       this.next = next;
     }
 
+    @Override
     public K getKey() {
       return get();
     }
 
     // null expiration
 
+    @Override
     public long getExpirationTime() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setExpirationTime(long time) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getNextExpirable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setNextExpirable(ReferenceEntry<K, V> next) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getPreviousExpirable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setPreviousExpirable(ReferenceEntry<K, V> previous) {
       throw new UnsupportedOperationException();
     }
 
     // null eviction
 
+    @Override
     public ReferenceEntry<K, V> getNextEvictable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setNextEvictable(ReferenceEntry<K, V> next) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public ReferenceEntry<K, V> getPreviousEvictable() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setPreviousEvictable(ReferenceEntry<K, V> previous) {
       throw new UnsupportedOperationException();
     }
@@ -1430,28 +1497,33 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     final ReferenceEntry<K, V> next;
     volatile ValueReference<K, V> valueReference = unset();
 
+    @Override
     public ValueReference<K, V> getValueReference() {
       return valueReference;
     }
 
+    @Override
     public void setValueReference(ValueReference<K, V> valueReference) {
       ValueReference<K, V> previous = this.valueReference;
       this.valueReference = valueReference;
       previous.clear(valueReference);
     }
 
+    @Override
     public int getHash() {
       return hash;
     }
 
+    @Override
     public ReferenceEntry<K, V> getNext() {
       return next;
     }
   }
 
-  static final class WeakExpirableEntry<K, V> extends WeakEntry<K, V> implements
-      ReferenceEntry<K, V> {
-    WeakExpirableEntry(ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
+  static final class WeakExpirableEntry<K, V>
+      extends WeakEntry<K, V> implements ReferenceEntry<K, V> {
+    WeakExpirableEntry(
+        ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
       super(queue, key, hash, next);
     }
 
@@ -1496,9 +1568,10 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     }
   }
 
-  static final class WeakEvictableEntry<K, V> extends WeakEntry<K, V> implements
-      ReferenceEntry<K, V> {
-    WeakEvictableEntry(ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
+  static final class WeakEvictableEntry<K, V>
+      extends WeakEntry<K, V> implements ReferenceEntry<K, V> {
+    WeakEvictableEntry(
+        ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
       super(queue, key, hash, next);
     }
 
@@ -1531,10 +1604,10 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     }
   }
 
-  static final class WeakExpirableEvictableEntry<K, V> extends WeakEntry<K, V> implements
-      ReferenceEntry<K, V> {
-    WeakExpirableEvictableEntry(ReferenceQueue<K> queue, K key, int hash,
-        @Nullable ReferenceEntry<K, V> next) {
+  static final class WeakExpirableEvictableEntry<K, V>
+      extends WeakEntry<K, V> implements ReferenceEntry<K, V> {
+    WeakExpirableEvictableEntry(
+        ReferenceQueue<K> queue, K key, int hash, @Nullable ReferenceEntry<K, V> next) {
       super(queue, key, hash, next);
     }
 
@@ -1610,8 +1683,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
   /**
    * References a weak value.
    */
-  static final class WeakValueReference<K, V> extends WeakReference<V> implements
-      ValueReference<K, V> {
+  static final class WeakValueReference<K, V>
+      extends WeakReference<V> implements ValueReference<K, V> {
     final ReferenceEntry<K, V> entry;
 
     WeakValueReference(ReferenceQueue<V> queue, V referent, ReferenceEntry<K, V> entry) {
@@ -1619,22 +1692,28 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       this.entry = entry;
     }
 
+    @Override
     public ReferenceEntry<K, V> getEntry() {
       return entry;
     }
 
+    @Override
     public void clear(ValueReference<K, V> newValue) {
       clear();
     }
 
-    public ValueReference<K, V> copyFor(ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
+    @Override
+    public ValueReference<K, V> copyFor(
+        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
       return new WeakValueReference<K, V>(queue, value, entry);
     }
 
+    @Override
     public boolean isComputingReference() {
       return false;
     }
 
+    @Override
     public V waitForValue() {
       return get();
     }
@@ -1643,8 +1722,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
   /**
    * References a soft value.
    */
-  static final class SoftValueReference<K, V> extends SoftReference<V> implements
-      ValueReference<K, V> {
+  static final class SoftValueReference<K, V>
+      extends SoftReference<V> implements ValueReference<K, V> {
     final ReferenceEntry<K, V> entry;
 
     SoftValueReference(ReferenceQueue<V> queue, V referent, ReferenceEntry<K, V> entry) {
@@ -1652,22 +1731,28 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       this.entry = entry;
     }
 
+    @Override
     public ReferenceEntry<K, V> getEntry() {
       return entry;
     }
 
+    @Override
     public void clear(ValueReference<K, V> newValue) {
       clear();
     }
 
-    public ValueReference<K, V> copyFor(ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
+    @Override
+    public ValueReference<K, V> copyFor(
+        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
       return new SoftValueReference<K, V>(queue, value, entry);
     }
 
+    @Override
     public boolean isComputingReference() {
       return false;
     }
 
+    @Override
     public V waitForValue() {
       return get();
     }
@@ -1683,26 +1768,33 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       this.referent = referent;
     }
 
+    @Override
     public V get() {
       return referent;
     }
 
+    @Override
     public ReferenceEntry<K, V> getEntry() {
       return null;
     }
 
-    public ValueReference<K, V> copyFor(ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
+    @Override
+    public ValueReference<K, V> copyFor(
+        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
       return this;
     }
 
+    @Override
     public boolean isComputingReference() {
       return false;
     }
 
+    @Override
     public V waitForValue() {
       return get();
     }
 
+    @Override
     public void clear(ValueReference<K, V> newValue) {}
   }
 
@@ -1888,8 +1980,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
    * Segments are specialized versions of hash tables. This subclass inherits from ReentrantLock
    * opportunistically, just to simplify some locking and avoid separate construction.
    */
-  @SuppressWarnings("serial")
-  // This class is never serialized.
+  @SuppressWarnings("serial") // This class is never serialized.
   static class Segment<K, V> extends ReentrantLock {
 
     /*
@@ -1943,7 +2034,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
 
     /**
      * The table is expanded when its size exceeds this threshold. (The value of this field is
-     * always {@code (int)(capacity * 0.75)}.)
+     * always {@code (int) (capacity * 0.75)}.)
      */
     int threshold;
 
@@ -2001,18 +2092,23 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       this.maxSegmentSize = maxSegmentSize;
       initTable(newEntryArray(initialCapacity));
 
-      keyReferenceQueue = map.usesKeyReferences() ? new ReferenceQueue<K>() : null;
+      keyReferenceQueue = map.usesKeyReferences()
+           ? new ReferenceQueue<K>() : null;
 
-      valueReferenceQueue = map.usesValueReferences() ? new ReferenceQueue<V>() : null;
+      valueReferenceQueue = map.usesValueReferences()
+           ? new ReferenceQueue<V>() : null;
 
-      recencyQueue = (map.evictsBySize() || map.expiresAfterAccess()) ? new ConcurrentLinkedQueue<ReferenceEntry<K, V>>()
-          : MapMakerInternalMap.<ReferenceEntry<K, V>> discardingQueue();
+      recencyQueue = (map.evictsBySize() || map.expiresAfterAccess())
+          ? new ConcurrentLinkedQueue<ReferenceEntry<K, V>>()
+          : MapMakerInternalMap.<ReferenceEntry<K, V>>discardingQueue();
 
-      evictionQueue = map.evictsBySize() ? new EvictionQueue<K, V>() : MapMakerInternalMap
-          .<ReferenceEntry<K, V>> discardingQueue();
+      evictionQueue = map.evictsBySize()
+          ? new EvictionQueue<K, V>()
+          : MapMakerInternalMap.<ReferenceEntry<K, V>>discardingQueue();
 
-      expirationQueue = map.expires() ? new ExpirationQueue<K, V>() : MapMakerInternalMap
-          .<ReferenceEntry<K, V>> discardingQueue();
+      expirationQueue = map.expires()
+          ? new ExpirationQueue<K, V>()
+          : MapMakerInternalMap.<ReferenceEntry<K, V>>discardingQueue();
     }
 
     AtomicReferenceArray<ReferenceEntry<K, V>> newEntryArray(int size) {
@@ -2187,7 +2283,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       if (map.expires()) {
         // currently MapMaker ensures that expireAfterWrite and
         // expireAfterAccess are mutually exclusive
-        long expiration = map.expiresAfterAccess() ? map.expireAfterAccessNanos
+        long expiration = map.expiresAfterAccess()
+            ? map.expireAfterAccessNanos
             : map.expireAfterWriteNanos;
         recordExpirationTime(entry, expiration);
         expirationQueue.add(entry);
@@ -2802,8 +2899,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
         for (ReferenceEntry<K, V> e = first; e != null; e = e.getNext()) {
           if (e == entry) {
             ++modCount;
-            enqueueNotification(e.getKey(), hash, e.getValueReference().get(),
-                RemovalCause.COLLECTED);
+            enqueueNotification(
+                e.getKey(), hash, e.getValueReference().get(), RemovalCause.COLLECTED);
             ReferenceEntry<K, V> newFirst = removeFromChain(first, e);
             newCount = this.count - 1;
             table.set(index, newFirst);
@@ -3041,6 +3138,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
 
     // implements Queue
 
+    @Override
     public boolean offer(ReferenceEntry<K, V> entry) {
       // unlink
       connectEvictables(entry.getPreviousEvictable(), entry.getNextEvictable());
@@ -3052,11 +3150,13 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       return true;
     }
 
+    @Override
     public ReferenceEntry<K, V> peek() {
       ReferenceEntry<K, V> next = head.getNextEvictable();
       return (next == head) ? null : next;
     }
 
+    @Override
     public ReferenceEntry<K, V> poll() {
       ReferenceEntry<K, V> next = head.getNextEvictable();
       if (next == head) {
@@ -3116,7 +3216,6 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     @Override
     public Iterator<ReferenceEntry<K, V>> iterator() {
       return new AbstractSequentialIterator<ReferenceEntry<K, V>>(peek()) {
-
         @Override
         protected ReferenceEntry<K, V> computeNext(ReferenceEntry<K, V> previous) {
           ReferenceEntry<K, V> next = previous.getNextEvictable();
@@ -3175,6 +3274,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
 
     // implements Queue
 
+    @Override
     public boolean offer(ReferenceEntry<K, V> entry) {
       // unlink
       connectExpirables(entry.getPreviousExpirable(), entry.getNextExpirable());
@@ -3186,11 +3286,13 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       return true;
     }
 
+    @Override
     public ReferenceEntry<K, V> peek() {
       ReferenceEntry<K, V> next = head.getNextExpirable();
       return (next == head) ? null : next;
     }
 
+    @Override
     public ReferenceEntry<K, V> poll() {
       ReferenceEntry<K, V> next = head.getNextExpirable();
       if (next == head) {
@@ -3250,7 +3352,6 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     @Override
     public Iterator<ReferenceEntry<K, V>> iterator() {
       return new AbstractSequentialIterator<ReferenceEntry<K, V>>(peek()) {
-
         @Override
         protected ReferenceEntry<K, V> computeNext(ReferenceEntry<K, V> previous) {
           ReferenceEntry<K, V> next = previous.getNextExpirable();
@@ -3267,6 +3368,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       this.mapReference = new WeakReference<MapMakerInternalMap<?, ?>>(map);
     }
 
+    @Override
     public void run() {
       MapMakerInternalMap<?, ?> map = mapReference.get();
       if (map == null) {
@@ -3370,7 +3472,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       long sum = 0L;
       for (Segment<K, V> segment : segments) {
         // ensure visibility of most recent completed write
-        @SuppressWarnings({ "UnusedDeclaration", "unused" })
+        @SuppressWarnings({"UnusedDeclaration", "unused"})
         int c = segment.count; // read-volatile
 
         AtomicReferenceArray<ReferenceEntry<K, V>> table = segment.table;
@@ -3400,6 +3502,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     return segmentFor(hash).put(key, hash, value, false);
   }
 
+  @Override
   public V putIfAbsent(K key, V value) {
     checkNotNull(key);
     checkNotNull(value);
@@ -3423,6 +3526,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     return segmentFor(hash).remove(key, hash);
   }
 
+  @Override
   public boolean remove(@Nullable Object key, @Nullable Object value) {
     if (key == null || value == null) {
       return false;
@@ -3431,6 +3535,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     return segmentFor(hash).remove(key, hash, value);
   }
 
+  @Override
   public boolean replace(K key, @Nullable V oldValue, V newValue) {
     checkNotNull(key);
     checkNotNull(newValue);
@@ -3441,6 +3546,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
     return segmentFor(hash).replace(key, hash, oldValue, newValue);
   }
 
+  @Override
   public V replace(K key, V value) {
     checkNotNull(key);
     checkNotNull(value);
@@ -3497,6 +3603,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       advance();
     }
 
+    @Override
     public abstract E next();
 
     final void advance() {
@@ -3570,6 +3677,7 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       }
     }
 
+    @Override
     public boolean hasNext() {
       return nextExternal != null;
     }
@@ -3583,8 +3691,9 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       return lastReturned;
     }
 
+    @Override
     public void remove() {
-      checkState(lastReturned != null);
+      checkRemove(lastReturned != null);
       MapMakerInternalMap.this.remove(lastReturned.getKey());
       lastReturned = null;
     }
@@ -3784,8 +3893,8 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
    * The actual object that gets serialized. Unfortunately, readResolve() doesn't get called when a
    * circular dependency is present, so the proxy must be able to behave as the map itself.
    */
-  abstract static class AbstractSerializationProxy<K, V> extends ForwardingConcurrentMap<K, V>
-      implements Serializable {
+  abstract static class AbstractSerializationProxy<K, V>
+      extends ForwardingConcurrentMap<K, V> implements Serializable {
     private static final long serialVersionUID = 3;
 
     final Strength keyStrength;
@@ -3831,12 +3940,14 @@ class MapMakerInternalMap<K, V> extends AbstractMap<K, V> implements ConcurrentM
       out.writeObject(null); // terminate entries
     }
 
-    @SuppressWarnings("deprecation")
-    // serialization of deprecated feature
+    @SuppressWarnings("deprecation") // serialization of deprecated feature
     MapMaker readMapMaker(ObjectInputStream in) throws IOException {
       int size = in.readInt();
-      MapMaker mapMaker = new MapMaker().initialCapacity(size).setKeyStrength(keyStrength)
-          .setValueStrength(valueStrength).keyEquivalence(keyEquivalence)
+      MapMaker mapMaker = new MapMaker()
+          .initialCapacity(size)
+          .setKeyStrength(keyStrength)
+          .setValueStrength(valueStrength)
+          .keyEquivalence(keyEquivalence)
           .concurrencyLevel(concurrencyLevel);
       mapMaker.removalListener(removalListener);
       if (expireAfterWriteNanos > 0) {

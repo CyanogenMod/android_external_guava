@@ -19,9 +19,9 @@ import static com.google.common.hash.Hashing.ChecksumType.CRC_32;
 
 import com.google.common.base.Supplier;
 
-import java.util.zip.Checksum;
-
 import junit.framework.TestCase;
+
+import java.util.zip.Checksum;
 
 /**
  * Tests for ChecksumHashFunction.

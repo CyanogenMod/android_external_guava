@@ -16,16 +16,15 @@
 
 package com.google.common.io;
 
+import static com.google.common.io.SourceSinkFactory.ByteSinkFactory;
+import static com.google.common.io.SourceSinkFactory.CharSinkFactory;
 import static org.junit.Assert.assertArrayEquals;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.SourceSinkFactory.ByteSinkFactory;
-import com.google.common.io.SourceSinkFactory.CharSinkFactory;
 
 import junit.framework.TestSuite;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -103,7 +102,7 @@ public class ByteSinkTester extends SourceSinkTester<ByteSink, byte[], ByteSinkF
   }
 
   public void testOpenBufferedStream() throws IOException {
-    BufferedOutputStream out = sink.openBufferedStream();
+    OutputStream out = sink.openBufferedStream();
     try {
       ByteStreams.copy(new ByteArrayInputStream(data), out);
     } finally {

@@ -26,8 +26,7 @@ import java.util.Comparator;
 import javax.annotation.Nullable;
 
 /**
- * A utility for performing a "lazy" chained comparison statement, which 
- * performs comparisons only until it finds a nonzero result. For example:
+ * A utility for performing a chained comparison statement. For example:
  * <pre>   {@code
  *
  *   public int compareTo(Foo that) {
@@ -38,13 +37,18 @@ import javax.annotation.Nullable;
  *         .result();
  *   }}</pre>
  *
- * The value of this expression will have the same sign as the <i>first
+ * <p>The value of this expression will have the same sign as the <i>first
  * nonzero</i> comparison result in the chain, or will be zero if every
  * comparison result was zero.
  *
- * <p>Once any comparison returns a nonzero value, remaining comparisons are
- * "short-circuited".
- * 
+ * <p>Performance note: Even though the {@code ComparisonChain} caller always
+ * invokes its {@code compare} methods unconditionally, the {@code
+ * ComparisonChain} implementation stops calling its inputs' {@link
+ * Comparable#compareTo compareTo} and {@link Comparator#compare compare}
+ * methods as soon as one of them returns a nonzero result. This optimization is
+ * typically important only in the presence of expensive {@code compareTo} and
+ * {@code compare} implementations.
+ *
  * <p>See the Guava User Guide article on <a href=
  * "http://code.google.com/p/guava-libraries/wiki/CommonObjectUtilitiesExplained#compare/compareTo">
  * {@code ComparisonChain}</a>.
@@ -66,53 +70,37 @@ public abstract class ComparisonChain {
   }
 
   private static final ComparisonChain ACTIVE = new ComparisonChain() {
-    @Override
     @SuppressWarnings("unchecked")
-    public ComparisonChain compare(Comparable left, Comparable right) {
+    @Override public ComparisonChain compare(
+        Comparable left, Comparable right) {
       return classify(left.compareTo(right));
     }
-
-    @Override
-    public <T> ComparisonChain compare(@Nullable T left, @Nullable T right, Comparator<T> comparator) {
+    @Override public <T> ComparisonChain compare(
+        @Nullable T left, @Nullable T right, Comparator<T> comparator) {
       return classify(comparator.compare(left, right));
     }
-
-    @Override
-    public ComparisonChain compare(int left, int right) {
+    @Override public ComparisonChain compare(int left, int right) {
       return classify(Ints.compare(left, right));
     }
-
-    @Override
-    public ComparisonChain compare(long left, long right) {
+    @Override public ComparisonChain compare(long left, long right) {
       return classify(Longs.compare(left, right));
     }
-
-    @Override
-    public ComparisonChain compare(float left, float right) {
+    @Override public ComparisonChain compare(float left, float right) {
       return classify(Float.compare(left, right));
     }
-
-    @Override
-    public ComparisonChain compare(double left, double right) {
+    @Override public ComparisonChain compare(double left, double right) {
       return classify(Double.compare(left, right));
     }
-
-    @Override
-    public ComparisonChain compareTrueFirst(boolean left, boolean right) {
+    @Override public ComparisonChain compareTrueFirst(boolean left, boolean right) {
       return classify(Booleans.compare(right, left)); // reversed
     }
-
-    @Override
-    public ComparisonChain compareFalseFirst(boolean left, boolean right) {
+    @Override public ComparisonChain compareFalseFirst(boolean left, boolean right) {
       return classify(Booleans.compare(left, right));
     }
-
     ComparisonChain classify(int result) {
       return (result < 0) ? LESS : (result > 0) ? GREATER : ACTIVE;
     }
-
-    @Override
-    public int result() {
+    @Override public int result() {
       return 0;
     }
   };
@@ -127,50 +115,33 @@ public abstract class ComparisonChain {
     InactiveComparisonChain(int result) {
       this.result = result;
     }
-
-    @Override
-    public ComparisonChain compare(@Nullable Comparable left, @Nullable Comparable right) {
+    @Override public ComparisonChain compare(
+        @Nullable Comparable left, @Nullable Comparable right) {
       return this;
     }
-
-    @Override
-    public <T> ComparisonChain compare(@Nullable T left, @Nullable T right,
-        @Nullable Comparator<T> comparator) {
+    @Override public <T> ComparisonChain compare(@Nullable T left,
+        @Nullable T right, @Nullable Comparator<T> comparator) {
       return this;
     }
-
-    @Override
-    public ComparisonChain compare(int left, int right) {
+    @Override public ComparisonChain compare(int left, int right) {
       return this;
     }
-
-    @Override
-    public ComparisonChain compare(long left, long right) {
+    @Override public ComparisonChain compare(long left, long right) {
       return this;
     }
-
-    @Override
-    public ComparisonChain compare(float left, float right) {
+    @Override public ComparisonChain compare(float left, float right) {
       return this;
     }
-
-    @Override
-    public ComparisonChain compare(double left, double right) {
+    @Override public ComparisonChain compare(double left, double right) {
       return this;
     }
-
-    @Override
-    public ComparisonChain compareTrueFirst(boolean left, boolean right) {
+    @Override public ComparisonChain compareTrueFirst(boolean left, boolean right) {
       return this;
     }
-
-    @Override
-    public ComparisonChain compareFalseFirst(boolean left, boolean right) {
+    @Override public ComparisonChain compareFalseFirst(boolean left, boolean right) {
       return this;
     }
-
-    @Override
-    public int result() {
+    @Override public int result() {
       return result;
     }
   }
@@ -180,14 +151,15 @@ public abstract class ComparisonChain {
    * Comparable#compareTo}, <i>if</i> the result of this comparison chain
    * has not already been determined.
    */
-  public abstract ComparisonChain compare(Comparable<?> left, Comparable<?> right);
+  public abstract ComparisonChain compare(
+      Comparable<?> left, Comparable<?> right);
 
   /**
    * Compares two objects using a comparator, <i>if</i> the result of this
    * comparison chain has not already been determined.
    */
-  public abstract <T> ComparisonChain compare(@Nullable T left, @Nullable T right,
-      Comparator<T> comparator);
+  public abstract <T> ComparisonChain compare(
+      @Nullable T left, @Nullable T right, Comparator<T> comparator);
 
   /**
    * Compares two {@code int} values as specified by {@link Ints#compare},
@@ -234,19 +206,6 @@ public abstract class ComparisonChain {
    * @since 12.0 (present as {@code compare} since 2.0)
    */
   public abstract ComparisonChain compareFalseFirst(boolean left, boolean right);
-
-  /**
-   * Old name of {@link #compareFalseFirst}.
-   *
-   * @deprecated Use {@link #compareFalseFirst}; or, if the parameters passed
-   *     are being either negated or reversed, undo the negation or reversal and
-   *     use {@link #compareTrueFirst}. <b>This method is scheduled for deletion
-   *     in September 2013.</b>
-   */
-  @Deprecated
-  public final ComparisonChain compare(boolean left, boolean right) {
-    return compareFalseFirst(left, right);
-  }
 
   /**
    * Ends this comparison chain and returns its result: a value having the

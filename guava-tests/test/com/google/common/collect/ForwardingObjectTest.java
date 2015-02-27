@@ -16,9 +16,9 @@
 
 package com.google.common.collect;
 
-import java.util.Set;
-
 import junit.framework.TestCase;
+
+import java.util.Set;
 
 /**
  * Tests for {@code ForwardingObject}.
