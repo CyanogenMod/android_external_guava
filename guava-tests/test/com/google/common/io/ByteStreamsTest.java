@@ -31,8 +31,6 @@ import java.io.UnsupportedEncodingException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.zip.CRC32;
-import java.util.zip.Checksum;
 
 /**
  * Unit test for {@link ByteStreams}.
@@ -384,21 +382,6 @@ public class ByteStreamsTest extends IoTestCase {
     out.writeFloat(Float.intBitsToFloat(0x12345678));
     out.writeFloat(Float.intBitsToFloat(0x76543210));
     assertEquals(bytes, out.toByteArray());
-  }
-
-  public void testChecksum() throws IOException {
-    InputSupplier<ByteArrayInputStream> asciiBytes =
-        ByteStreams.newInputStreamSupplier(ASCII.getBytes(Charsets.US_ASCII.name()));
-    InputSupplier<ByteArrayInputStream> i18nBytes =
-        ByteStreams.newInputStreamSupplier(I18N.getBytes(Charsets.UTF_8.name()));
-
-    Checksum checksum = new CRC32();
-    assertEquals(0L, checksum.getValue());
-    assertEquals(3145994718L, ByteStreams.getChecksum(asciiBytes, checksum));
-    assertEquals(0L, checksum.getValue());
-    assertEquals(3145994718L, ByteStreams.getChecksum(asciiBytes, checksum));
-    assertEquals(1138302340L, ByteStreams.getChecksum(i18nBytes, checksum));
-    assertEquals(0L, checksum.getValue());
   }
 
   public void testNewDataOutput_BAOS() {
