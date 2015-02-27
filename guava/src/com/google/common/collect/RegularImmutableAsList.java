@@ -17,6 +17,7 @@
 package com.google.common.collect;
 
 import com.google.common.annotations.GwtCompatible;
+import com.google.common.annotations.GwtIncompatible;
 
 /**
  * An {@link ImmutableAsList} implementation specialized for when the delegate collection is
@@ -24,9 +25,8 @@ import com.google.common.annotations.GwtCompatible;
  *
  * @author Louis Wasserman
  */
-@GwtCompatible
-@SuppressWarnings("serial")
-// uses writeReplace, not default serialization
+@GwtCompatible(emulated = true)
+@SuppressWarnings("serial") // uses writeReplace, not default serialization
 class RegularImmutableAsList<E> extends ImmutableAsList<E> {
   private final ImmutableCollection<E> delegate;
   private final ImmutableList<? extends E> delegateList;
@@ -37,7 +37,7 @@ class RegularImmutableAsList<E> extends ImmutableAsList<E> {
   }
 
   RegularImmutableAsList(ImmutableCollection<E> delegate, Object[] array) {
-    this(delegate, ImmutableList.<E> asImmutableList(array));
+    this(delegate, ImmutableList.<E>asImmutableList(array));
   }
 
   @Override
@@ -49,43 +49,19 @@ class RegularImmutableAsList<E> extends ImmutableAsList<E> {
     return delegateList;
   }
 
+  @SuppressWarnings("unchecked")  // safe covariant cast!
   @Override
-  @SuppressWarnings("unchecked")
-  // safe covariant cast!
   public UnmodifiableListIterator<E> listIterator(int index) {
     return (UnmodifiableListIterator<E>) delegateList.listIterator(index);
   }
 
+  @GwtIncompatible("not present in emulated superclass")
   @Override
-  public Object[] toArray() {
-    return delegateList.toArray();
+  int copyIntoArray(Object[] dst, int offset) {
+    return delegateList.copyIntoArray(dst, offset);
   }
 
   @Override
-  public <T> T[] toArray(T[] other) {
-    return delegateList.toArray(other);
-  }
-
-  @Override
-  public int indexOf(Object object) {
-    return delegateList.indexOf(object);
-  }
-
-  @Override
-  public int lastIndexOf(Object object) {
-    return delegateList.lastIndexOf(object);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    return delegateList.equals(obj);
-  }
-
-  @Override
-  public int hashCode() {
-    return delegateList.hashCode();
-  }
-
   public E get(int index) {
     return delegateList.get(index);
   }

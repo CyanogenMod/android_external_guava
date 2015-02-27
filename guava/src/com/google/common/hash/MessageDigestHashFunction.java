@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 /**
  * {@link HashFunction} adapter for {@link MessageDigest} instances.
@@ -28,7 +29,8 @@ import java.security.NoSuchAlgorithmException;
  * @author Kevin Bourrillion
  * @author Dimitris Andreou
  */
-final class MessageDigestHashFunction extends AbstractStreamingHashFunction implements Serializable {
+final class MessageDigestHashFunction extends AbstractStreamingHashFunction
+    implements Serializable {
   private final MessageDigest prototype;
   private final int bytes;
   private final boolean supportsClone;
@@ -45,8 +47,8 @@ final class MessageDigestHashFunction extends AbstractStreamingHashFunction impl
     this.toString = checkNotNull(toString);
     this.prototype = getMessageDigest(algorithmName);
     int maxLength = prototype.getDigestLength();
-    checkArgument(bytes >= 4 && bytes <= maxLength, "bytes (%s) must be >= 4 and < %s", bytes,
-        maxLength);
+    checkArgument(bytes >= 4 && bytes <= maxLength,
+        "bytes (%s) must be >= 4 and < %s", bytes, maxLength);
     this.bytes = bytes;
     this.supportsClone = supportsClone();
   }
@@ -60,7 +62,7 @@ final class MessageDigestHashFunction extends AbstractStreamingHashFunction impl
     }
   }
 
-  public int bits() {
+  @Override public int bits() {
     return bytes * Byte.SIZE;
   }
 
@@ -76,7 +78,7 @@ final class MessageDigestHashFunction extends AbstractStreamingHashFunction impl
     }
   }
 
-  public Hasher newHasher() {
+  @Override public Hasher newHasher() {
     if (supportsClone) {
       try {
         return new MessageDigestHasher((MessageDigest) prototype.clone(), bytes);
@@ -142,18 +144,22 @@ final class MessageDigestHashFunction extends AbstractStreamingHashFunction impl
     }
 
     private void checkNotDone() {
-      checkState(!done, "Cannot use Hasher after calling #hash() on it");
+      checkState(!done, "Cannot re-use a Hasher after calling hash() on it");
     }
 
+    @Override
     public HashCode hash() {
+      checkNotDone();
       done = true;
-      if (bytes == digest.getDigestLength()) {
-        return HashCodes.fromBytesNoCopy(digest.digest());
-      } else {
-        byte[] result = new byte[bytes];
-        System.arraycopy(digest.digest(), 0, result, 0, bytes);
-        return HashCodes.fromBytesNoCopy(result);
-      }
+      return (bytes == digest.getDigestLength())
+          ? HashCode.fromBytesNoCopy(digest.digest())
+          : HashCode.fromBytesNoCopy(copyOf(digest.digest(), bytes));
     }
+  }
+
+  private static byte[] copyOf(byte[] array, int length) {
+    byte[] newArray = new byte[length];
+    System.arraycopy(array, 0, newArray, 0, Math.min(length, array.length));
+    return newArray;
   }
 }

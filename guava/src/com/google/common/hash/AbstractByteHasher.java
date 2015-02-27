@@ -58,17 +58,20 @@ abstract class AbstractByteHasher extends AbstractHasher {
     }
   }
 
+  @Override
   public Hasher putByte(byte b) {
     update(b);
     return this;
   }
 
+  @Override
   public Hasher putBytes(byte[] bytes) {
     checkNotNull(bytes);
     update(bytes);
     return this;
   }
 
+  @Override
   public Hasher putBytes(byte[] bytes, int off, int len) {
     checkPositionIndexes(off, off + len, bytes.length);
     update(bytes, off, len);
@@ -87,26 +90,31 @@ abstract class AbstractByteHasher extends AbstractHasher {
     return this;
   }
 
+  @Override
   public Hasher putShort(short s) {
     scratch.putShort(s);
     return update(Shorts.BYTES);
   }
 
+  @Override
   public Hasher putInt(int i) {
     scratch.putInt(i);
     return update(Ints.BYTES);
   }
 
+  @Override
   public Hasher putLong(long l) {
     scratch.putLong(l);
     return update(Longs.BYTES);
   }
 
+  @Override
   public Hasher putChar(char c) {
     scratch.putChar(c);
     return update(Chars.BYTES);
   }
 
+  @Override
   public <T> Hasher putObject(T instance, Funnel<? super T> funnel) {
     funnel.funnel(instance, this);
     return this;

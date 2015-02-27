@@ -37,7 +37,8 @@ final class EmptyImmutableSortedMap<K, V> extends ImmutableSortedMap<K, V> {
     this.keySet = ImmutableSortedSet.emptySet(comparator);
   }
 
-  EmptyImmutableSortedMap(Comparator<? super K> comparator, ImmutableSortedMap<K, V> descendingMap) {
+  EmptyImmutableSortedMap(
+      Comparator<? super K> comparator, ImmutableSortedMap<K, V> descendingMap) {
     super(descendingMap);
     this.keySet = ImmutableSortedSet.emptySet(comparator);
   }
@@ -85,6 +86,11 @@ final class EmptyImmutableSortedMap<K, V> extends ImmutableSortedMap<K, V> {
   @Override
   ImmutableSet<Entry<K, V>> createEntrySet() {
     throw new AssertionError("should never be called");
+  }
+
+  @Override
+  public ImmutableSetMultimap<K, V> asMultimap() {
+    return ImmutableSetMultimap.of();
   }
 
   @Override

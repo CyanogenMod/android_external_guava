@@ -23,6 +23,7 @@ import static com.google.common.collect.testing.IteratorFeature.MODIFIABLE;
 import static com.google.common.collect.testing.IteratorFeature.UNMODIFIABLE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.truth0.Truth.ASSERT;
 
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
@@ -32,8 +33,10 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.testing.IteratorTester;
 import com.google.common.testing.ClassSanityTester;
-import com.google.common.testing.FluentAsserts;
 import com.google.common.testing.NullPointerTester;
+
+import junit.framework.AssertionFailedError;
+import junit.framework.TestCase;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,8 +51,6 @@ import java.util.RandomAccess;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import junit.framework.TestCase;
 
 /**
  * Unit test for {@code Iterables}.
@@ -85,8 +86,7 @@ public class IterablesTest extends TestCase {
     List<Integer> nums = asList(1, 2, 3, 4, 5);
     List<Integer> collection = new ArrayList<Integer>(nums) {
       @Override public Iterator<Integer> iterator() {
-        fail("Don't iterate me!");
-        return null;
+        throw new AssertionFailedError("Don't iterate me!");
       }
     };
     assertEquals(5, Iterables.size(collection));
@@ -283,7 +283,7 @@ public class IterablesTest extends TestCase {
     Iterable<TypeA> alist = Lists
         .newArrayList(new TypeA(), new TypeA(), hasBoth, new TypeA());
     Iterable<TypeB> blist = Iterables.filter(alist, TypeB.class);
-    FluentAsserts.assertThat(blist).iteratesOverSequence(hasBoth);
+    ASSERT.that(blist).iteratesOverSequence(hasBoth);
   }
 
   public void testTransform() {
@@ -411,7 +411,7 @@ public class IterablesTest extends TestCase {
     int n = 4;
     Iterable<Integer> repeated
         = Iterables.concat(Collections.nCopies(n, iterable));
-    FluentAsserts.assertThat(repeated).iteratesOverSequence(
+    ASSERT.that(repeated).iteratesOverSequence(
         1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3);
   }
 
@@ -510,7 +510,7 @@ public class IterablesTest extends TestCase {
     List<String> freshlyAdded = newArrayList("freshly", "added");
 
     boolean changed = Iterables.addAll(alreadyThere, freshlyAdded);
-    FluentAsserts.assertThat(alreadyThere).has().allOf(
+    ASSERT.that(alreadyThere).has().exactly(
         "already", "there", "freshly", "added").inOrder();
     assertTrue(changed);
   }
@@ -621,6 +621,38 @@ public class IterablesTest extends TestCase {
     assertEquals(newArrayList("a", "b"), newArrayList(skip(list, 0)));
   }
 
+  public void testSkip_removal() {
+    Collection<String> set = Sets.newHashSet("a", "b");
+    Iterator<String> iterator = skip(set, 2).iterator();
+    try {
+      iterator.next();
+    } catch (NoSuchElementException suppressed) {
+      // We want remove() to fail even after a failed call to next().
+    }
+    try {
+      iterator.remove();
+      fail("Expected IllegalStateException");
+    } catch (IllegalStateException expected) {}
+  }
+
+  public void testSkip_allOfMutableList_modifiable() {
+    List<String> list = newArrayList("a", "b");
+    Iterator<String> iterator = skip(list, 2).iterator();
+    try {
+      iterator.remove();
+      fail("Expected IllegalStateException");
+    } catch (IllegalStateException expected) {}
+  }
+
+  public void testSkip_allOfImmutableList_modifiable() {
+    List<String> list = ImmutableList.of("a", "b");
+    Iterator<String> iterator = skip(list, 2).iterator();
+    try {
+      iterator.remove();
+      fail("Expected UnsupportedOperationException");
+    } catch (UnsupportedOperationException expected) {}
+  }
+
   @GwtIncompatible("slow (~35s)")
   public void testSkip_iterator() {
     new IteratorTester<Integer>(5, MODIFIABLE, newArrayList(2, 3),
@@ -656,7 +688,7 @@ public class IterablesTest extends TestCase {
     Iterable<String> tail = skip(set, 1);
     set.remove("b");
     set.addAll(newArrayList("A", "B", "C"));
-    FluentAsserts.assertThat(tail).iteratesOverSequence("c", "A", "B", "C");
+    ASSERT.that(tail).iteratesOverSequence("c", "A", "B", "C");
   }
 
   public void testSkip_structurallyModifiedSkipSomeList() throws Exception {
@@ -664,7 +696,7 @@ public class IterablesTest extends TestCase {
     Iterable<String> tail = skip(list, 1);
     list.subList(1, 3).clear();
     list.addAll(0, newArrayList("A", "B", "C"));
-    FluentAsserts.assertThat(tail).iteratesOverSequence("B", "C", "a");
+    ASSERT.that(tail).iteratesOverSequence("B", "C", "a");
   }
 
   public void testSkip_structurallyModifiedSkipAll() throws Exception {
@@ -868,14 +900,6 @@ public class IterablesTest extends TestCase {
     public Iterator<String> iterator() {
       throw new UnsupportedOperationException();
     }
-  }
-
-  public void testGetLast_withDefault_not_empty_sortedSet() {
-    // TODO: verify that this is the best testing strategy.
-    SortedSet<String> diesOnIteratorSortedSet = new DiesOnIteratorTreeSet();
-    diesOnIteratorSortedSet.add("bar");
-
-    assertEquals("bar", Iterables.getLast(diesOnIteratorSortedSet, "qux"));
   }
 
   public void testGetLast_emptySortedSet() {
@@ -1100,18 +1124,19 @@ public class IterablesTest extends TestCase {
 
     // Test & Verify
     Iterable<String> consumingIterable = Iterables.consumingIterable(list);
+    assertEquals("Iterables.consumingIterable(...)", consumingIterable.toString());
     Iterator<String> consumingIterator = consumingIterable.iterator();
 
-    FluentAsserts.assertThat(list).has().allOf("a", "b").inOrder();
+    ASSERT.that(list).has().exactly("a", "b").inOrder();
 
     assertTrue(consumingIterator.hasNext());
-    FluentAsserts.assertThat(list).has().allOf("a", "b").inOrder();
+    ASSERT.that(list).has().exactly("a", "b").inOrder();
     assertEquals("a", consumingIterator.next());
-    FluentAsserts.assertThat(list).has().item("b");
+    ASSERT.that(list).has().item("b");
 
     assertTrue(consumingIterator.hasNext());
     assertEquals("b", consumingIterator.next());
-    FluentAsserts.assertThat(list).isEmpty();
+    ASSERT.that(list).isEmpty();
 
     assertFalse(consumingIterator.hasNext());
   }

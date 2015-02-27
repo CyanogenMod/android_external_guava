@@ -16,7 +16,6 @@
 
 package com.google.common.collect.testing.features;
 
-import com.google.common.annotations.GwtCompatible;
 import com.google.common.collect.testing.Helpers;
 
 import java.lang.annotation.Annotation;
@@ -32,11 +31,8 @@ import java.util.Set;
 /**
  * Utilities for collecting and validating tester requirements from annotations.
  *
- * <p>This class can be referenced in GWT tests.
- *
  * @author George van den Driessche
  */
-@GwtCompatible
 public class FeatureUtil {
   /**
    * A cache of annotated objects (typically a Class or Method) to its

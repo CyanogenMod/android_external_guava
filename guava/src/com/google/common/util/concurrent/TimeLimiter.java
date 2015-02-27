@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  *     return DEFAULT_VALUE;
  *   }
  * </pre>
- * Please see {@code SimpleTimeLimiterTest} for more usage examples.
+ * <p>Please see {@code SimpleTimeLimiterTest} for more usage examples.
  *
  * @author Kevin Bourrillion
  * @since 1.0
@@ -75,7 +75,8 @@ public interface TimeLimiter {
    * @throws IllegalArgumentException if {@code interfaceType} is a regular
    *     class, enum, or annotation type, rather than an interface
    */
-  <T> T newProxy(T target, Class<T> interfaceType, long timeoutDuration, TimeUnit timeoutUnit);
+  <T> T newProxy(T target, Class<T> interfaceType,
+      long timeoutDuration, TimeUnit timeoutUnit);
 
   /**
    * Invokes a specified Callable, timing out after the specified time limit.
@@ -100,6 +101,6 @@ public interface TimeLimiter {
    * @throws UncheckedTimeoutException if the time limit is reached
    * @throws Exception
    */
-  <T> T callWithTimeout(Callable<T> callable, long timeoutDuration, TimeUnit timeoutUnit,
-      boolean interruptible) throws Exception;
+  <T> T callWithTimeout(Callable<T> callable, long timeoutDuration,
+      TimeUnit timeoutUnit, boolean interruptible) throws Exception;
 }

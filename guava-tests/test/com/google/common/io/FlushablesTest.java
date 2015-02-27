@@ -22,10 +22,10 @@ import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.reset;
 import static org.easymock.EasyMock.verify;
 
+import junit.framework.TestCase;
+
 import java.io.Flushable;
 import java.io.IOException;
-
-import junit.framework.TestCase;
 
 /**
  * Unit tests for {@link Flushables}.

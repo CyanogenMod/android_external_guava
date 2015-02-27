@@ -17,6 +17,7 @@
 package com.google.common.io;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.io.TestOption.AVAILABLE_ALWAYS_ZERO;
 import static com.google.common.io.TestOption.CLOSE_THROWS;
 import static com.google.common.io.TestOption.OPEN_THROWS;
 import static com.google.common.io.TestOption.READ_THROWS;
@@ -25,12 +26,18 @@ import static com.google.common.io.TestOption.WRITE_THROWS;
 import static org.junit.Assert.assertArrayEquals;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.hash.Hashing;
+import com.google.common.testing.TestLogHandler;
 
-import java.io.BufferedInputStream;
+import junit.framework.TestSuite;
+
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.EnumSet;
 
@@ -40,6 +47,16 @@ import java.util.EnumSet;
  * @author Colin Decker
  */
 public class ByteSourceTest extends IoTestCase {
+
+  public static TestSuite suite() {
+    TestSuite suite = new TestSuite();
+    suite.addTest(ByteSourceTester.tests("ByteSource.wrap[byte[]]",
+        SourceSinkFactories.byteArraySourceFactory(), true));
+    suite.addTest(ByteSourceTester.tests("ByteSource.empty[]",
+        SourceSinkFactories.emptyByteSourceFactory(), true));
+    suite.addTestSuite(ByteSourceTest.class);
+    return suite;
+  }
 
   private static final byte[] bytes = newPreFilledByteArray(10000);
 
@@ -51,7 +68,7 @@ public class ByteSourceTest extends IoTestCase {
   }
 
   public void testOpenBufferedStream() throws IOException {
-    BufferedInputStream in = source.openBufferedStream();
+    InputStream in = source.openBufferedStream();
     assertTrue(source.wasStreamOpened());
     assertFalse(source.wasStreamClosed());
 
@@ -70,6 +87,9 @@ public class ByteSourceTest extends IoTestCase {
 
     // test that we can get the size even if skip() isn't supported
     assertEquals(bytes.length, new TestByteSource(bytes, SKIP_THROWS).size());
+
+    // test that we can get the size even if available() always returns zero
+    assertEquals(bytes.length, new TestByteSource(bytes, AVAILABLE_ALWAYS_ZERO).size());
   }
 
   public void testCopyTo_outputStream() throws IOException {
@@ -95,6 +115,51 @@ public class ByteSourceTest extends IoTestCase {
 
   public void testRead_toArray() throws IOException {
     assertArrayEquals(bytes, source.read());
+    assertTrue(source.wasStreamOpened() && source.wasStreamClosed());
+  }
+
+  public void testRead_withProcessor() throws IOException {
+    final byte[] processedBytes = new byte[bytes.length];
+    ByteProcessor<byte[]> processor = new ByteProcessor<byte[]>() {
+      int pos;
+
+      @Override
+      public boolean processBytes(byte[] buf, int off, int len) throws IOException {
+        System.arraycopy(buf, off, processedBytes, pos, len);
+        pos += len;
+        return true;
+      }
+
+      @Override
+      public byte[] getResult() {
+        return processedBytes;
+      }
+    };
+
+    source.read(processor);
+    assertTrue(source.wasStreamOpened() && source.wasStreamClosed());
+
+    assertArrayEquals(bytes, processedBytes);
+  }
+
+  public void testRead_withProcessor_stopsOnFalse() throws IOException {
+    ByteProcessor<Void> processor = new ByteProcessor<Void>() {
+      boolean firstCall = true;
+
+      @Override
+      public boolean processBytes(byte[] buf, int off, int len) throws IOException {
+        assertTrue("consume() called twice", firstCall);
+        firstCall = false;
+        return false;
+      }
+
+      @Override
+      public Void getResult() {
+        return null;
+      }
+    };
+
+    source.read(processor);
     assertTrue(source.wasStreamOpened() && source.wasStreamClosed());
   }
 
@@ -211,5 +276,152 @@ public class ByteSourceTest extends IoTestCase {
     } catch (IOException expected) {
     }
     assertTrue(okSource.wasStreamClosed());
+  }
+
+  public void testConcat() throws IOException {
+    ByteSource b1 = ByteSource.wrap(new byte[] {0, 1, 2, 3});
+    ByteSource b2 = ByteSource.wrap(new byte[0]);
+    ByteSource b3 = ByteSource.wrap(new byte[] {4, 5});
+
+    byte[] expected = {0, 1, 2, 3, 4, 5};
+
+    assertArrayEquals(expected,
+        ByteSource.concat(ImmutableList.of(b1, b2, b3)).read());
+    assertArrayEquals(expected,
+        ByteSource.concat(b1, b2, b3).read());
+    assertArrayEquals(expected,
+        ByteSource.concat(ImmutableList.of(b1, b2, b3).iterator()).read());
+    assertEquals(expected.length, ByteSource.concat(b1, b2, b3).size());
+    assertFalse(ByteSource.concat(b1, b2, b3).isEmpty());
+
+    ByteSource emptyConcat = ByteSource.concat(ByteSource.empty(), ByteSource.empty());
+    assertTrue(emptyConcat.isEmpty());
+    assertEquals(0, emptyConcat.size());
+  }
+
+  public void testConcat_infiniteIterable() throws IOException {
+    ByteSource source = ByteSource.wrap(new byte[] {0, 1, 2, 3});
+    Iterable<ByteSource> cycle = Iterables.cycle(ImmutableList.of(source));
+    ByteSource concatenated = ByteSource.concat(cycle);
+
+    byte[] expected = {0, 1, 2, 3, 0, 1, 2, 3};
+    assertArrayEquals(expected, concatenated.slice(0, 8).read());
+  }
+
+  private static final ByteSource BROKEN_CLOSE_SOURCE
+      = new TestByteSource(new byte[10], CLOSE_THROWS);
+  private static final ByteSource BROKEN_OPEN_SOURCE
+      = new TestByteSource(new byte[10], OPEN_THROWS);
+  private static final ByteSource BROKEN_READ_SOURCE
+      = new TestByteSource(new byte[10], READ_THROWS);
+  private static final ByteSink BROKEN_CLOSE_SINK
+      = new TestByteSink(CLOSE_THROWS);
+  private static final ByteSink BROKEN_OPEN_SINK
+      = new TestByteSink(OPEN_THROWS);
+  private static final ByteSink BROKEN_WRITE_SINK
+      = new TestByteSink(WRITE_THROWS);
+
+  private static final ImmutableSet<ByteSource> BROKEN_SOURCES
+      = ImmutableSet.of(BROKEN_CLOSE_SOURCE, BROKEN_OPEN_SOURCE, BROKEN_READ_SOURCE);
+  private static final ImmutableSet<ByteSink> BROKEN_SINKS
+      = ImmutableSet.of(BROKEN_CLOSE_SINK, BROKEN_OPEN_SINK, BROKEN_WRITE_SINK);
+
+  public void testCopyExceptions() {
+    if (!Closer.SuppressingSuppressor.isAvailable()) {
+      // test that exceptions are logged
+
+      TestLogHandler logHandler = new TestLogHandler();
+      Closeables.logger.addHandler(logHandler);
+      try {
+        for (ByteSource in : BROKEN_SOURCES) {
+          runFailureTest(in, newNormalByteSink());
+          assertTrue(logHandler.getStoredLogRecords().isEmpty());
+
+          runFailureTest(in, BROKEN_CLOSE_SINK);
+          assertEquals((in == BROKEN_OPEN_SOURCE) ? 0 : 1, getAndResetRecords(logHandler));
+        }
+
+        for (ByteSink out : BROKEN_SINKS) {
+          runFailureTest(newNormalByteSource(), out);
+          assertTrue(logHandler.getStoredLogRecords().isEmpty());
+
+          runFailureTest(BROKEN_CLOSE_SOURCE, out);
+          assertEquals(1, getAndResetRecords(logHandler));
+        }
+
+        for (ByteSource in : BROKEN_SOURCES) {
+          for (ByteSink out : BROKEN_SINKS) {
+            runFailureTest(in, out);
+            assertTrue(getAndResetRecords(logHandler) <= 1);
+          }
+        }
+      } finally {
+        Closeables.logger.removeHandler(logHandler);
+      }
+    } else {
+      // test that exceptions are suppressed
+
+      for (ByteSource in : BROKEN_SOURCES) {
+        int suppressed = runSuppressionFailureTest(in, newNormalByteSink());
+        assertEquals(0, suppressed);
+
+        suppressed = runSuppressionFailureTest(in, BROKEN_CLOSE_SINK);
+        assertEquals((in == BROKEN_OPEN_SOURCE) ? 0 : 1, suppressed);
+      }
+
+      for (ByteSink out : BROKEN_SINKS) {
+        int suppressed = runSuppressionFailureTest(newNormalByteSource(), out);
+        assertEquals(0, suppressed);
+
+        suppressed = runSuppressionFailureTest(BROKEN_CLOSE_SOURCE, out);
+        assertEquals(1, suppressed);
+      }
+
+      for (ByteSource in : BROKEN_SOURCES) {
+        for (ByteSink out : BROKEN_SINKS) {
+          int suppressed = runSuppressionFailureTest(in, out);
+          assertTrue(suppressed <= 1);
+        }
+      }
+    }
+  }
+
+  private static int getAndResetRecords(TestLogHandler logHandler) {
+    int records = logHandler.getStoredLogRecords().size();
+    logHandler.clear();
+    return records;
+  }
+
+  private static void runFailureTest(ByteSource in, ByteSink out) {
+    try {
+      in.copyTo(out);
+      fail();
+    } catch (IOException expected) {
+    }
+  }
+
+  /**
+   * @return the number of exceptions that were suppressed on the expected thrown exception
+   */
+  private static int runSuppressionFailureTest(ByteSource in, ByteSink out) {
+    try {
+      in.copyTo(out);
+      fail();
+    } catch (IOException expected) {
+      return CloserTest.getSuppressed(expected).length;
+    }
+    throw new AssertionError(); // can't happen
+  }
+
+  private static ByteSource newNormalByteSource() {
+    return ByteSource.wrap(new byte[10]);
+  }
+
+  private static ByteSink newNormalByteSink() {
+    return new ByteSink() {
+      @Override public OutputStream openStream() {
+        return new ByteArrayOutputStream();
+      }
+    };
   }
 }

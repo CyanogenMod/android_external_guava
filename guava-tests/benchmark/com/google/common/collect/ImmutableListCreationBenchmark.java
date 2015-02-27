@@ -16,9 +16,8 @@
 
 package com.google.common.collect;
 
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 
 import java.util.List;
 
@@ -27,14 +26,14 @@ import java.util.List;
  *
  * @author Louis Wasserman
  */
-public class ImmutableListCreationBenchmark extends SimpleBenchmark {
+public class ImmutableListCreationBenchmark {
 
   @Param({"10", "1000", "1000000"})
   int size;
 
   private static final Object OBJECT = new Object();
 
-  public int timeBuilderAdd(int reps) {
+  @Benchmark int builderAdd(int reps) {
     int size = this.size;
     int dummy = 0;
     for (int rep = 0; rep < reps; rep++) {
@@ -47,7 +46,7 @@ public class ImmutableListCreationBenchmark extends SimpleBenchmark {
     return dummy;
   }
 
-  public int timePreSizedBuilderAdd(int reps) {
+  @Benchmark int preSizedBuilderAdd(int reps) {
     int size = this.size;
     int dummy = 0;
     for (int rep = 0; rep < reps; rep++) {
@@ -60,7 +59,7 @@ public class ImmutableListCreationBenchmark extends SimpleBenchmark {
     return dummy;
   }
 
-  public int timeCopyArrayList(int reps) {
+  @Benchmark int copyArrayList(int reps) {
     int size = this.size;
     int dummy = 0;
     for (int rep = 0; rep < reps; rep++) {
@@ -73,7 +72,7 @@ public class ImmutableListCreationBenchmark extends SimpleBenchmark {
     return dummy;
   }
 
-  public int timeCopyPreSizedArrayList(int reps) {
+  @Benchmark int copyPreSizedArrayList(int reps) {
     int size = this.size;
     int tmp = 0;
     for (int rep = 0; rep < reps; rep++) {
@@ -84,9 +83,5 @@ public class ImmutableListCreationBenchmark extends SimpleBenchmark {
       tmp += ImmutableList.copyOf(builder).size();
     }
     return tmp;
-  }
-
-  public static void main(String[] args) {
-    Runner.main(ImmutableListCreationBenchmark.class, args);
   }
 }

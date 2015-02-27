@@ -22,7 +22,6 @@ import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
 
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -71,7 +70,8 @@ public final class Uninterruptibles {
    * {@code latch.}{@link CountDownLatch#await(long, TimeUnit)
    * await(timeout, unit)} uninterruptibly.
    */
-  public static boolean awaitUninterruptibly(CountDownLatch latch, long timeout, TimeUnit unit) {
+  public static boolean awaitUninterruptibly(CountDownLatch latch,
+      long timeout, TimeUnit unit) {
     boolean interrupted = false;
     try {
       long remainingNanos = unit.toNanos(timeout);
@@ -126,7 +126,8 @@ public final class Uninterruptibles {
    * @throws ExecutionException if the computation threw an exception
    * @throws CancellationException if the computation was cancelled
    */
-  public static <V> V getUninterruptibly(Future<V> future) throws ExecutionException {
+  public static <V> V getUninterruptibly(Future<V> future)
+      throws ExecutionException {
     boolean interrupted = false;
     try {
       while (true) {
@@ -156,8 +157,9 @@ public final class Uninterruptibles {
    * @throws CancellationException if the computation was cancelled
    * @throws TimeoutException if the wait timed out
    */
-  public static <V> V getUninterruptibly(Future<V> future, long timeout, TimeUnit unit)
-      throws ExecutionException, TimeoutException {
+  public static <V> V getUninterruptibly(
+      Future<V> future, long timeout,  TimeUnit unit)
+          throws ExecutionException, TimeoutException {
     boolean interrupted = false;
     try {
       long remainingNanos = unit.toNanos(timeout);
@@ -184,7 +186,8 @@ public final class Uninterruptibles {
    * {@code unit.}{@link TimeUnit#timedJoin(Thread, long)
    * timedJoin(toJoin, timeout)} uninterruptibly.
    */
-  public static void joinUninterruptibly(Thread toJoin, long timeout, TimeUnit unit) {
+  public static void joinUninterruptibly(Thread toJoin,
+      long timeout, TimeUnit unit) {
     Preconditions.checkNotNull(toJoin);
     boolean interrupted = false;
     try {

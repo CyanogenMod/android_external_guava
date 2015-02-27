@@ -22,9 +22,9 @@ import static com.google.common.math.MathBenchmarking.RANDOM_SOURCE;
 import static com.google.common.math.MathBenchmarking.randomNonZeroBigInteger;
 import static com.google.common.math.MathBenchmarking.randomPositiveBigInteger;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.math.IntMath;
 
 import java.math.RoundingMode;
@@ -34,13 +34,13 @@ import java.math.RoundingMode;
  *
  * @author Louis Wasserman
  */
-public class IntMathRoundingBenchmark extends SimpleBenchmark {
+public class IntMathRoundingBenchmark {
   private static final int[] positive = new int[ARRAY_SIZE];
   private static final int[] nonzero = new int[ARRAY_SIZE];
   private static final int[] ints = new int[ARRAY_SIZE];
 
-  @Override
-  protected void setUp() {
+  @BeforeExperiment
+  void setUp() {
     for (int i = 0; i < ARRAY_SIZE; i++) {
       positive[i] = randomPositiveBigInteger(Integer.SIZE - 2).intValue();
       nonzero[i] = randomNonZeroBigInteger(Integer.SIZE - 2).intValue();
@@ -51,7 +51,7 @@ public class IntMathRoundingBenchmark extends SimpleBenchmark {
   @Param({"DOWN", "UP", "FLOOR", "CEILING", "HALF_EVEN", "HALF_UP", "HALF_DOWN"})
   RoundingMode mode;
 
-  public int timeLog2(int reps) {
+  @Benchmark int log2(int reps) {
     int tmp = 0;
     for (int i = 0; i < reps; i++) {
       int j = i & ARRAY_MASK;
@@ -60,7 +60,7 @@ public class IntMathRoundingBenchmark extends SimpleBenchmark {
     return tmp;
   }
 
-  public int timeLog10(int reps) {
+  @Benchmark int log10(int reps) {
     int tmp = 0;
     for (int i = 0; i < reps; i++) {
       int j = i & ARRAY_MASK;
@@ -69,7 +69,7 @@ public class IntMathRoundingBenchmark extends SimpleBenchmark {
     return tmp;
   }
 
-  public int timeSqrt(int reps) {
+  @Benchmark int sqrt(int reps) {
     int tmp = 0;
     for (int i = 0; i < reps; i++) {
       int j = i & ARRAY_MASK;
@@ -78,16 +78,12 @@ public class IntMathRoundingBenchmark extends SimpleBenchmark {
     return tmp;
   }
 
-  public int timeDivide(int reps) {
+  @Benchmark int divide(int reps) {
     int tmp = 0;
     for (int i = 0; i < reps; i++) {
       int j = i & ARRAY_MASK;
       tmp += IntMath.divide(ints[j], nonzero[j], mode);
     }
     return tmp;
-  }
-
-  public static void main(String[] args) {
-    Runner.main(IntMathRoundingBenchmark.class, args);
   }
 }

@@ -31,8 +31,9 @@ import java.util.concurrent.TimeoutException;
  * @since 1.0
  */
 @Beta
-public abstract class AbstractCheckedFuture<V, X extends Exception> extends
-    ForwardingListenableFuture.SimpleForwardingListenableFuture<V> implements CheckedFuture<V, X> {
+public abstract class AbstractCheckedFuture<V, X extends Exception>
+    extends ForwardingListenableFuture.SimpleForwardingListenableFuture<V>
+    implements CheckedFuture<V, X> {
   /**
    * Constructs an {@code AbstractCheckedFuture} that wraps a delegate.
    */
@@ -71,7 +72,7 @@ public abstract class AbstractCheckedFuture<V, X extends Exception> extends
    * @throws X if {@link #get()} throws an {@link InterruptedException},
    *         {@link CancellationException}, or {@link ExecutionException}
    */
-
+  @Override
   public V checkedGet() throws X {
     try {
       return get();
@@ -100,7 +101,7 @@ public abstract class AbstractCheckedFuture<V, X extends Exception> extends
    *         {@link CancellationException}, or {@link ExecutionException}
    * @throws TimeoutException {@inheritDoc}
    */
-
+  @Override
   public V checkedGet(long timeout, TimeUnit unit) throws TimeoutException, X {
     try {
       return get(timeout, unit);

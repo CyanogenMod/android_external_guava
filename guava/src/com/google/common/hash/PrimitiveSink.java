@@ -41,7 +41,7 @@ public interface PrimitiveSink {
    * @return this instance
    */
   PrimitiveSink putBytes(byte[] bytes);
-
+  
   /**
    * Puts a chunk of an array of bytes into this sink. {@code bytes[off]} is the first byte written,
    * {@code bytes[off + len - 1]} is the last. 
@@ -92,8 +92,19 @@ public interface PrimitiveSink {
 
   /**
    * Puts a string into this sink.
+   *
+   * @deprecated Use {PrimitiveSink#putUnencodedChars} instead. This method is scheduled for
+   *     removal in Guava 16.0.
    */
+  @Deprecated
   PrimitiveSink putString(CharSequence charSequence);
+
+  /**
+   * Puts each 16-bit code unit from the {@link CharSequence} into this sink.
+   *
+   * @since 15.0 (since 11.0 as putString(CharSequence))
+   */
+  PrimitiveSink putUnencodedChars(CharSequence charSequence);
 
   /**
    * Puts a string into this sink using the given charset.

@@ -31,7 +31,8 @@ import java.util.logging.Logger;
  */
 @Beta
 public final class Flushables {
-  private static final Logger logger = Logger.getLogger(Flushables.class.getName());
+  private static final Logger logger
+      = Logger.getLogger(Flushables.class.getName());
 
   private Flushables() {}
 
@@ -49,12 +50,14 @@ public final class Flushables {
    *     {@link Flushable#flush} throws an {@code IOException}.
    * @see Closeables#close
    */
-  public static void flush(Flushable flushable, boolean swallowIOException) throws IOException {
+  public static void flush(Flushable flushable, boolean swallowIOException)
+      throws IOException {
     try {
       flushable.flush();
     } catch (IOException e) {
       if (swallowIOException) {
-        logger.log(Level.WARNING, "IOException thrown while flushing Flushable.", e);
+        logger.log(Level.WARNING,
+            "IOException thrown while flushing Flushable.", e);
       } else {
         throw e;
       }

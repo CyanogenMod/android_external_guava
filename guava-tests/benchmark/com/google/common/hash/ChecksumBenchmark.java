@@ -16,9 +16,9 @@
 
 package com.google.common.hash;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 
 import java.util.Random;
 import java.util.zip.Adler32;
@@ -32,7 +32,7 @@ import java.util.zip.Checksum;
  *
  * @author Colin Decker
  */
-public class ChecksumBenchmark extends SimpleBenchmark {
+public class ChecksumBenchmark {
 
   // Use a constant seed for all of the benchmarks to ensure apples to apples comparisons.
   private static final int RANDOM_SEED = new Random().nextInt();
@@ -42,19 +42,19 @@ public class ChecksumBenchmark extends SimpleBenchmark {
 
   private byte[] testBytes;
 
-  @Override
-  public void setUp() {
+  @BeforeExperiment
+  void setUp() {
     testBytes = new byte[size];
     new Random(RANDOM_SEED).nextBytes(testBytes);
   }
 
   // CRC32
 
-  public byte timeCrc32HashFunction(int reps) {
+  @Benchmark byte crc32HashFunction(int reps) {
     return runHashFunction(reps, Hashing.crc32());
   }
 
-  public byte timeCrc32Checksum(int reps) throws Exception {
+  @Benchmark byte crc32Checksum(int reps) throws Exception {
     byte result = 0x01;
     for (int i = 0; i < reps; i++) {
       CRC32 checksum = new CRC32();
@@ -66,11 +66,11 @@ public class ChecksumBenchmark extends SimpleBenchmark {
 
   // Adler32
 
-  public byte timeAdler32HashFunction(int reps) {
+  @Benchmark byte adler32HashFunction(int reps) {
     return runHashFunction(reps, Hashing.adler32());
   }
 
-  public byte timeAdler32Checksum(int reps) throws Exception {
+  @Benchmark byte adler32Checksum(int reps) throws Exception {
     byte result = 0x01;
     for (int i = 0; i < reps; i++) {
       Adler32 checksum = new Adler32();
@@ -91,9 +91,5 @@ public class ChecksumBenchmark extends SimpleBenchmark {
       result ^= hashFunction.hashBytes(testBytes).asBytes()[0];
     }
     return result;
-  }
-
-  public static void main(String[] args) {
-    Runner.main(ChecksumBenchmark.class, args);
   }
 }

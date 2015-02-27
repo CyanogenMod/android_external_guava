@@ -27,13 +27,13 @@ import javax.annotation.Nullable;
 
 /**
  * Captures a free type variable that can be used in {@link TypeToken#where}.
- * For example: <pre>   {@code
+ * For example:
  *
+ * <pre>   {@code
  *   static <T> TypeToken<List<T>> listOf(Class<T> elementType) {
  *     return new TypeToken<List<T>>() {}
  *         .where(new TypeParameter<T>() {}, elementType);
- *   }
- * }</pre>
+ *   }}</pre>
  *
  * @author Ben Yu
  * @since 12.0
@@ -49,13 +49,11 @@ public abstract class TypeParameter<T> extends TypeCapture<T> {
     this.typeVariable = (TypeVariable<?>) type;
   }
 
-  @Override
-  public final int hashCode() {
+  @Override public final int hashCode() {
     return typeVariable.hashCode();
   }
 
-  @Override
-  public final boolean equals(@Nullable Object o) {
+  @Override public final boolean equals(@Nullable Object o) {
     if (o instanceof TypeParameter) {
       TypeParameter<?> that = (TypeParameter<?>) o;
       return typeVariable.equals(that.typeVariable);
@@ -63,8 +61,7 @@ public abstract class TypeParameter<T> extends TypeCapture<T> {
     return false;
   }
 
-  @Override
-  public String toString() {
+  @Override public String toString() {
     return typeVariable.toString();
   }
 }

@@ -22,16 +22,17 @@ import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.MapConstraintsTest.TestKeyException;
 import com.google.common.collect.MapConstraintsTest.TestValueException;
+import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.MapFeature;
 import com.google.common.collect.testing.google.BiMapTestSuiteBuilder;
 import com.google.common.collect.testing.google.TestStringBiMapGenerator;
 
-import java.util.Map.Entry;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+
+import java.util.Map.Entry;
 
 /**
  * Tests for {@link MapConstraints#constrainedBiMap}.
@@ -54,8 +55,10 @@ public class ConstrainedBiMapTest extends TestCase {
         .named("Maps.constrainedBiMap[HashBiMap]")
         .withFeatures(
             CollectionSize.ANY,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
             MapFeature.ALLOWS_NULL_KEYS,
             MapFeature.ALLOWS_NULL_VALUES,
+            MapFeature.ALLOWS_ANY_NULL_QUERIES,
             MapFeature.GENERAL_PURPOSE,
             MapFeature.REJECTS_DUPLICATES_AT_CREATION)
         .createTestSuite());

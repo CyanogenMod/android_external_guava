@@ -45,49 +45,47 @@ class Element extends AccessibleObject implements Member {
     this.member = member;
   }
 
-  @Override
-  public final boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
+  public TypeToken<?> getOwnerType() {
+    return TypeToken.of(getDeclaringClass());
+  }
+
+  @Override public final boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
     return accessibleObject.isAnnotationPresent(annotationClass);
   }
 
-  @Override
-  public final <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
+  @Override public final <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
     return accessibleObject.getAnnotation(annotationClass);
   }
 
-  @Override
-  public final Annotation[] getAnnotations() {
+  @Override public final Annotation[] getAnnotations() {
     return accessibleObject.getAnnotations();
   }
 
-  @Override
-  public final Annotation[] getDeclaredAnnotations() {
+  @Override public final Annotation[] getDeclaredAnnotations() {
     return accessibleObject.getDeclaredAnnotations();
   }
 
-  @Override
-  public final void setAccessible(boolean flag) throws SecurityException {
+  @Override public final void setAccessible(boolean flag) throws SecurityException {
     accessibleObject.setAccessible(flag);
   }
 
-  @Override
-  public final boolean isAccessible() {
+  @Override public final boolean isAccessible() {
     return accessibleObject.isAccessible();
   }
 
-  public Class<?> getDeclaringClass() {
+  @Override public Class<?> getDeclaringClass() {
     return member.getDeclaringClass();
   }
 
-  public final String getName() {
+  @Override public final String getName() {
     return member.getName();
   }
 
-  public final int getModifiers() {
+  @Override public final int getModifiers() {
     return member.getModifiers();
   }
 
-  public final boolean isSynthetic() {
+  @Override public final boolean isSynthetic() {
     return member.isSynthetic();
   }
 
@@ -152,22 +150,19 @@ class Element extends AccessibleObject implements Member {
     return Modifier.isTransient(getModifiers());
   }
 
-  @Override
-  public boolean equals(@Nullable Object obj) {
+  @Override public boolean equals(@Nullable Object obj) {
     if (obj instanceof Element) {
       Element that = (Element) obj;
-      return member.equals(that.member);
+      return getOwnerType().equals(that.getOwnerType()) && member.equals(that.member);
     }
     return false;
   }
 
-  @Override
-  public int hashCode() {
+  @Override public int hashCode() {
     return member.hashCode();
   }
 
-  @Override
-  public String toString() {
+  @Override public String toString() {
     return member.toString();
   }
 }

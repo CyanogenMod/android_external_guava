@@ -25,13 +25,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.testing.NullPointerTester;
 import com.google.common.testing.SerializableTester;
 
+import junit.framework.TestCase;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import junit.framework.TestCase;
-
-import org.truth0.subjects.IterableSubject;
 
 /**
  * Unit test for {@link Optional}.
@@ -53,7 +51,8 @@ public final class OptionalTest extends TestCase {
     try {
       Optional.of(null);
       fail();
-    } catch (NullPointerException expected) {}
+    } catch (NullPointerException expected) {
+    }
   }
 
   public void testFromNullable() {
@@ -79,7 +78,8 @@ public final class OptionalTest extends TestCase {
     try {
       optional.get();
       fail();
-    } catch (IllegalStateException expected) {}
+    } catch (IllegalStateException expected) {
+    }
   }
 
   public void testGet_present() {
@@ -108,7 +108,8 @@ public final class OptionalTest extends TestCase {
     try {
       absentOptional.or(nullSupplier);
       fail();
-    } catch (NullPointerException expected) {}
+    } catch (NullPointerException expected) {
+    }
   }
 
   public void testOr_nullSupplier_present() {
@@ -146,7 +147,8 @@ public final class OptionalTest extends TestCase {
     try {
       presentAsSet.add("b");
       fail();
-    } catch (UnsupportedOperationException expected) {}
+    } catch (UnsupportedOperationException expected) {
+    }
   }
 
   public void testAsSet_absentIsImmutable() {
@@ -154,7 +156,8 @@ public final class OptionalTest extends TestCase {
     try {
       absentAsSet.add("foo");
       fail();
-    } catch (UnsupportedOperationException expected) {}
+    } catch (UnsupportedOperationException expected) {
+    }
   }
 
   public void testTransform_absent() {
@@ -172,23 +175,25 @@ public final class OptionalTest extends TestCase {
 
   public void testTransform_present_functionReturnsNull() {
     try {
-      Optional.of("a").transform(new Function<String, String>() {
-        @Override
-        public String apply(String input) {
-          return null;
-        }
-      });
+      Optional.of("a").transform(
+          new Function<String, String>() {
+            @Override public String apply(String input) {
+              return null;
+            }
+          });
       fail("Should throw if Function returns null.");
-    } catch (NullPointerException expected) {}
+    } catch (NullPointerException expected) {
+    }
   }
 
   public void testTransform_abssent_functionReturnsNull() {
-    assertEquals(Optional.absent(), Optional.absent().transform(new Function<Object, Object>() {
-      @Override
-      public Object apply(Object input) {
-        return null;
-      }
-    }));
+    assertEquals(Optional.absent(),
+        Optional.absent().transform(
+          new Function<Object, Object>() {
+            @Override public Object apply(Object input) {
+              return null;
+            }
+          }));
   }
 
   // TODO(kevinb): use EqualsTester
@@ -214,35 +219,36 @@ public final class OptionalTest extends TestCase {
   }
 
   public void testPresentInstances_allPresent() {
-    List<Optional<String>> optionals = ImmutableList.of(Optional.of("a"), Optional.of("b"),
-        Optional.of("c"));
-    assertThat(Optional.presentInstances(optionals)).iteratesOverSequence("a", "b", "c");
+    List<Optional<String>> optionals =
+        ImmutableList.of(Optional.of("a"), Optional.of("b"), Optional.of("c"));
+    ASSERT.that(Optional.presentInstances(optionals)).iteratesOverSequence("a", "b", "c");
   }
 
   public void testPresentInstances_allAbsent() {
-    List<Optional<Object>> optionals = ImmutableList.of(Optional.absent(), Optional.absent());
-    assertThat(Optional.presentInstances(optionals)).isEmpty();
+    List<Optional<Object>> optionals =
+        ImmutableList.of(Optional.absent(), Optional.absent());
+    ASSERT.that(Optional.presentInstances(optionals)).isEmpty();
   }
 
   public void testPresentInstances_somePresent() {
-    List<Optional<String>> optionals = ImmutableList.of(Optional.of("a"),
-        Optional.<String>absent(), Optional.of("c"));
-    assertThat(Optional.presentInstances(optionals)).iteratesOverSequence("a", "c");
+    List<Optional<String>> optionals =
+        ImmutableList.of(Optional.of("a"), Optional.<String>absent(), Optional.of("c"));
+    ASSERT.that(Optional.presentInstances(optionals)).iteratesOverSequence("a", "c");
   }
 
   public void testPresentInstances_callingIteratorTwice() {
-    List<Optional<String>> optionals = ImmutableList.of(Optional.of("a"),
-        Optional.<String>absent(), Optional.of("c"));
+    List<Optional<String>> optionals =
+        ImmutableList.of(Optional.of("a"), Optional.<String>absent(), Optional.of("c"));
     Iterable<String> onlyPresent = Optional.presentInstances(optionals);
-    assertThat(onlyPresent).iteratesOverSequence("a", "c");
-    assertThat(onlyPresent).iteratesOverSequence("a", "c");
+    ASSERT.that(onlyPresent).iteratesOverSequence("a", "c");
+    ASSERT.that(onlyPresent).iteratesOverSequence("a", "c");
   }
 
   public void testPresentInstances_wildcards() {
-    List<Optional<? extends Number>> optionals = ImmutableList.<Optional<? extends Number>>of(
-        Optional.<Double>absent(), Optional.of(2));
+    List<Optional<? extends Number>> optionals =
+        ImmutableList.<Optional<? extends Number>>of(Optional.<Double>absent(), Optional.of(2));
     Iterable<Number> onlyPresent = Optional.presentInstances(optionals);
-    assertThat(onlyPresent).iteratesOverSequence(2);
+    ASSERT.that(onlyPresent).iteratesOverSequence(2);
   }
 
   private static Optional<Integer> getSomeOptionalInt() {
@@ -258,28 +264,32 @@ public final class OptionalTest extends TestCase {
    * mentioned in the method Javadoc does in fact compile.
    */
 
+  @SuppressWarnings("unused") // compilation test
   public void testSampleCodeError1() {
     Optional<Integer> optionalInt = getSomeOptionalInt();
     // Number value = optionalInt.or(0.5); // error
   }
 
+  @SuppressWarnings("unused") // compilation test
   public void testSampleCodeError2() {
     FluentIterable<? extends Number> numbers = getSomeNumbers();
     Optional<? extends Number> first = numbers.first();
     // Number value = first.or(0.5); // error
   }
 
-  @SuppressWarnings("unchecked")
-  // safe covariant cast
+  @SuppressWarnings("unused") // compilation test
   public void testSampleCodeFine1() {
-    Optional<Number> optionalInt = (Optional) getSomeOptionalInt();
+    Optional<Number> optionalInt = Optional.of((Number) 1);
     Number value = optionalInt.or(0.5); // fine
   }
 
-  @SuppressWarnings("unchecked")
-  // safe covariant cast
+  @SuppressWarnings("unused") // compilation test
   public void testSampleCodeFine2() {
     FluentIterable<? extends Number> numbers = getSomeNumbers();
+
+    // Sadly, the following is what users will have to do in some circumstances.
+
+    @SuppressWarnings("unchecked") // safe covariant cast
     Optional<Number> first = (Optional) numbers.first();
     Number value = first.or(0.5); // fine
   }
@@ -297,11 +307,5 @@ public final class OptionalTest extends TestCase {
     npTester.testAllPublicStaticMethods(Optional.class);
     npTester.testAllPublicInstanceMethods(Optional.absent());
     npTester.testAllPublicInstanceMethods(Optional.of("training"));
-  }
-
-  // Hack for JDK5 type inference.
-  private static <T> IterableSubject<? extends IterableSubject<?, T, Iterable<T>>, T, Iterable<T>> assertThat(
-      Iterable<T> collection) {
-    return ASSERT.<T, Iterable<T>>that(collection);
   }
 }

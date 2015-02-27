@@ -16,8 +16,8 @@
 
 package com.google.common.cache;
 
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.collect.MapMaker;
@@ -29,7 +29,7 @@ import java.util.Map;
  *
  * @author Nikita Sidorov
  */
-public class MapMakerComparisonBenchmark extends SimpleBenchmark {
+public class MapMakerComparisonBenchmark {
   private static final String TEST_KEY = "test key";
   private static final String TEST_VALUE = "test value";
 
@@ -47,50 +47,46 @@ public class MapMakerComparisonBenchmark extends SimpleBenchmark {
   private final Cache<Object, Object> cache = CacheBuilder.newBuilder().recordStats().build();
   private final Cache<Object, Object> cacheNoStats = CacheBuilder.newBuilder().build();
 
-  @Override
-  public void setUp() {
+  @BeforeExperiment
+  void setUp() {
     map.put(TEST_KEY, TEST_VALUE);
     cache.put(TEST_KEY, TEST_VALUE);
     cacheNoStats.put(TEST_KEY, TEST_VALUE);
   }
 
-  public void timeComputingMapMaker(int rep) {
+  @Benchmark void computingMapMaker(int rep) {
     for (int i = 0; i < rep; i++) {
       computingMap.get(TEST_KEY);
     }
   }
 
-  public void timeLoadingCacheBuilder_stats(int rep) {
+  @Benchmark void loadingCacheBuilder_stats(int rep) {
     for (int i = 0; i < rep; i++) {
       loadingCache.getUnchecked(TEST_KEY);
     }
   }
 
-  public void timeLoadingCacheBuilder(int rep) {
+  @Benchmark void loadingCacheBuilder(int rep) {
     for (int i = 0; i < rep; i++) {
       loadingCacheNoStats.getUnchecked(TEST_KEY);
     }
   }
 
-  public void timeConcurrentHashMap(int rep) {
+  @Benchmark void concurrentHashMap(int rep) {
     for (int i = 0; i < rep; i++) {
       map.get(TEST_KEY);
     }
   }
 
-  public void timeCacheBuilder_stats(int rep) {
+  @Benchmark void cacheBuilder_stats(int rep) {
     for (int i = 0; i < rep; i++) {
       cache.getIfPresent(TEST_KEY);
     }
   }
 
-  public void timeCacheBuilder(int rep) {
+  @Benchmark void cacheBuilder(int rep) {
     for (int i = 0; i < rep; i++) {
       cacheNoStats.getIfPresent(TEST_KEY);
     }
-  }
-
-  public static void main(String[] args) {
-    Runner.main(MapMakerComparisonBenchmark.class, args);
   }
 }

@@ -18,10 +18,10 @@ package com.google.common.util.concurrent;
 
 import com.google.common.util.concurrent.testing.MockFutureListener;
 
+import junit.framework.TestCase;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import junit.framework.TestCase;
 
 /**
  * Unit tests for any listenable future that chains other listenable futures.
@@ -64,13 +64,7 @@ public abstract class AbstractChainedListenableFutureTest<T> extends TestCase {
 
   public void testFutureGetThrowsWrappedError() throws Exception {
     Error error = new Error();
-    try {
-      inputFuture.setException(error);
-      fail("Expected an Error to be thrown");  // COV_NF_LINE
-    } catch (Error expected) {
-      assertSame(error, expected);
-    }
-
+    inputFuture.setException(error);
     // Verify that get throws an ExecutionException, caused by an Error, when
     // the callback is called.
     listener.assertException(error);

@@ -48,7 +48,7 @@ public final class SignedBytes {
    * @since 10.0
    */
   public static final byte MAX_POWER_OF_TWO = 1 << 6;
-
+  
   /**
    * Returns the {@code byte} value that is equal to {@code value}, if possible.
    *
@@ -59,7 +59,10 @@ public final class SignedBytes {
    */
   public static byte checkedCast(long value) {
     byte result = (byte) value;
-    checkArgument(result == value, "Out of range: %s", value);
+    if (result != value) {
+      // don't use checkArgument here, to avoid boxing
+      throw new IllegalArgumentException("Out of range: " + value);
+    }
     return result;
   }
 
@@ -85,11 +88,16 @@ public final class SignedBytes {
    * Compares the two specified {@code byte} values. The sign of the value
    * returned is the same as that of {@code ((Byte) a).compareTo(b)}.
    *
+   * <p><b>Note:</b> this method behaves identically to the JDK 7 method {@link
+   * Byte#compare}.
+   *
    * @param a the first {@code byte} to compare
    * @param b the second {@code byte} to compare
    * @return a negative value if {@code a} is less than {@code b}; a positive
    *     value if {@code a} is greater than {@code b}; or zero if they are equal
    */
+  // TODO(kevinb): if Ints.compare etc. are ever removed, *maybe* remove this
+  // one too, which would leave compare methods only on the Unsigned* classes.
   public static int compare(byte a, byte b) {
     return a - b; // safe due to restricted range
   }
@@ -179,6 +187,7 @@ public final class SignedBytes {
   private enum LexicographicalComparator implements Comparator<byte[]> {
     INSTANCE;
 
+    @Override
     public int compare(byte[] left, byte[] right) {
       int minLength = Math.min(left.length, right.length);
       for (int i = 0; i < minLength; i++) {

@@ -42,7 +42,6 @@ final class GwtWorkarounds {
    */
   interface CharInput {
     int read() throws IOException;
-
     void close() throws IOException;
   }
 
@@ -53,11 +52,12 @@ final class GwtWorkarounds {
   static CharInput asCharInput(final Reader reader) {
     checkNotNull(reader);
     return new CharInput() {
-
+      @Override
       public int read() throws IOException {
         return reader.read();
       }
 
+      @Override
       public void close() throws IOException {
         reader.close();
       }
@@ -72,6 +72,7 @@ final class GwtWorkarounds {
     return new CharInput() {
       int index = 0;
 
+      @Override
       public int read() {
         if (index < chars.length()) {
           return chars.charAt(index++);
@@ -80,6 +81,7 @@ final class GwtWorkarounds {
         }
       }
 
+      @Override
       public void close() {
         index = chars.length();
       }
@@ -91,7 +93,6 @@ final class GwtWorkarounds {
    */
   interface ByteInput {
     int read() throws IOException;
-
     void close() throws IOException;
   }
 
@@ -102,7 +103,6 @@ final class GwtWorkarounds {
   static InputStream asInputStream(final ByteInput input) {
     checkNotNull(input);
     return new InputStream() {
-
       @Override
       public int read() throws IOException {
         return input.read();
@@ -142,9 +142,7 @@ final class GwtWorkarounds {
    */
   interface ByteOutput {
     void write(byte b) throws IOException;
-
     void flush() throws IOException;
-
     void close() throws IOException;
   }
 
@@ -155,7 +153,6 @@ final class GwtWorkarounds {
   static OutputStream asOutputStream(final ByteOutput output) {
     checkNotNull(output);
     return new OutputStream() {
-
       @Override
       public void write(int b) throws IOException {
         output.write((byte) b);
@@ -178,9 +175,7 @@ final class GwtWorkarounds {
    */
   interface CharOutput {
     void write(char c) throws IOException;
-
     void flush() throws IOException;
-
     void close() throws IOException;
   }
 
@@ -191,15 +186,17 @@ final class GwtWorkarounds {
   static CharOutput asCharOutput(final Writer writer) {
     checkNotNull(writer);
     return new CharOutput() {
-
+      @Override
       public void write(char c) throws IOException {
         writer.append(c);
       }
 
+      @Override
       public void flush() throws IOException {
         writer.flush();
       }
 
+      @Override
       public void close() throws IOException {
         writer.close();
       }
@@ -214,12 +211,15 @@ final class GwtWorkarounds {
     final StringBuilder builder = new StringBuilder(initialSize);
     return new CharOutput() {
 
+      @Override
       public void write(char c) {
         builder.append(c);
       }
 
+      @Override
       public void flush() {}
 
+      @Override
       public void close() {}
 
       @Override

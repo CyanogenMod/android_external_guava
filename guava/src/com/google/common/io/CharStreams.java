@@ -17,12 +17,12 @@
 package com.google.common.io;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkPositionIndexes;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Charsets;
-import com.google.common.base.Splitter;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 
 import java.io.Closeable;
 import java.io.EOFException;
@@ -38,9 +38,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Provides utility methods for working with character streams.
@@ -69,86 +67,25 @@ public final class CharStreams {
    *
    * @param value the string to read
    * @return the factory
+   * @deprecated Use {@link CharSource#wrap(CharSequence)} instead. This method
+   *     is scheduled for removal in Guava 18.0.
    */
-  public static InputSupplier<StringReader> newReaderSupplier(final String value) {
-    return CharStreams.asInputSupplier(asCharSource(value));
+  @Deprecated
+  public static InputSupplier<StringReader> newReaderSupplier(
+      final String value) {
+    return asInputSupplier(CharSource.wrap(value));
   }
 
   /**
    * Returns a {@link CharSource} that reads the given string value.
    *
    * @since 14.0
+   * @deprecated Use {@link CharSource#wrap(CharSequence)} instead. This method
+   *     is scheduled to be removed in Guava 16.0.
    */
+  @Deprecated
   public static CharSource asCharSource(String string) {
-    return new StringCharSource(string);
-  }
-
-  private static final class StringCharSource extends CharSource {
-
-    private static final Splitter LINE_SPLITTER = Splitter.on(Pattern.compile("\r\n|\n|\r"));
-
-    private final String string;
-
-    private StringCharSource(String string) {
-      this.string = checkNotNull(string);
-    }
-
-    @Override
-    public Reader openStream() {
-      return new StringReader(string);
-    }
-
-    @Override
-    public String read() {
-      return string;
-    }
-
-    /**
-     * Returns an iterable over the lines in the string. If the string ends in
-     * a newline, a final empty string is not included to match the behavior of
-     * BufferedReader/LineReader.readLine().
-     */
-    private Iterable<String> lines() {
-      return new Iterable<String>() {
-
-        public Iterator<String> iterator() {
-          return new AbstractIterator<String>() {
-            Iterator<String> lines = LINE_SPLITTER.split(string).iterator();
-
-            @Override
-            protected String computeNext() {
-              if (lines.hasNext()) {
-                String next = lines.next();
-                // skip last line if it's empty
-                if (lines.hasNext() || next.length() != 0) {
-                  return next;
-                }
-              }
-              return endOfData();
-            }
-          };
-        }
-      };
-    }
-
-    @Override
-    public String readFirstLine() {
-      Iterator<String> lines = lines().iterator();
-      return lines.hasNext() ? lines.next() : null;
-    }
-
-    @Override
-    public ImmutableList<String> readLines() {
-      return ImmutableList.copyOf(lines());
-    }
-
-    @Override
-    public String toString() {
-      String limited = (string.length() <= 15)
-          ? string
-          : string.substring(0, 12) + "...";
-      return "CharStreams.asCharSource(" + limited + ")";
-    }
+    return CharSource.wrap(string);
   }
 
   /**
@@ -159,10 +96,14 @@ public final class CharStreams {
    * @param charset the charset used to decode the input stream; see {@link
    *     Charsets} for helpful predefined constants
    * @return the factory
+   * @deprecated Use {@link ByteSource#asCharSource(Charset)} instead. This
+   *     method is scheduled for removal in Guava 18.0.
    */
+  @Deprecated
   public static InputSupplier<InputStreamReader> newReaderSupplier(
       final InputSupplier<? extends InputStream> in, final Charset charset) {
-    return CharStreams.asInputSupplier(ByteStreams.asByteSource(in).asCharSource(charset));
+    return asInputSupplier(
+        ByteStreams.asByteSource(in).asCharSource(charset));
   }
 
   /**
@@ -173,10 +114,14 @@ public final class CharStreams {
    * @param charset the charset used to encode the output stream; see {@link
    *     Charsets} for helpful predefined constants
    * @return the factory
+   * @deprecated Use {@link ByteSink#asCharSink(Charset)} instead. This method
+   *     is scheduled for removal in Guava 18.0.
    */
+  @Deprecated
   public static OutputSupplier<OutputStreamWriter> newWriterSupplier(
       final OutputSupplier<? extends OutputStream> out, final Charset charset) {
-    return CharStreams.asOutputSupplier(ByteStreams.asByteSink(out).asCharSink(charset));
+    return asOutputSupplier(
+        ByteStreams.asByteSink(out).asCharSink(charset));
   }
 
   /**
@@ -186,7 +131,10 @@ public final class CharStreams {
    * @param from the character sequence to write
    * @param to the output supplier
    * @throws IOException if an I/O error occurs
+   * @deprecated Use {@link CharSink#write(CharSequence)} instead. This method
+   *     is scheduled for removal in Guava 18.0.
    */
+  @Deprecated
   public static <W extends Appendable & Closeable> void write(CharSequence from,
       OutputSupplier<W> to) throws IOException {
     asCharSink(to).write(from);
@@ -201,9 +149,13 @@ public final class CharStreams {
    * @param to the output factory
    * @return the number of characters copied
    * @throws IOException if an I/O error occurs
+   * @deprecated Use {@link CharSource#copyTo(CharSink)} instead. This method is
+   *     scheduled for removal in Guava 18.0.
    */
-  public static <R extends Readable & Closeable, W extends Appendable & Closeable> long copy(
-      InputSupplier<R> from, OutputSupplier<W> to) throws IOException {
+  @Deprecated
+  public static <R extends Readable & Closeable,
+      W extends Appendable & Closeable> long copy(InputSupplier<R> from,
+      OutputSupplier<W> to) throws IOException {
     return asCharSource(from).copyTo(asCharSink(to));
   }
 
@@ -216,9 +168,12 @@ public final class CharStreams {
    * @param to the object to write to
    * @return the number of characters copied
    * @throws IOException if an I/O error occurs
+   * @deprecated Use {@link CharSource#copyTo(Appendable)} instead. This method
+   *     is scheduled for removal in Guava 18.0.
    */
-  public static <R extends Readable & Closeable> long copy(InputSupplier<R> from, Appendable to)
-      throws IOException {
+  @Deprecated
+  public static <R extends Readable & Closeable> long copy(
+      InputSupplier<R> from, Appendable to) throws IOException {
     return asCharSource(from).copyTo(to);
   }
 
@@ -264,9 +219,12 @@ public final class CharStreams {
    * @param supplier the factory to read from
    * @return a string containing all the characters
    * @throws IOException if an I/O error occurs
+   * @deprecated Use {@link CharSource#read()} instead. This method is
+   *     scheduled for removal in Guava 18.0.
    */
-  public static <R extends Readable & Closeable> String toString(InputSupplier<R> supplier)
-      throws IOException {
+  @Deprecated
+  public static <R extends Readable & Closeable> String toString(
+      InputSupplier<R> supplier) throws IOException {
     return asCharSource(supplier).read();
   }
 
@@ -292,9 +250,12 @@ public final class CharStreams {
    * @param supplier the factory to read from
    * @return the first line, or null if the reader is empty
    * @throws IOException if an I/O error occurs
+   * @deprecated Use {@link CharSource#readFirstLine()} instead. This method is
+   *     scheduled for removal in Guava 18.0.
    */
-  public static <R extends Readable & Closeable> String readFirstLine(InputSupplier<R> supplier)
-      throws IOException {
+  @Deprecated
+  public static <R extends Readable & Closeable> String readFirstLine(
+      InputSupplier<R> supplier) throws IOException {
     return asCharSource(supplier).readFirstLine();
   }
 
@@ -306,9 +267,13 @@ public final class CharStreams {
    * @param supplier the factory to read from
    * @return a mutable {@link List} containing all the lines
    * @throws IOException if an I/O error occurs
+   * @deprecated Use {@link CharSource#readLines()} instead, but note that it
+   *     returns an {@code ImmutableList}. This method is scheduled for removal
+   *     in Guava 18.0.
    */
-  public static <R extends Readable & Closeable> List<String> readLines(InputSupplier<R> supplier)
-      throws IOException {
+  @Deprecated
+  public static <R extends Readable & Closeable> List<String> readLines(
+      InputSupplier<R> supplier) throws IOException {
     Closer closer = Closer.create();
     try {
       R r = closer.register(supplier.getInput());
@@ -353,7 +318,8 @@ public final class CharStreams {
    * @throws IOException if an I/O error occurs
    * @since 14.0
    */
-  public static <T> T readLines(Readable readable, LineProcessor<T> processor) throws IOException {
+  public static <T> T readLines(
+      Readable readable, LineProcessor<T> processor) throws IOException {
     checkNotNull(readable);
     checkNotNull(processor);
 
@@ -376,9 +342,12 @@ public final class CharStreams {
    * @param callback the LineProcessor to use to handle the lines
    * @return the output of processing the lines
    * @throws IOException if an I/O error occurs
+   * @deprecated Use {@link CharSource#readLines(LineProcessor)} instead. This
+   *     method is scheduled for removal in Guava 18.0.
    */
-  public static <R extends Readable & Closeable, T> T readLines(InputSupplier<R> supplier,
-      LineProcessor<T> callback) throws IOException {
+  @Deprecated
+  public static <R extends Readable & Closeable, T> T readLines(
+      InputSupplier<R> supplier, LineProcessor<T> callback) throws IOException {
     checkNotNull(supplier);
     checkNotNull(callback);
 
@@ -407,19 +376,33 @@ public final class CharStreams {
    * @param suppliers the suppliers to concatenate
    * @return a supplier that will return a reader containing the concatenated
    *     data
+   * @deprecated Use {@link CharSource#concat(Iterable)} instead. This method
+   *     is scheduled for removal in Guava 18.0.
    */
+  @Deprecated
   public static InputSupplier<Reader> join(
       final Iterable<? extends InputSupplier<? extends Reader>> suppliers) {
     checkNotNull(suppliers);
-    return new InputSupplier<Reader>() {
-      public Reader getInput() throws IOException {
-        return new MultiReader(suppliers.iterator());
-      }
-    };
+    Iterable<CharSource> sources = Iterables.transform(suppliers,
+        new Function<InputSupplier<? extends Reader>, CharSource>() {
+          @Override
+          public CharSource apply(InputSupplier<? extends Reader> input) {
+            return asCharSource(input);
+          }
+        });
+    return asInputSupplier(CharSource.concat(sources));
   }
 
-  /** Varargs form of {@link #join(Iterable)}. */
-  public static InputSupplier<Reader> join(InputSupplier<? extends Reader>... suppliers) {
+  /**
+   * Varargs form of {@link #join(Iterable)}.
+   *
+   * @deprecated Use {@link CharSource#concat(CharSource[])} instead. This
+   *     method is scheduled for removal in Guava 18.0.
+   */
+  @Deprecated
+  @SuppressWarnings("unchecked") // suppress "possible heap pollution" warning in JDK7
+  public static InputSupplier<Reader> join(
+      InputSupplier<? extends Reader>... suppliers) {
     return join(Arrays.asList(suppliers));
   }
 
@@ -431,7 +414,7 @@ public final class CharStreams {
    * @param reader the reader to read from
    * @param n the number of characters to skip
    * @throws EOFException if this stream reaches the end before skipping all
-   *     the bytes
+   *     the characters
    * @throws IOException if an I/O error occurs
    */
   public static void skipFully(Reader reader, long n) throws IOException {
@@ -447,6 +430,74 @@ public final class CharStreams {
       } else {
         n -= amt;
       }
+    }
+  }
+
+  /**
+   * Returns a {@link Writer} that simply discards written chars.
+   *
+   * @since 15.0
+   */
+  public static Writer nullWriter() {
+    return NullWriter.INSTANCE;
+  }
+
+  private static final class NullWriter extends Writer {
+
+    private static final NullWriter INSTANCE = new NullWriter();
+
+    @Override
+    public void write(int c) {
+    }
+
+    @Override
+    public void write(char[] cbuf) {
+      checkNotNull(cbuf);
+    }
+
+    @Override
+    public void write(char[] cbuf, int off, int len) {
+      checkPositionIndexes(off, off + len, cbuf.length);
+    }
+
+    @Override
+    public void write(String str) {
+      checkNotNull(str);
+    }
+
+    @Override
+    public void write(String str, int off, int len) {
+      checkPositionIndexes(off, off + len, str.length());
+    }
+
+    @Override
+    public Writer append(CharSequence csq) {
+      checkNotNull(csq);
+      return this;
+    }
+
+    @Override
+    public Writer append(CharSequence csq, int start, int end) {
+      checkPositionIndexes(start, end, csq.length());
+      return this;
+    }
+
+    @Override
+    public Writer append(char c) {
+      return this;
+    }
+
+    @Override
+    public void flush() {
+    }
+
+    @Override
+    public void close() {
+    }
+
+    @Override
+    public String toString() {
+      return "CharStreams.nullWriter()";
     }
   }
 
@@ -469,13 +520,12 @@ public final class CharStreams {
 
   // TODO(user): Remove these once Input/OutputSupplier methods are removed
 
-  static <R extends Readable & Closeable> Reader asReader(final R readable) {
+  static Reader asReader(final Readable readable) {
     checkNotNull(readable);
     if (readable instanceof Reader) {
       return (Reader) readable;
     }
     return new Reader() {
-
       @Override
       public int read(char[] cbuf, int off, int len) throws IOException {
         return read(CharBuffer.wrap(cbuf, off, len));
@@ -488,50 +538,82 @@ public final class CharStreams {
 
       @Override
       public void close() throws IOException {
-        readable.close();
+        if (readable instanceof Closeable) {
+          ((Closeable) readable).close();
+        }
       }
     };
   }
 
-  static <R extends Reader> InputSupplier<R> asInputSupplier(final CharSource source) {
-    checkNotNull(source);
-    return new InputSupplier<R>() {
-
-      public R getInput() throws IOException {
-        return (R) source.openStream();
-      }
-    };
-  }
-
-  static <W extends Writer> OutputSupplier<W> asOutputSupplier(final CharSink sink) {
-    checkNotNull(sink);
-    return new OutputSupplier<W>() {
-
-      public W getOutput() throws IOException {
-        return (W) sink.openStream();
-      }
-    };
-  }
-
-  static <R extends Readable & Closeable> CharSource asCharSource(final InputSupplier<R> supplier) {
+  /**
+   * Returns a view of the given {@code Readable} supplier as a
+   * {@code CharSource}.
+   *
+   * <p>This method is a temporary method provided for easing migration from
+   * suppliers to sources and sinks.
+   *
+   * @since 15.0
+   * @deprecated Convert all {@code InputSupplier<? extends Readable>}
+   *     implementations to extend {@link CharSource} or provide a method for
+   *     viewing the object as a {@code CharSource}. This method is scheduled
+   *     for removal in Guava 18.0.
+   */
+  @Deprecated
+  public static CharSource asCharSource(
+      final InputSupplier<? extends Readable> supplier) {
     checkNotNull(supplier);
     return new CharSource() {
-
       @Override
       public Reader openStream() throws IOException {
         return asReader(supplier.getInput());
       }
+
+      @Override
+      public String toString() {
+        return "CharStreams.asCharSource(" + supplier + ")";
+      }
     };
   }
 
-  static <W extends Appendable & Closeable> CharSink asCharSink(final OutputSupplier<W> supplier) {
+  /**
+   * Returns a view of the given {@code Appendable} supplier as a
+   * {@code CharSink}.
+   *
+   * <p>This method is a temporary method provided for easing migration from
+   * suppliers to sources and sinks.
+   *
+   * @since 15.0
+   * @deprecated Convert all {@code OutputSupplier<? extends Appendable>}
+   *     implementations to extend {@link CharSink} or provide a method for
+   *     viewing the object as a {@code CharSink}. This method is scheduled
+   *     for removal in Guava 18.0.
+   */
+  @Deprecated
+  public static CharSink asCharSink(
+      final OutputSupplier<? extends Appendable> supplier) {
     checkNotNull(supplier);
     return new CharSink() {
-
       @Override
       public Writer openStream() throws IOException {
         return asWriter(supplier.getOutput());
       }
+
+      @Override
+      public String toString() {
+        return "CharStreams.asCharSink(" + supplier + ")";
+      }
     };
+  }
+
+  @SuppressWarnings("unchecked") // used internally where known to be safe
+  static <R extends Reader> InputSupplier<R> asInputSupplier(
+      CharSource source) {
+    return (InputSupplier) checkNotNull(source);
+  }
+
+  @SuppressWarnings("unchecked") // used internally where known to be safe
+  static <W extends Writer> OutputSupplier<W> asOutputSupplier(
+      CharSink sink) {
+    return (OutputSupplier) checkNotNull(sink);
   }
 }

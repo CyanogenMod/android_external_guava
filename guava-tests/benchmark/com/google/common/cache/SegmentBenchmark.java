@@ -18,9 +18,9 @@ package com.google.common.cache;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.cache.LocalCache.ReferenceEntry;
 import com.google.common.cache.LocalCache.Segment;
 
@@ -31,14 +31,14 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *
  * @author Charles Fry
  */
-public class SegmentBenchmark extends SimpleBenchmark {
+public class SegmentBenchmark {
 
   @Param({"16", "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192"}) int capacity;
 
   private Segment<Object, Object> segment;
 
-  @Override
-  protected void setUp() {
+  @BeforeExperiment
+  void setUp() {
     LocalCache<Object, Object> cache = new LocalCache<Object, Object>(
         CacheBuilder.newBuilder()
             .concurrencyLevel(1)
@@ -52,7 +52,7 @@ public class SegmentBenchmark extends SimpleBenchmark {
     checkState(segment.table.length() == capacity);
   }
 
-  public int time(int reps) {
+  @Benchmark int time(int reps) {
     int dummy = 0;
     AtomicReferenceArray<ReferenceEntry<Object, Object>> oldTable = segment.table;
     for (int i = 0; i < reps; i++) {
@@ -61,9 +61,5 @@ public class SegmentBenchmark extends SimpleBenchmark {
       dummy += segment.count;
     }
     return dummy;
-  }
-
-  public static void main(String[] args) {
-    Runner.main(SegmentBenchmark.class, args);
   }
 }

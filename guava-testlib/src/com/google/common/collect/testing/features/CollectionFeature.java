@@ -30,8 +30,6 @@ import java.util.SortedSet;
 /**
  * Optional features of classes derived from {@code Collection}.
  *
- * <p>This class is GWT compatible.
- *
  * @author George van den Driessche
  */
 // Enum values use constructors with generic varargs.
@@ -84,6 +82,7 @@ public enum CollectionFeature implements Feature<Collection> {
 
   SUPPORTS_ADD,
   SUPPORTS_REMOVE,
+  SUPPORTS_ITERATOR_REMOVE,
   FAILS_FAST_ON_CONCURRENT_MODIFICATION,
 
   /**
@@ -93,19 +92,24 @@ public enum CollectionFeature implements Feature<Collection> {
    */
   GENERAL_PURPOSE(
       SUPPORTS_ADD,
-      SUPPORTS_REMOVE),
+      SUPPORTS_REMOVE,
+      SUPPORTS_ITERATOR_REMOVE),
 
   /** Features supported by collections where only removal is allowed. */
   REMOVE_OPERATIONS(
-      SUPPORTS_REMOVE),
+      SUPPORTS_REMOVE,
+      SUPPORTS_ITERATOR_REMOVE),
 
   SERIALIZABLE, SERIALIZABLE_INCLUDING_VIEWS(SERIALIZABLE),
+  
+  SUBSET_VIEW,
+  DESCENDING_VIEW,
 
   /**
    * For documenting collections that support no optional features, such as
    * {@link java.util.Collections#emptySet}
    */
-  NONE();
+  NONE;
 
   private final Set<Feature<? super Collection>> implied;
 

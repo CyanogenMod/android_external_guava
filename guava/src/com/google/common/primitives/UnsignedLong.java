@@ -17,7 +17,6 @@ package com.google.common.primitives;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 
 import java.io.Serializable;
@@ -56,22 +55,6 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
   }
 
   /**
-   * Returns an {@code UnsignedLong} that, when treated as signed, is equal to {@code value}. The
-   * inverse operation is {@link #longValue()}.
-   *
-   * <p>Put another way, if {@code value} is negative, the returned result will be equal to
-   * {@code 2^64 + value}; otherwise, the returned result will be equal to {@code value}.
-   *
-   * @deprecated Use {@link #fromLongBits(long)}. This method is scheduled to be removed in Guava
-   *             release 15.0.
-   */
-  @Deprecated
-  @Beta
-  public static UnsignedLong asUnsigned(long value) {
-    return fromLongBits(value);
-  }
-
-  /**
    * Returns an {@code UnsignedLong} corresponding to a given bit representation.
    * The argument is interpreted as an unsigned 64-bit value. Specifically, the sign bit
    * of {@code bits} is interpreted as a normal bit, and all other bits are treated as usual.
@@ -96,7 +79,8 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
    * @since 14.0
    */
   public static UnsignedLong valueOf(long value) {
-    checkArgument(value >= 0, "value (%s) is outside the range for an unsigned long value", value);
+    checkArgument(value >= 0,
+        "value (%s) is outside the range for an unsigned long value", value);
     return fromLongBits(value);
   }
 
@@ -140,36 +124,10 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
    * Returns the result of adding this and {@code val}. If the result would have more than 64 bits,
    * returns the low 64 bits of the result.
    *
-   * @deprecated Use {@link #plus(UnsignedLong)}.  This method is scheduled to be removed in Guava
-   *             release 15.0.
-   */
-  @Deprecated
-  @Beta
-  public UnsignedLong add(UnsignedLong val) {
-    return plus(val);
-  }
-
-  /**
-   * Returns the result of adding this and {@code val}. If the result would have more than 64 bits,
-   * returns the low 64 bits of the result.
-   *
    * @since 14.0
    */
   public UnsignedLong plus(UnsignedLong val) {
     return fromLongBits(this.value + checkNotNull(val).value);
-  }
-
-  /**
-   * Returns the result of subtracting this and {@code val}. If the result would be negative,
-   * returns the low 64 bits of the result.
-   *
-   * @deprecated Use {@link #minus(UnsignedLong)}.  This method is scheduled to be removed in Guava
-   *             release 15.0.
-   */
-  @Deprecated
-  @Beta
-  public UnsignedLong subtract(UnsignedLong val) {
-    return minus(val);
   }
 
   /**
@@ -186,19 +144,6 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
    * Returns the result of multiplying this and {@code val}. If the result would have more than 64
    * bits, returns the low 64 bits of the result.
    *
-   * @deprecated Use {@link #times(UnsignedLong)}.  This method is scheduled to be removed in Guava
-   *             release 15.0.
-   */
-  @Deprecated
-  @Beta
-  public UnsignedLong multiply(UnsignedLong val) {
-    return times(val);
-  }
-
-  /**
-   * Returns the result of multiplying this and {@code val}. If the result would have more than 64
-   * bits, returns the low 64 bits of the result.
-   *
    * @since 14.0
    */
   @CheckReturnValue
@@ -209,35 +154,11 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
   /**
    * Returns the result of dividing this by {@code val}.
    *
-   * @deprecated Use {@link #dividedBy(UnsignedLong)}.  This method is scheduled to be removed in
-   *             Guava release 15.0.
-   */
-  @Deprecated
-  @Beta
-  public UnsignedLong divide(UnsignedLong val) {
-    return dividedBy(val);
-  }
-
-  /**
-   * Returns the result of dividing this by {@code val}.
-   *
    * @since 14.0
    */
   @CheckReturnValue
   public UnsignedLong dividedBy(UnsignedLong val) {
     return fromLongBits(UnsignedLongs.divide(value, checkNotNull(val).value));
-  }
-
-  /**
-   * Returns the remainder of dividing this by {@code val}.
-   *
-   * @deprecated Use {@link #mod(UnsignedLong)}.  This method is scheduled to be removed in Guava
-   *             release 15.0.
-   */
-  @Deprecated
-  @Beta
-  public UnsignedLong remainder(UnsignedLong val) {
-    return mod(val);
   }
 
   /**
@@ -253,7 +174,6 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
   /**
    * Returns the value of this {@code UnsignedLong} as an {@code int}.
    */
-
   @Override
   public int intValue() {
     return (int) value;
@@ -261,12 +181,11 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
 
   /**
    * Returns the value of this {@code UnsignedLong} as a {@code long}. This is an inverse operation
-   * to {@link #asUnsigned}.
+   * to {@link #fromLongBits}.
    *
    * <p>Note that if this {@code UnsignedLong} holds a value {@code >= 2^63}, the returned value
    * will be equal to {@code this - 2^64}.
    */
-
   @Override
   public long longValue() {
     return value;
@@ -276,7 +195,6 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
    * Returns the value of this {@code UnsignedLong} as a {@code float}, analogous to a widening
    * primitive conversion from {@code long} to {@code float}, and correctly rounded.
    */
-
   @Override
   public float floatValue() {
     @SuppressWarnings("cast")
@@ -291,7 +209,6 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
    * Returns the value of this {@code UnsignedLong} as a {@code double}, analogous to a widening
    * primitive conversion from {@code long} to {@code double}, and correctly rounded.
    */
-
   @Override
   public double doubleValue() {
     @SuppressWarnings("cast")
@@ -313,6 +230,7 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
     return bigInt;
   }
 
+  @Override
   public int compareTo(UnsignedLong o) {
     checkNotNull(o);
     return UnsignedLongs.compare(value, o.value);
@@ -335,7 +253,6 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
   /**
    * Returns a string representation of the {@code UnsignedLong} value, in base 10.
    */
-
   @Override
   public String toString() {
     return UnsignedLongs.toString(value);

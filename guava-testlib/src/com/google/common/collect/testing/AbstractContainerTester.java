@@ -28,8 +28,6 @@ import java.util.List;
  * Base class for testers of classes (including {@link Collection}
  * and {@link java.util.Map Map}) that contain elements.
  *
- * <p>This class is GWT compatible.
- *
  * @param <C> the type of the container
  * @param <E> the type of the container's contents
  *
@@ -132,7 +130,7 @@ public abstract class AbstractContainerTester<C, E>
    * collection.add(existingElement);
    * expectAdded(existingElement);</pre>
    *
-   * In this case, {@code collection} was not modified as a result of the
+   * <p>In this case, {@code collection} was not modified as a result of the
    * {@code add()} call, and the test will fail because the number of
    * occurrences of {@code existingElement} is unchanged.
    *

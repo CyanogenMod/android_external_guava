@@ -52,62 +52,70 @@ import javax.annotation.Nullable;
  * @since 2.0 (imported from Google Collections Library)
  */
 @GwtCompatible
-public abstract class ForwardingList<E> extends ForwardingCollection<E> implements List<E> {
+public abstract class ForwardingList<E> extends ForwardingCollection<E>
+    implements List<E> {
   // TODO(user): identify places where thread safety is actually lost
 
   /** Constructor for use by subclasses. */
   protected ForwardingList() {}
 
-  @Override
-  protected abstract List<E> delegate();
+  @Override protected abstract List<E> delegate();
 
+  @Override
   public void add(int index, E element) {
     delegate().add(index, element);
   }
 
+  @Override
   public boolean addAll(int index, Collection<? extends E> elements) {
     return delegate().addAll(index, elements);
   }
 
+  @Override
   public E get(int index) {
     return delegate().get(index);
   }
 
+  @Override
   public int indexOf(Object element) {
     return delegate().indexOf(element);
   }
 
+  @Override
   public int lastIndexOf(Object element) {
     return delegate().lastIndexOf(element);
   }
 
+  @Override
   public ListIterator<E> listIterator() {
     return delegate().listIterator();
   }
 
+  @Override
   public ListIterator<E> listIterator(int index) {
     return delegate().listIterator(index);
   }
 
+  @Override
   public E remove(int index) {
     return delegate().remove(index);
   }
 
+  @Override
   public E set(int index, E element) {
     return delegate().set(index, element);
   }
 
+  @Override
   public List<E> subList(int fromIndex, int toIndex) {
     return delegate().subList(fromIndex, toIndex);
   }
 
-  @Override
-  public boolean equals(@Nullable Object object) {
+  @Override public boolean equals(@Nullable Object object) {
     return object == this || delegate().equals(object);
   }
 
-  @Override
-  public int hashCode() {
+  @Override public int hashCode() {
     return delegate().hashCode();
   }
 
@@ -132,7 +140,8 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E> implemen
    *
    * @since 7.0
    */
-  protected boolean standardAddAll(int index, Iterable<? extends E> elements) {
+  protected boolean standardAddAll(
+      int index, Iterable<? extends E> elements) {
     return Lists.addAllImpl(this, index, elements);
   }
 
@@ -191,8 +200,7 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E> implemen
    *
    * @since 7.0
    */
-  @Beta
-  protected ListIterator<E> standardListIterator(int start) {
+  @Beta protected ListIterator<E> standardListIterator(int start) {
     return Lists.listIteratorImpl(this, start);
   }
 
@@ -203,8 +211,7 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E> implemen
    *
    * @since 7.0
    */
-  @Beta
-  protected List<E> standardSubList(int fromIndex, int toIndex) {
+  @Beta protected List<E> standardSubList(int fromIndex, int toIndex) {
     return Lists.subListImpl(this, fromIndex, toIndex);
   }
 
@@ -215,8 +222,7 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E> implemen
    *
    * @since 7.0
    */
-  @Beta
-  protected boolean standardEquals(@Nullable Object object) {
+  @Beta protected boolean standardEquals(@Nullable Object object) {
     return Lists.equalsImpl(this, object);
   }
 
@@ -227,8 +233,7 @@ public abstract class ForwardingList<E> extends ForwardingCollection<E> implemen
    *
    * @since 7.0
    */
-  @Beta
-  protected int standardHashCode() {
+  @Beta protected int standardHashCode() {
     return Lists.hashCodeImpl(this);
   }
 }

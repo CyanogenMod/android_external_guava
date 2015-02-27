@@ -16,8 +16,9 @@
 
 package com.google.common.collect.testing;
 
+import static com.google.common.collect.testing.DerivedCollectionGenerators.keySetGenerator;
+
 import com.google.common.collect.testing.DerivedCollectionGenerators.MapEntrySetGenerator;
-import com.google.common.collect.testing.DerivedCollectionGenerators.MapKeySetGenerator;
 import com.google.common.collect.testing.DerivedCollectionGenerators.MapValueCollectionGenerator;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
@@ -27,6 +28,7 @@ import com.google.common.collect.testing.testers.MapClearTester;
 import com.google.common.collect.testing.testers.MapContainsKeyTester;
 import com.google.common.collect.testing.testers.MapContainsValueTester;
 import com.google.common.collect.testing.testers.MapCreationTester;
+import com.google.common.collect.testing.testers.MapEntrySetTester;
 import com.google.common.collect.testing.testers.MapEqualsTester;
 import com.google.common.collect.testing.testers.MapGetTester;
 import com.google.common.collect.testing.testers.MapHashCodeTester;
@@ -36,6 +38,7 @@ import com.google.common.collect.testing.testers.MapPutTester;
 import com.google.common.collect.testing.testers.MapRemoveTester;
 import com.google.common.collect.testing.testers.MapSerializationTester;
 import com.google.common.collect.testing.testers.MapSizeTester;
+import com.google.common.collect.testing.testers.MapToStringTester;
 import com.google.common.testing.SerializableTester;
 
 import junit.framework.TestSuite;
@@ -68,6 +71,7 @@ public class MapTestSuiteBuilder<K, V>
         MapContainsKeyTester.class,
         MapContainsValueTester.class,
         MapCreationTester.class,
+        MapEntrySetTester.class,
         MapEqualsTester.class,
         MapGetTester.class,
         MapHashCodeTester.class,
@@ -76,7 +80,8 @@ public class MapTestSuiteBuilder<K, V>
         MapPutAllTester.class,
         MapRemoveTester.class,
         MapSerializationTester.class,
-        MapSizeTester.class
+        MapSizeTester.class,
+        MapToStringTester.class
     );
   }
 
@@ -109,7 +114,7 @@ public class MapTestSuiteBuilder<K, V>
         .createTestSuite());
 
     derivedSuites.add(createDerivedKeySetSuite(
-            new MapKeySetGenerator<K, V>(parentBuilder.getSubjectGenerator()))
+            keySetGenerator(parentBuilder.getSubjectGenerator()))
         .withFeatures(computeKeySetFeatures(parentBuilder.getFeatures()))
         .named(parentBuilder.getName() + " keys")
         .suppressing(parentBuilder.getSuppressedTests())
@@ -143,7 +148,9 @@ public class MapTestSuiteBuilder<K, V>
       Set<Feature<?>> mapFeatures) {
     Set<Feature<?>> entrySetFeatures =
         computeCommonDerivedCollectionFeatures(mapFeatures);
-    entrySetFeatures.add(CollectionFeature.ALLOWS_NULL_QUERIES);
+    if (mapFeatures.contains(MapFeature.ALLOWS_NULL_ENTRY_QUERIES)) {
+      entrySetFeatures.add(CollectionFeature.ALLOWS_NULL_QUERIES);
+    }
     return entrySetFeatures;
   }
 
@@ -152,9 +159,12 @@ public class MapTestSuiteBuilder<K, V>
     Set<Feature<?>> keySetFeatures =
         computeCommonDerivedCollectionFeatures(mapFeatures);
 
+    // TODO(user): make this trigger only if the map is a submap
+    // currently, the KeySetGenerator won't work properly for a subset of a keyset of a submap
+    keySetFeatures.add(CollectionFeature.SUBSET_VIEW);
     if (mapFeatures.contains(MapFeature.ALLOWS_NULL_KEYS)) {
       keySetFeatures.add(CollectionFeature.ALLOWS_NULL_VALUES);
-    } else if (mapFeatures.contains(MapFeature.ALLOWS_NULL_QUERIES)) {
+    } else if (mapFeatures.contains(MapFeature.ALLOWS_NULL_KEY_QUERIES)) {
       keySetFeatures.add(CollectionFeature.ALLOWS_NULL_QUERIES);
     }
 
@@ -165,7 +175,7 @@ public class MapTestSuiteBuilder<K, V>
       Set<Feature<?>> mapFeatures) {
     Set<Feature<?>> valuesCollectionFeatures =
         computeCommonDerivedCollectionFeatures(mapFeatures);
-    if (mapFeatures.contains(MapFeature.ALLOWS_NULL_QUERIES)) {
+    if (mapFeatures.contains(MapFeature.ALLOWS_NULL_VALUE_QUERIES)) {
       valuesCollectionFeatures.add(CollectionFeature.ALLOWS_NULL_QUERIES);
     }
     if (mapFeatures.contains(MapFeature.ALLOWS_NULL_VALUES)) {
@@ -175,10 +185,12 @@ public class MapTestSuiteBuilder<K, V>
     return valuesCollectionFeatures;
   }
 
-  private static Set<Feature<?>> computeCommonDerivedCollectionFeatures(
+  public static Set<Feature<?>> computeCommonDerivedCollectionFeatures(
       Set<Feature<?>> mapFeatures) {
+    mapFeatures = new HashSet<Feature<?>>(mapFeatures);
     Set<Feature<?>> derivedFeatures = new HashSet<Feature<?>>();
-    if (mapFeatures.contains(CollectionFeature.SERIALIZABLE_INCLUDING_VIEWS)) {
+    mapFeatures.remove(CollectionFeature.SERIALIZABLE);
+    if (mapFeatures.remove(CollectionFeature.SERIALIZABLE_INCLUDING_VIEWS)) {
       derivedFeatures.add(CollectionFeature.SERIALIZABLE);
     }
     if (mapFeatures.contains(MapFeature.SUPPORTS_REMOVE)) {
@@ -190,8 +202,11 @@ public class MapTestSuiteBuilder<K, V>
     if (mapFeatures.contains(MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION)) {
       derivedFeatures.add(CollectionFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION);
     }
-    if (mapFeatures.contains(CollectionFeature.KNOWN_ORDER)) {
-      derivedFeatures.add(CollectionFeature.KNOWN_ORDER);
+    // add the intersection of CollectionFeature.values() and mapFeatures
+    for (CollectionFeature feature : CollectionFeature.values()) {
+      if (mapFeatures.contains(feature)) {
+        derivedFeatures.add(feature);
+      }
     }
     // add the intersection of CollectionSize.values() and mapFeatures
     for (CollectionSize size : CollectionSize.values()) {

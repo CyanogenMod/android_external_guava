@@ -17,11 +17,11 @@
 package com.google.common.collect;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.Multisets.checkNonnegative;
+import static com.google.common.collect.CollectPreconditions.checkNonnegative;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -46,7 +46,7 @@ import javax.annotation.Nullable;
  *
  * @author mike nonemacher
  */
-public class ConcurrentHashMultisetBenchmark extends SimpleBenchmark {
+public class ConcurrentHashMultisetBenchmark {
   @Param({"1", "2", "4", "8"}) int threads;
   @Param({"3", "30", "300"}) int size;
   @Param MultisetSupplier implSupplier;
@@ -55,8 +55,7 @@ public class ConcurrentHashMultisetBenchmark extends SimpleBenchmark {
   private ImmutableList<Integer> keys;
   private ExecutorService threadPool;
 
-  @Override protected void setUp() throws Exception {
-    super.setUp();
+  @BeforeExperiment void setUp() throws Exception {
     multiset = implSupplier.get();
     ImmutableList.Builder<Integer> builder = ImmutableList.builder();
     for (int i = 0; i < size; i++) {
@@ -67,7 +66,7 @@ public class ConcurrentHashMultisetBenchmark extends SimpleBenchmark {
         Executors.newFixedThreadPool(threads, new ThreadFactoryBuilder().setDaemon(true).build());
   }
 
-  public long timeAdd(final int reps) throws ExecutionException, InterruptedException {
+  @Benchmark long add(final int reps) throws ExecutionException, InterruptedException {
     return doMultithreadedLoop(
         new Callable<Long>() {
           @Override public Long call() {
@@ -76,7 +75,7 @@ public class ConcurrentHashMultisetBenchmark extends SimpleBenchmark {
         });
   }
 
-  public long timeAddRemove(final int reps) throws ExecutionException, InterruptedException {
+  @Benchmark long addRemove(final int reps) throws ExecutionException, InterruptedException {
     return doMultithreadedLoop(
         new Callable<Long>() {
           @Override public Long call() {
@@ -129,10 +128,6 @@ public class ConcurrentHashMultisetBenchmark extends SimpleBenchmark {
       }
     }
     return blah;
-  }
-
-  public static void main(String[] args) {
-    Runner.main(ConcurrentHashMultisetBenchmark.class, args);
   }
 
   private enum MultisetSupplier {

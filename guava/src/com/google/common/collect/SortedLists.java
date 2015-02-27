@@ -38,8 +38,7 @@ import javax.annotation.Nullable;
  * @author Louis Wasserman
  */
 @GwtCompatible
-@Beta
-final class SortedLists {
+@Beta final class SortedLists {
   private SortedLists() {}
 
   /**
@@ -52,10 +51,9 @@ final class SortedLists {
      * made as to which index is returned, if more than one element compares as equal to the key.
      */
     ANY_PRESENT {
-
       @Override
-      <E> int resultIndex(Comparator<? super E> comparator, E key, List<? extends E> list,
-          int foundIndex) {
+      <E> int resultIndex(
+          Comparator<? super E> comparator, E key, List<? extends E> list, int foundIndex) {
         return foundIndex;
       }
     },
@@ -63,10 +61,9 @@ final class SortedLists {
      * Return the index of the last list element that compares as equal to the key.
      */
     LAST_PRESENT {
-
       @Override
-      <E> int resultIndex(Comparator<? super E> comparator, E key, List<? extends E> list,
-          int foundIndex) {
+      <E> int resultIndex(
+          Comparator<? super E> comparator, E key, List<? extends E> list, int foundIndex) {
         // Of course, we have to use binary search to find the precise
         // breakpoint...
         int lower = foundIndex;
@@ -88,10 +85,9 @@ final class SortedLists {
      * Return the index of the first list element that compares as equal to the key.
      */
     FIRST_PRESENT {
-
       @Override
-      <E> int resultIndex(Comparator<? super E> comparator, E key, List<? extends E> list,
-          int foundIndex) {
+      <E> int resultIndex(
+          Comparator<? super E> comparator, E key, List<? extends E> list, int foundIndex) {
         // Of course, we have to use binary search to find the precise
         // breakpoint...
         int lower = 0;
@@ -115,10 +111,9 @@ final class SortedLists {
      * list.size()} if there is no such element.
      */
     FIRST_AFTER {
-
       @Override
-      public <E> int resultIndex(Comparator<? super E> comparator, E key, List<? extends E> list,
-          int foundIndex) {
+      public <E> int resultIndex(
+          Comparator<? super E> comparator, E key, List<? extends E> list, int foundIndex) {
         return LAST_PRESENT.resultIndex(comparator, key, list, foundIndex) + 1;
       }
     },
@@ -127,15 +122,14 @@ final class SortedLists {
      * if there is no such element.
      */
     LAST_BEFORE {
-
       @Override
-      public <E> int resultIndex(Comparator<? super E> comparator, E key, List<? extends E> list,
-          int foundIndex) {
+      public <E> int resultIndex(
+          Comparator<? super E> comparator, E key, List<? extends E> list, int foundIndex) {
         return FIRST_PRESENT.resultIndex(comparator, key, list, foundIndex) - 1;
       }
     };
-    abstract <E> int resultIndex(Comparator<? super E> comparator, E key, List<? extends E> list,
-        int foundIndex);
+    abstract <E> int resultIndex(
+        Comparator<? super E> comparator, E key, List<? extends E> list, int foundIndex);
   }
 
   /**
@@ -148,7 +142,6 @@ final class SortedLists {
      * element.
      */
     NEXT_LOWER {
-
       @Override
       int resultIndex(int higherIndex) {
         return higherIndex - 1;
@@ -159,7 +152,6 @@ final class SortedLists {
      * no such element.
      */
     NEXT_HIGHER {
-
       @Override
       public int resultIndex(int higherIndex) {
         return higherIndex;
@@ -178,7 +170,6 @@ final class SortedLists {
      * {@code ~insertionIndex} is equal to {@code -1 - insertionIndex}.
      */
     INVERTED_INSERTION_INDEX {
-
       @Override
       public int resultIndex(int higherIndex) {
         return ~higherIndex;
@@ -198,7 +189,8 @@ final class SortedLists {
   public static <E extends Comparable> int binarySearch(List<? extends E> list, E e,
       KeyPresentBehavior presentBehavior, KeyAbsentBehavior absentBehavior) {
     checkNotNull(e);
-    return binarySearch(list, checkNotNull(e), Ordering.natural(), presentBehavior, absentBehavior);
+    return binarySearch(
+        list, checkNotNull(e), Ordering.natural(), presentBehavior, absentBehavior);
   }
 
   /**
@@ -210,7 +202,13 @@ final class SortedLists {
   public static <E, K extends Comparable> int binarySearch(List<E> list,
       Function<? super E, K> keyFunction, @Nullable K key, KeyPresentBehavior presentBehavior,
       KeyAbsentBehavior absentBehavior) {
-    return binarySearch(list, keyFunction, key, Ordering.natural(), presentBehavior, absentBehavior);
+    return binarySearch(
+        list,
+        keyFunction,
+        key,
+        Ordering.natural(),
+        presentBehavior,
+        absentBehavior);
   }
 
   /**
@@ -220,11 +218,15 @@ final class SortedLists {
    * {@link #binarySearch(List, Object, Comparator, KeyPresentBehavior, KeyAbsentBehavior)} using
    * {@link Lists#transform(List, Function) Lists.transform(list, keyFunction)}.
    */
-  public static <E, K> int binarySearch(List<E> list, Function<? super E, K> keyFunction,
-      @Nullable K key, Comparator<? super K> keyComparator, KeyPresentBehavior presentBehavior,
+  public static <E, K> int binarySearch(
+      List<E> list,
+      Function<? super E, K> keyFunction,
+      @Nullable K key,
+      Comparator<? super K> keyComparator,
+      KeyPresentBehavior presentBehavior,
       KeyAbsentBehavior absentBehavior) {
-    return binarySearch(Lists.transform(list, keyFunction), key, keyComparator, presentBehavior,
-        absentBehavior);
+    return binarySearch(
+        Lists.transform(list, keyFunction), key, keyComparator, presentBehavior, absentBehavior);
   }
 
   /**
@@ -273,9 +275,8 @@ final class SortedLists {
       } else if (c > 0) {
         lower = middle + 1;
       } else {
-        return lower
-            + presentBehavior.resultIndex(comparator, key, list.subList(lower, upper + 1), middle
-                - lower);
+        return lower + presentBehavior.resultIndex(
+            comparator, key, list.subList(lower, upper + 1), middle - lower);
       }
     }
     return absentBehavior.resultIndex(lower);

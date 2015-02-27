@@ -26,6 +26,7 @@ import static java.lang.Double.POSITIVE_INFINITY;
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
+import com.google.common.base.Converter;
 
 import java.io.Serializable;
 import java.util.AbstractList;
@@ -73,7 +74,7 @@ public final class Doubles {
     return ((Double) value).hashCode();
     // TODO(kevinb): do it this way when we can (GWT problem):
     // long bits = Double.doubleToLongBits(value);
-    // return (int)(bits ^ (bits >>> 32));
+    // return (int) (bits ^ (bits >>> 32));
   }
 
   /**
@@ -81,6 +82,10 @@ public final class Doubles {
    * returned is the same as that of <code>((Double) a).{@linkplain
    * Double#compareTo compareTo}(b)</code>. As with that method, {@code NaN} is
    * treated as greater than all other values, and {@code 0.0 > -0.0}.
+   *
+   * <p><b>Note:</b> this method simply delegates to the JDK method {@link
+   * Double#compare}. It is provided for consistency with the other primitive
+   * types, whose compare methods were not added to the JDK until JDK 7.
    *
    * @param a the first {@code double} to compare
    * @param b the second {@code double} to compare
@@ -136,7 +141,8 @@ public final class Doubles {
   }
 
   // TODO(kevinb): consider making this public
-  private static int indexOf(double[] array, double target, int start, int end) {
+  private static int indexOf(
+      double[] array, double target, int start, int end) {
     for (int i = start; i < end; i++) {
       if (array[i] == target) {
         return i;
@@ -166,7 +172,8 @@ public final class Doubles {
       return 0;
     }
 
-    outer: for (int i = 0; i < array.length - target.length + 1; i++) {
+    outer:
+    for (int i = 0; i < array.length - target.length + 1; i++) {
       for (int j = 0; j < target.length; j++) {
         if (array[i + j] != target[j]) {
           continue outer;
@@ -192,7 +199,8 @@ public final class Doubles {
   }
 
   // TODO(kevinb): consider making this public
-  private static int lastIndexOf(double[] array, double target, int start, int end) {
+  private static int lastIndexOf(
+      double[] array, double target, int start, int end) {
     for (int i = end - 1; i >= start; i--) {
       if (array[i] == target) {
         return i;
@@ -260,6 +268,42 @@ public final class Doubles {
     return result;
   }
 
+  private static final class DoubleConverter
+      extends Converter<String, Double> implements Serializable {
+    static final DoubleConverter INSTANCE = new DoubleConverter();
+
+    @Override
+    protected Double doForward(String value) {
+      return Double.valueOf(value);
+    }
+
+    @Override
+    protected String doBackward(Double value) {
+      return value.toString();
+    }
+
+    @Override
+    public String toString() {
+      return "Doubles.stringConverter()";
+    }
+
+    private Object readResolve() {
+      return INSTANCE;
+    }
+    private static final long serialVersionUID = 1;
+  }
+
+  /**
+   * Returns a serializable converter object that converts between strings and
+   * doubles using {@link Double#valueOf} and {@link Double#toString()}.
+   *
+   * @since 16.0
+   */
+  @Beta
+  public static Converter<String, Double> stringConverter() {
+    return DoubleConverter.INSTANCE;
+  }
+
   /**
    * Returns an array containing the same values as {@code array}, but
    * guaranteed to be of a specified minimum length. If {@code array} already
@@ -276,10 +320,13 @@ public final class Doubles {
    * @return an array containing the values of {@code array}, with guaranteed
    *     minimum length {@code minLength}
    */
-  public static double[] ensureCapacity(double[] array, int minLength, int padding) {
+  public static double[] ensureCapacity(
+      double[] array, int minLength, int padding) {
     checkArgument(minLength >= 0, "Invalid minLength: %s", minLength);
     checkArgument(padding >= 0, "Invalid padding: %s", padding);
-    return (array.length < minLength) ? copyOf(array, minLength + padding) : array;
+    return (array.length < minLength)
+        ? copyOf(array, minLength + padding)
+        : array;
   }
 
   // Arrays.copyOf() requires Java 6
@@ -341,6 +388,7 @@ public final class Doubles {
   private enum LexicographicalComparator implements Comparator<double[]> {
     INSTANCE;
 
+    @Override
     public int compare(double[] left, double[] right) {
       int minLength = Math.min(left.length, right.length);
       for (int i = 0; i < minLength; i++) {
@@ -408,8 +456,8 @@ public final class Doubles {
   }
 
   @GwtCompatible
-  private static class DoubleArrayAsList extends AbstractList<Double> implements RandomAccess,
-      Serializable {
+  private static class DoubleArrayAsList extends AbstractList<Double>
+      implements RandomAccess, Serializable {
     final double[] array;
     final int start;
     final int end;
@@ -424,31 +472,26 @@ public final class Doubles {
       this.end = end;
     }
 
-    @Override
-    public int size() {
+    @Override public int size() {
       return end - start;
     }
 
-    @Override
-    public boolean isEmpty() {
+    @Override public boolean isEmpty() {
       return false;
     }
 
-    @Override
-    public Double get(int index) {
+    @Override public Double get(int index) {
       checkElementIndex(index, size());
       return array[start + index];
     }
 
-    @Override
-    public boolean contains(Object target) {
+    @Override public boolean contains(Object target) {
       // Overridden to prevent a ton of boxing
       return (target instanceof Double)
           && Doubles.indexOf(array, (Double) target, start, end) != -1;
     }
 
-    @Override
-    public int indexOf(Object target) {
+    @Override public int indexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Double) {
         int i = Doubles.indexOf(array, (Double) target, start, end);
@@ -459,8 +502,7 @@ public final class Doubles {
       return -1;
     }
 
-    @Override
-    public int lastIndexOf(Object target) {
+    @Override public int lastIndexOf(Object target) {
       // Overridden to prevent a ton of boxing
       if (target instanceof Double) {
         int i = Doubles.lastIndexOf(array, (Double) target, start, end);
@@ -471,8 +513,7 @@ public final class Doubles {
       return -1;
     }
 
-    @Override
-    public Double set(int index, Double element) {
+    @Override public Double set(int index, Double element) {
       checkElementIndex(index, size());
       double oldValue = array[start + index];
       // checkNotNull for GWT (do not optimize)
@@ -480,8 +521,7 @@ public final class Doubles {
       return oldValue;
     }
 
-    @Override
-    public List<Double> subList(int fromIndex, int toIndex) {
+    @Override public List<Double> subList(int fromIndex, int toIndex) {
       int size = size();
       checkPositionIndexes(fromIndex, toIndex, size);
       if (fromIndex == toIndex) {
@@ -490,8 +530,7 @@ public final class Doubles {
       return new DoubleArrayAsList(array, start + fromIndex, start + toIndex);
     }
 
-    @Override
-    public boolean equals(Object object) {
+    @Override public boolean equals(Object object) {
       if (object == this) {
         return true;
       }
@@ -511,8 +550,7 @@ public final class Doubles {
       return super.equals(object);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
       int result = 1;
       for (int i = start; i < end; i++) {
         result = 31 * result + Doubles.hashCode(array[i]);
@@ -520,8 +558,7 @@ public final class Doubles {
       return result;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       StringBuilder builder = new StringBuilder(size() * 12);
       builder.append('[').append(array[start]);
       for (int i = start + 1; i < end; i++) {

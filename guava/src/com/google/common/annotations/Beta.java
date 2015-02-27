@@ -39,9 +39,12 @@ import java.lang.annotation.Target;
  * @author Kevin Bourrillion
  */
 @Retention(RetentionPolicy.CLASS)
-@Target({ ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.FIELD,
-    ElementType.METHOD, ElementType.TYPE })
+@Target({
+    ElementType.ANNOTATION_TYPE,
+    ElementType.CONSTRUCTOR,
+    ElementType.FIELD,
+    ElementType.METHOD,
+    ElementType.TYPE})
 @Documented
 @GwtCompatible
-public @interface Beta {
-}
+public @interface Beta {}

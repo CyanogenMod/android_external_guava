@@ -40,7 +40,8 @@ import java.io.OutputStream;
  * @since 8.0
  */
 @Beta
-public class LittleEndianDataOutputStream extends FilterOutputStream implements DataOutput {
+public class LittleEndianDataOutputStream extends FilterOutputStream
+    implements DataOutput {
 
   /**
    * Creates a {@code LittleEndianDataOutputStream} that wraps the given stream.
@@ -51,17 +52,16 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
     super(new DataOutputStream(Preconditions.checkNotNull(out)));
   }
 
-  @Override
-  public void write(byte[] b, int off, int len) throws IOException {
+  @Override public void write(byte[] b, int off, int len) throws IOException {
     // Override slow FilterOutputStream impl
     out.write(b, off, len);
   }
 
-  public void writeBoolean(boolean v) throws IOException {
+  @Override public void writeBoolean(boolean v) throws IOException {
     ((DataOutputStream) out).writeBoolean(v);
   }
 
-  public void writeByte(int v) throws IOException {
+  @Override public void writeByte(int v) throws IOException {
     ((DataOutputStream) out).writeByte(v);
   }
 
@@ -71,7 +71,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
    *             {@link #writeChars(String s)} or another write method instead.
    */
   @Deprecated
-  public void writeBytes(String s) throws IOException {
+  @Override public void writeBytes(String s) throws IOException {
     ((DataOutputStream) out).writeBytes(s);
   }
 
@@ -81,7 +81,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
    *
    * @throws IOException if an I/O error occurs
    */
-  public void writeChar(int v) throws IOException {
+  @Override public void writeChar(int v) throws IOException {
     writeShort(v);
   }
 
@@ -92,7 +92,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
    *
    * @throws IOException if an I/O error occurs
    */
-  public void writeChars(String s) throws IOException {
+  @Override public void writeChars(String s) throws IOException {
     for (int i = 0; i < s.length(); i++) {
       writeChar(s.charAt(i));
     }
@@ -105,7 +105,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
    *
    * @throws IOException if an I/O error occurs
    */
-  public void writeDouble(double v) throws IOException {
+  @Override public void writeDouble(double v) throws IOException {
     writeLong(Double.doubleToLongBits(v));
   }
 
@@ -116,7 +116,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
    *
    * @throws IOException if an I/O error occurs
    */
-  public void writeFloat(float v) throws IOException {
+  @Override public void writeFloat(float v) throws IOException {
     writeInt(Float.floatToIntBits(v));
   }
 
@@ -127,7 +127,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
    *
    * @throws IOException if an I/O error occurs
    */
-  public void writeInt(int v) throws IOException {
+  @Override public void writeInt(int v) throws IOException {
     out.write(0xFF & v);
     out.write(0xFF & (v >> 8));
     out.write(0xFF & (v >> 16));
@@ -141,7 +141,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
    *
    * @throws IOException if an I/O error occurs
    */
-  public void writeLong(long v) throws IOException {
+  @Override public void writeLong(long v) throws IOException {
     byte[] bytes = Longs.toByteArray(Long.reverseBytes(v));
     write(bytes, 0, bytes.length);
   }
@@ -153,12 +153,19 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
    *
    * @throws IOException if an I/O error occurs
    */
-  public void writeShort(int v) throws IOException {
+  @Override public void writeShort(int v) throws IOException {
     out.write(0xFF & v);
     out.write(0xFF & (v >> 8));
   }
 
-  public void writeUTF(String str) throws IOException {
+  @Override public void writeUTF(String str) throws IOException {
     ((DataOutputStream) out).writeUTF(str);
+  }
+
+  // Overriding close() because FilterOutputStream's close() method pre-JDK8 has bad behavior:
+  // it silently ignores any exception thrown by flush(). Instead, just close the delegate stream.
+  // It should flush itself if necessary.
+  @Override public void close() throws IOException {
+    out.close();
   }
 }

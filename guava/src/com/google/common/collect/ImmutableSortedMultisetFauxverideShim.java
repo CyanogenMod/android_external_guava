@@ -26,8 +26,8 @@ package com.google.common.collect;
  *   Set<Object> sorted = ImmutableSortedMultiset.copyOf(objects);
  *   // BAD CODE! The returned multiset is actually an unsorted ImmutableMultiset!}</pre>
  *
- * While we could put the overrides in {@link ImmutableSortedMultiset} itself, it seems clearer to
- * separate these "do not call" methods from those intended for normal use.
+ * <p>While we could put the overrides in {@link ImmutableSortedMultiset} itself, it seems clearer
+ * to separate these "do not call" methods from those intended for normal use.
  *
  * @author Louis Wasserman
  */
@@ -127,7 +127,13 @@ abstract class ImmutableSortedMultisetFauxverideShim<E> extends ImmutableMultise
    *             Comparable, Comparable, Comparable...)} . </b>
    */
   @Deprecated
-  public static <E> ImmutableSortedMultiset<E> of(E e1, E e2, E e3, E e4, E e5, E e6,
+  public static <E> ImmutableSortedMultiset<E> of(
+      E e1,
+      E e2,
+      E e3,
+      E e4,
+      E e5,
+      E e6,
       E... remaining) {
     throw new UnsupportedOperationException();
   }

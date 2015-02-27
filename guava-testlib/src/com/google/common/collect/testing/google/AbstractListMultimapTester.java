@@ -21,7 +21,6 @@ import com.google.common.collect.ListMultimap;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Superclass for all {@code ListMultimap} testers.
@@ -37,13 +36,13 @@ public class AbstractListMultimapTester<K, V>
   }
 
   protected void assertGet(K key, Collection<V> values) {
-    ASSERT.<V, List<V>>that(multimap().get(key)).has().allFrom(values).inOrder();
+    ASSERT.that(multimap().get(key)).has().exactlyAs(values).inOrder();
 
     if (!values.isEmpty()) {
-      ASSERT.<V, List<V>>that(multimap().asMap().get(key)).has().allFrom(values).inOrder();
+      ASSERT.that(multimap().asMap().get(key)).has().exactlyAs(values).inOrder();
       assertFalse(multimap().isEmpty());
     } else {
-      ASSERT.<V, List<V>>that(multimap().asMap().get(key)).isNull();
+      ASSERT.that(multimap().asMap().get(key)).isNull();
     }
 
     assertEquals(values.size(), multimap().get(key).size());

@@ -16,9 +16,9 @@
 
 package com.google.common.collect;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.base.Preconditions;
 
 import java.util.Random;
@@ -28,7 +28,7 @@ import java.util.Random;
  * 
  * @author David Richter
  */
-public class MultisetIteratorBenchmark extends SimpleBenchmark {
+public class MultisetIteratorBenchmark {
   @Param({"0", "1", "16", "256", "4096", "65536"}) int size;
 
   LinkedHashMultiset<Object> linkedHashMultiset;
@@ -37,7 +37,7 @@ public class MultisetIteratorBenchmark extends SimpleBenchmark {
   // TreeMultiset requires a Comparable element.
   TreeMultiset<Integer> treeMultiset;
 
-  @Override protected void setUp() {
+  @BeforeExperiment void setUp() {
     hashMultiset = HashMultiset.create(size);
     linkedHashMultiset = LinkedHashMultiset.create(size);
     treeMultiset = TreeMultiset.create();
@@ -61,7 +61,7 @@ public class MultisetIteratorBenchmark extends SimpleBenchmark {
     Preconditions.checkState(hashMultiset.size() == size);
   }
 
-  public int timeHashMultiset(int reps) {
+  @Benchmark int hashMultiset(int reps) {
     int sum = 0;
     for (int i = 0; i < reps; i++) {
       for (Object value : hashMultiset) {
@@ -71,7 +71,7 @@ public class MultisetIteratorBenchmark extends SimpleBenchmark {
     return sum;
   }
 
-  public int timeLinkedHashMultiset(int reps) {
+  @Benchmark int linkedHashMultiset(int reps) {
     int sum = 0;
     for (int i = 0; i < reps; i++) {
       for (Object value : linkedHashMultiset) {
@@ -81,7 +81,7 @@ public class MultisetIteratorBenchmark extends SimpleBenchmark {
     return sum;
   }
 
-  public int timeTreeMultiset(int reps) {
+  @Benchmark int treeMultiset(int reps) {
     int sum = 0;
     for (int i = 0; i < reps; i++) {
       for (Object value : treeMultiset) {
@@ -89,9 +89,5 @@ public class MultisetIteratorBenchmark extends SimpleBenchmark {
       }
     }
     return sum;
-  }
-
-  public static void main(String[] args) {
-    Runner.main(MultisetIteratorBenchmark.class, args);
   }
 }

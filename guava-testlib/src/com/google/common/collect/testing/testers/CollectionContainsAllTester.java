@@ -34,8 +34,6 @@ import java.util.Collection;
  * collection. Can't be invoked directly; please see
  * {@link com.google.common.collect.testing.CollectionTestSuiteBuilder}.
  *
- * <p>This class is GWT compatible.
- *
  * @author Kevin Bourrillion
  * @author Chris Povirk
  */
@@ -59,6 +57,7 @@ public class CollectionContainsAllTester<E>
         collection.containsAll(MinimalCollection.of(createSamplesArray())));
   }
 
+  @SuppressWarnings("ModifyingCollectionWithItself")
   public void testContainsAll_self() {
     assertTrue("containsAll(this) should return true",
         collection.containsAll(collection));

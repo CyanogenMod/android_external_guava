@@ -16,9 +16,9 @@
 
 package com.google.common.collect;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 import com.google.common.collect.BenchmarkHelpers.SetImpl;
 import com.google.common.collect.CollectionBenchmarkSampleData.Element;
 
@@ -30,7 +30,7 @@ import java.util.Set;
  *
  * @author Kevin Bourrillion
  */
-public class SetContainsBenchmark extends SimpleBenchmark {
+public class SetContainsBenchmark {
   // Start at 4.88 then multiply by 2*2^phi <evil cackle> - The goal is be uniform
   // yet visit a variety of "values-relative-to-the-next-power-of-2"
   @Param({"5", "30", "180", "1100", "6900", "43000", "260000"}) // "1600000", "9800000"
@@ -54,7 +54,7 @@ public class SetContainsBenchmark extends SimpleBenchmark {
   private Element[] queries;
   private Set<Element> setToTest;
 
-  @Override public void setUp() {
+  @BeforeExperiment void setUp() {
     CollectionBenchmarkSampleData sampleData = 
         new CollectionBenchmarkSampleData(
             isUserTypeFast, random, hitRate, size);
@@ -63,7 +63,7 @@ public class SetContainsBenchmark extends SimpleBenchmark {
     this.queries = sampleData.getQueries();
   }
 
-  public boolean timeContains(int reps) {
+  @Benchmark boolean contains(int reps) {
     // Paranoia: acting on hearsay that accessing fields might be slow
     // Should write a benchmark to test that!
     Set<Element> set = setToTest;
@@ -76,9 +76,5 @@ public class SetContainsBenchmark extends SimpleBenchmark {
       dummy ^= set.contains(queries[i & mask]);
     }
     return dummy;
-  }
-
-  public static void main(String[] args) throws Exception {
-    Runner.main(SetContainsBenchmark.class, args);
   }
 }

@@ -21,19 +21,19 @@ import static org.truth0.Truth.ASSERT;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.testing.MapTestSuiteBuilder;
+import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.MapFeature;
 import com.google.common.collect.testing.testers.MapPutTester;
 import com.google.common.reflect.ImmutableTypeToInstanceMapTest.TestTypeToInstanceMapGenerator;
 
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+
+import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Unit test of {@link MutableTypeToInstanceMap}.
@@ -77,8 +77,9 @@ public class MutableTypeToInstanceMapTest extends TestCase {
             MapFeature.SUPPORTS_REMOVE,
             MapFeature.RESTRICTS_KEYS,
             MapFeature.ALLOWS_NULL_VALUES,
+            CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
             CollectionSize.ANY,
-            MapFeature.ALLOWS_NULL_QUERIES)
+            MapFeature.ALLOWS_ANY_NULL_QUERIES)
         .suppressing(remapTest)
         .createTestSuite());
 
@@ -101,6 +102,40 @@ public class MutableTypeToInstanceMapTest extends TestCase {
   public void testPutAllThrows() {
     try {
       map.putAll(ImmutableMap.of(TypeToken.of(Integer.class), new Integer(5)));
+      fail();
+    } catch (UnsupportedOperationException expected) {}
+  }
+
+  public void testEntrySetMutationThrows() {
+    map.putInstance(String.class, "test");
+    assertEquals(TypeToken.of(String.class), map.entrySet().iterator().next().getKey());
+    assertEquals("test", map.entrySet().iterator().next().getValue());
+    try {
+      map.entrySet().iterator().next().setValue(1);
+      fail();
+    } catch (UnsupportedOperationException expected) {}
+  }
+
+  public void testEntrySetToArrayMutationThrows() {
+    map.putInstance(String.class, "test");
+    @SuppressWarnings("unchecked") // Should get a CCE later if cast is wrong
+    Entry<Object, Object> entry = (Entry<Object, Object>) map.entrySet().toArray()[0];
+    assertEquals(TypeToken.of(String.class), entry.getKey());
+    assertEquals("test", entry.getValue());
+    try {
+      entry.setValue(1);
+      fail();
+    } catch (UnsupportedOperationException expected) {}
+  }
+
+  public void testEntrySetToTypedArrayMutationThrows() {
+    map.putInstance(String.class, "test");
+    @SuppressWarnings("unchecked") // Should get a CCE later if cast is wrong
+    Entry<Object, Object> entry = map.entrySet().toArray(new Entry[0])[0];
+    assertEquals(TypeToken.of(String.class), entry.getKey());
+    assertEquals("test", entry.getValue());
+    try {
+      entry.setValue(1);
       fail();
     } catch (UnsupportedOperationException expected) {}
   }
@@ -165,8 +200,7 @@ public class MutableTypeToInstanceMapTest extends TestCase {
     TypeToken<ImmutableList<Integer>[]> type = new TypeToken<ImmutableList<Integer>[]>() {};
     map.putInstance(type, array);
     assertEquals(1, map.size());
-    ASSERT.<ImmutableList<Integer>, List<ImmutableList<Integer>>>
-      that(map.getInstance(type)).has().allOf(array[0]).inOrder();
+    ASSERT.that(map.getInstance(type)).has().exactly(array[0]).inOrder();
   }
 
   public void testWildcardType() {

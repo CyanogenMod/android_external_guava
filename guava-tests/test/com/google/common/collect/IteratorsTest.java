@@ -40,6 +40,11 @@ import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.ListFeature;
 import com.google.common.testing.NullPointerTester;
 
+import junit.framework.AssertionFailedError;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,12 +57,6 @@ import java.util.NoSuchElementException;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.Vector;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-import org.truth0.subjects.CollectionSubject;
 
 /**
  * Unit test for {@code Iterators}.
@@ -120,6 +119,21 @@ public class IteratorsTest extends TestCase {
       iterator.add("a");
       fail("no exception thrown");
     } catch (UnsupportedOperationException expected) {
+    }
+  }
+
+  public void testEmptyModifiableIterator() {
+    Iterator<String> iterator = Iterators.emptyModifiableIterator();
+    assertFalse(iterator.hasNext());
+    try {
+      iterator.next();
+      fail("Expected NoSuchElementException");
+    } catch (NoSuchElementException expected) {
+    }
+    try {
+      iterator.remove();
+      fail("Expected IllegalStateException");
+    } catch (IllegalStateException expected) {
     }
   }
 
@@ -292,8 +306,7 @@ public class IteratorsTest extends TestCase {
         new Predicate<String>() {
           @Override
           public boolean apply(String s) {
-            fail("Should never be evaluated");
-            return false;
+            throw new AssertionFailedError("Should never be evaluated");
           }
         });
 
@@ -302,7 +315,7 @@ public class IteratorsTest extends TestCase {
     assertEquals(expected, actual);
   }
 
-  @GwtIncompatible("unreasonable slow")
+  @GwtIncompatible("unreasonably slow")
   public void testFilterUsingIteratorTester() {
     final List<Integer> list = asList(1, 2, 3, 4, 5);
     final Predicate<Integer> isEven = new Predicate<Integer>() {
@@ -626,7 +639,7 @@ public class IteratorsTest extends TestCase {
     } catch (NoSuchElementException expected) {}
   }
 
-  @GwtIncompatible("unreasonable slow")
+  @GwtIncompatible("unreasonably slow")
   public void testCycleUsingIteratorTester() {
     new IteratorTester<Integer>(5, UNMODIFIABLE, asList(1, 2, 1, 2, 1,
         2, 1, 2, 1, 2, 1, 2), IteratorTester.KnownOrder.KNOWN_ORDER) {
@@ -752,7 +765,7 @@ public class IteratorsTest extends TestCase {
 
     boolean changed = Iterators.addAll(alreadyThere,
                                        Iterators.<String>emptyIterator());
-    assertThat(alreadyThere).has().allOf("already", "there").inOrder();
+    ASSERT.that(alreadyThere).has().exactly("already", "there").inOrder();
     assertFalse(changed);
   }
 
@@ -762,7 +775,7 @@ public class IteratorsTest extends TestCase {
 
     boolean changed = Iterators.addAll(alreadyThere, freshlyAdded.iterator());
 
-    assertThat(alreadyThere).has().allOf("already", "there", "freshly", "added");
+    ASSERT.that(alreadyThere).has().exactly("already", "there", "freshly", "added");
     assertTrue(changed);
   }
 
@@ -772,7 +785,7 @@ public class IteratorsTest extends TestCase {
     List<String> oneMore = Lists.newArrayList("there");
 
     boolean changed = Iterators.addAll(alreadyThere, oneMore.iterator());
-    assertThat(alreadyThere).has().allOf("already", "there").inOrder();
+    ASSERT.that(alreadyThere).has().exactly("already", "there").inOrder();
     assertFalse(changed);
   }
 
@@ -1061,7 +1074,7 @@ public class IteratorsTest extends TestCase {
     } catch (IndexOutOfBoundsException expected) {}
   }
 
-  @GwtIncompatible("unreasonable slow")
+  @GwtIncompatible("unreasonably slow")
   public void testForArrayUsingTester() {
     new IteratorTester<Integer>(6, UNMODIFIABLE, asList(1, 2, 3),
         IteratorTester.KnownOrder.KNOWN_ORDER) {
@@ -1071,7 +1084,7 @@ public class IteratorsTest extends TestCase {
     }.test();
   }
 
-  @GwtIncompatible("unreasonable slow")
+  @GwtIncompatible("unreasonably slow")
   public void testForArrayWithOffsetUsingTester() {
     new IteratorTester<Integer>(6, UNMODIFIABLE, asList(1, 2, 3),
         IteratorTester.KnownOrder.KNOWN_ORDER) {
@@ -1508,16 +1521,18 @@ public class IteratorsTest extends TestCase {
     Iterator<String> consumingIterator =
         Iterators.consumingIterator(list.iterator());
 
-    assertThat(list).has().allOf("a", "b").inOrder();
+    assertEquals("Iterators.consumingIterator(...)", consumingIterator.toString());
+
+    ASSERT.that(list).has().exactly("a", "b").inOrder();
 
     assertTrue(consumingIterator.hasNext());
-    assertThat(list).has().allOf("a", "b").inOrder();
+    ASSERT.that(list).has().exactly("a", "b").inOrder();
     assertEquals("a", consumingIterator.next());
-    assertThat(list).has().item("b");
+    ASSERT.that(list).has().item("b");
 
     assertTrue(consumingIterator.hasNext());
     assertEquals("b", consumingIterator.next());
-    assertThat(list).isEmpty();
+    ASSERT.that(list).isEmpty();
 
     assertFalse(consumingIterator.hasNext());
   }
@@ -1581,11 +1596,5 @@ public class IteratorsTest extends TestCase {
     assertNotSame(peek, nonpeek);
     assertSame(peek, Iterators.peekingIterator(peek));
     assertSame(peek, Iterators.peekingIterator((Iterator<String>) peek));
-  }
-
-  // Hack for JDK5 type inference.
-  private static <T> CollectionSubject<? extends CollectionSubject<?, T, Collection<T>>, T, Collection<T>> assertThat(
-      Collection<T> collection) {
-    return ASSERT.<T, Collection<T>>that(collection);
   }
 }

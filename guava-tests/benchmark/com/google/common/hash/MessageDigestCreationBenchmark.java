@@ -16,9 +16,9 @@
 
 package com.google.common.hash;
 
+import com.google.caliper.BeforeExperiment;
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
 
 import java.security.MessageDigest;
 
@@ -27,18 +27,18 @@ import java.security.MessageDigest;
  *
  * @author Kurt Alfred Kluever
  */
-public class MessageDigestCreationBenchmark extends SimpleBenchmark {
+public class MessageDigestCreationBenchmark {
 
   @Param({"MD5", "SHA-1", "SHA-256", "SHA-512"})
   private String algorithm;
 
   private MessageDigest md;
 
-  public void setUp() throws Exception {
+  @BeforeExperiment void setUp() throws Exception {
     md = MessageDigest.getInstance(algorithm);
   }
 
-  public int timeGetInstance(int reps) throws Exception {
+  @Benchmark int getInstance(int reps) throws Exception {
     int retValue = 0;
     for (int i = 0; i < reps; i++) {
       retValue ^= MessageDigest.getInstance(algorithm).getDigestLength();
@@ -46,15 +46,11 @@ public class MessageDigestCreationBenchmark extends SimpleBenchmark {
     return retValue;
   }
 
-  public int timeClone(int reps) throws Exception {
+  @Benchmark int clone(int reps) throws Exception {
     int retValue = 0;
     for (int i = 0; i < reps; i++) {
       retValue ^= ((MessageDigest) md.clone()).getDigestLength();
     }
     return retValue;
-  }
-
-  public static void main(String[] args) {
-    Runner.main(MessageDigestCreationBenchmark.class, args);
   }
 }

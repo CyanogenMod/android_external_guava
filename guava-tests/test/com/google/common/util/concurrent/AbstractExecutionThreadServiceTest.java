@@ -16,21 +16,18 @@
 
 package com.google.common.util.concurrent;
 
-import com.google.common.base.Throwables;
 import com.google.common.testing.TearDown;
 import com.google.common.testing.TearDownStack;
 
+import junit.framework.TestCase;
+
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import junit.framework.TestCase;
 
 /**
  * Unit test for {@link AbstractExecutionThreadService}.
@@ -45,7 +42,7 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
 
   private Thread executionThread;
   private Throwable thrownByExecutionThread;
-  private final Executor executor = new Executor() {
+  private final Executor exceptionCatchingExecutor = new Executor() {
     @Override
     public void execute(Runnable command) {
       executionThread = new Thread(command);
@@ -67,42 +64,31 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     WaitOnRunService service = new WaitOnRunService();
     assertFalse(service.startUpCalled);
 
-    service.start().get();
+    service.startAsync().awaitRunning();
     assertTrue(service.startUpCalled);
     assertEquals(Service.State.RUNNING, service.state());
 
     enterRun.await(); // to avoid stopping the service until run() is invoked
 
-    service.stop().get();
+    service.stopAsync().awaitTerminated();
     assertTrue(service.shutDownCalled);
     assertEquals(Service.State.TERMINATED, service.state());
     executionThread.join();
     assertNull(thrownByExecutionThread);
   }
 
-  public void testServiceStartStopIdempotence() throws Exception {
+  public void testServiceStopIdempotence() throws Exception {
     WaitOnRunService service = new WaitOnRunService();
 
-    service.start();
-    service.start();
-    service.startAndWait();
-    assertEquals(Service.State.RUNNING, service.state());
-    service.startAndWait();
-    assertEquals(Service.State.RUNNING, service.state());
-
+    service.startAsync().awaitRunning();
     enterRun.await(); // to avoid stopping the service until run() is invoked
 
-    service.stop();
-    service.stop();
-    service.stopAndWait();
+    service.stopAsync();
+    service.stopAsync();
+    service.stopAsync().awaitTerminated();
     assertEquals(Service.State.TERMINATED, service.state());
-    service.stopAndWait();
+    service.stopAsync().awaitTerminated();
     assertEquals(Service.State.TERMINATED, service.state());
-
-    assertEquals(Service.State.RUNNING, service.start().get());
-    assertEquals(Service.State.RUNNING, service.startAndWait());
-    assertEquals(Service.State.TERMINATED, service.stop().get());
-    assertEquals(Service.State.TERMINATED, service.stopAndWait());
 
     executionThread.join();
     assertNull(thrownByExecutionThread);
@@ -112,7 +98,7 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     WaitOnRunService service = new WaitOnRunService();
     service.expectedShutdownState = Service.State.RUNNING;
 
-    service.start().get();
+    service.startAsync().awaitRunning();
     assertTrue(service.startUpCalled);
     assertEquals(Service.State.RUNNING, service.state());
 
@@ -123,7 +109,7 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     assertEquals(Service.State.TERMINATED, service.state());
     assertNull(thrownByExecutionThread);
 
-    service.stop().get(); // no-op
+    service.stopAsync().awaitTerminated(); // no-op
     assertEquals(Service.State.TERMINATED, service.state());
     assertTrue(service.shutDownCalled);
   }
@@ -153,7 +139,7 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
       try {
         exitRun.await();
       } catch (InterruptedException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
 
@@ -170,7 +156,7 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     }
 
     @Override protected Executor executor() {
-      return executor;
+      return exceptionCatchingExecutor;
     }
   }
 
@@ -178,11 +164,11 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     ThrowOnStartUpService service = new ThrowOnStartUpService();
     assertFalse(service.startUpCalled);
 
-    Future<Service.State> startupFuture = service.start();
+    service.startAsync();
     try {
-      startupFuture.get();
+      service.awaitRunning();
       fail();
-    } catch (ExecutionException expected) {
+    } catch (IllegalStateException expected) {
       assertEquals("kaboom!", expected.getCause().getMessage());
     }
     executionThread.join();
@@ -205,16 +191,21 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     }
 
     @Override protected Executor executor() {
-      return executor;
+      return exceptionCatchingExecutor;
     }
   }
 
   public void testServiceThrowOnRun() throws Exception {
     ThrowOnRunService service = new ThrowOnRunService();
 
-    service.start().get();
-
-    executionThread.join();
+    service.startAsync();
+    try {
+      service.awaitTerminated();
+      fail();
+    } catch (IllegalStateException expected) {
+      executionThread.join();
+      assertEquals(thrownByExecutionThread, expected.getCause());
+    }
     assertTrue(service.shutDownCalled);
     assertEquals(Service.State.FAILED, service.state());
     assertEquals("kaboom!", thrownByExecutionThread.getMessage());
@@ -224,8 +215,14 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     ThrowOnRunService service = new ThrowOnRunService();
     service.throwOnShutDown = true;
 
-    service.start().get();
-    executionThread.join();
+    service.startAsync();
+    try {
+      service.awaitTerminated();
+      fail();
+    } catch (IllegalStateException expected) {
+      executionThread.join();
+      assertEquals(thrownByExecutionThread, expected.getCause());
+    }
 
     assertTrue(service.shutDownCalled);
     assertEquals(Service.State.FAILED, service.state());
@@ -248,17 +245,17 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     }
 
     @Override protected Executor executor() {
-      return executor;
+      return exceptionCatchingExecutor;
     }
   }
 
   public void testServiceThrowOnShutDown() throws Exception {
     ThrowOnShutDown service = new ThrowOnShutDown();
 
-    service.start().get();
+    service.startAsync().awaitRunning();
     assertEquals(Service.State.RUNNING, service.state());
 
-    service.stop();
+    service.stopAsync();
     enterRun.countDown();
     executionThread.join();
 
@@ -271,7 +268,7 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
       try {
         enterRun.await();
       } catch (InterruptedException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
 
@@ -280,7 +277,7 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     }
 
     @Override protected Executor executor() {
-      return executor;
+      return exceptionCatchingExecutor;
     }
   }
 
@@ -288,7 +285,7 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
     TimeoutOnStartUp service = new TimeoutOnStartUp();
 
     try {
-      service.start().get(1, TimeUnit.MILLISECONDS);
+      service.startAsync().awaitRunning(1, TimeUnit.MILLISECONDS);
       fail();
     } catch (TimeoutException e) {
       assertTrue(e.getMessage().contains(Service.State.STARTING.toString()));
@@ -316,10 +313,10 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
         started.await();
       }
     };
-    service.start();
-    ListenableFuture<Service.State> stopped = service.stop();
+    service.startAsync();
+    service.stopAsync();
     started.countDown();
-    assertEquals(Service.State.TERMINATED, stopped.get());
+    service.awaitTerminated();
     assertEquals(Service.State.TERMINATED, service.state());
     assertEquals(1, service.startupCalled);
     assertEquals(0, service.runCalled);
@@ -328,19 +325,18 @@ public class AbstractExecutionThreadServiceTest extends TestCase {
 
   public void testStop_noStart() {
     FakeService service = new FakeService();
-    assertEquals(Service.State.TERMINATED, service.stopAndWait());
+    service.stopAsync().awaitTerminated();
     assertEquals(Service.State.TERMINATED, service.state());
     assertEquals(0, service.startupCalled);
     assertEquals(0, service.runCalled);
     assertEquals(0, service.shutdownCalled);
   }
 
-  public void testDefaultService() {
-    AbstractExecutionThreadService service = new AbstractExecutionThreadService() {
-      @Override protected void run() throws Exception {}
-    };
-    assertEquals(Service.State.RUNNING, service.startAndWait());
-    assertEquals(Service.State.TERMINATED, service.stopAndWait());
+  public void testDefaultService() throws InterruptedException {
+    WaitOnRunService service = new WaitOnRunService();
+    service.startAsync().awaitRunning();
+    enterRun.await();
+    service.stopAsync().awaitTerminated();
   }
 
   private class FakeService extends AbstractExecutionThreadService implements TearDown {

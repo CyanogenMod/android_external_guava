@@ -231,8 +231,8 @@ final class GeneralRange<T> implements Serializable {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(comparator, getLowerEndpoint(), getLowerBoundType(),
-        getUpperEndpoint(), getUpperBoundType());
+    return Objects.hashCode(comparator, getLowerEndpoint(), getLowerBoundType(), getUpperEndpoint(),
+        getUpperBoundType());
   }
 
   private transient GeneralRange<T> reverse;
@@ -243,9 +243,9 @@ final class GeneralRange<T> implements Serializable {
   GeneralRange<T> reverse() {
     GeneralRange<T> result = reverse;
     if (result == null) {
-      result = new GeneralRange<T>(Ordering.from(comparator).reverse(), hasUpperBound,
-          getUpperEndpoint(), getUpperBoundType(), hasLowerBound, getLowerEndpoint(),
-          getLowerBoundType());
+      result = new GeneralRange<T>(
+          Ordering.from(comparator).reverse(), hasUpperBound, getUpperEndpoint(),
+          getUpperBoundType(), hasLowerBound, getLowerEndpoint(), getLowerBoundType());
       result.reverse = this;
       return this.reverse = result;
     }
