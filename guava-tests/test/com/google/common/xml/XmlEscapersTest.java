@@ -82,8 +82,8 @@ public class XmlEscapersTest extends TestCase {
           assertUnescaped(xmlEscaper, ch);
         }
       } else {
-        // and everything else is replaced with FFFD.
-        assertEscaping(xmlEscaper, "\uFFFD", ch);
+        // and everything else is removed.
+        assertEscaping(xmlEscaper, "", ch);
       }
     }
 
@@ -109,13 +109,18 @@ public class XmlEscapersTest extends TestCase {
       }
     }
 
-    // Test that 0xFFFE and 0xFFFF are replaced with 0xFFFD
-    assertEscaping(xmlEscaper, "\uFFFD", '\uFFFE');
-    assertEscaping(xmlEscaper, "\uFFFD", '\uFFFF');
+    // TODO(user): Change once this escaper forbids \uFFFE and \uFFFF.
 
-    assertEquals("0xFFFE is forbidden and should be replaced during escaping",
-        "[\uFFFD]", xmlEscaper.escape("[\ufffe]"));
-    assertEquals("0xFFFF is forbidden and should be replaced during escaping",
-        "[\uFFFD]", xmlEscaper.escape("[\uffff]"));
+    assertUnescaped(xmlEscaper, '\uFFFE');
+    assertUnescaped(xmlEscaper, '\uFFFF');
+
+    // Test that 0xFFFE and 0xFFFF are removed
+    // assertEscaping(xmlEscaper, "", '\uFFFE');
+    // assertEscaping(xmlEscaper, "", '\uFFFF');
+
+    // assertEquals("0xFFFE is forbidden and should be removed during escaping",
+    //     "[]", XmlEscapers.xmlEscaper().escape("[\ufffe]"));
+    // assertEquals("0xFFFF is forbidden and should be removed during escaping",
+    //     "[]", XmlEscapers.xmlEscaper().escape("[\uffff]"));
   }
 }
