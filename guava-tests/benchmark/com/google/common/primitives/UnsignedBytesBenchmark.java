@@ -19,8 +19,8 @@ package com.google.common.primitives;
 import com.google.caliper.BeforeExperiment;
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.common.jdk5backport.Arrays;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -36,6 +36,7 @@ public class UnsignedBytesBenchmark {
   private byte[] ba3;
   private byte[] ba4;
   private Comparator<byte[]> javaImpl;
+  private Comparator<byte[]> unsafeImpl;
 
   // 4, 8, 64, 1K, 1M, 1M (unaligned), 64M, 64M (unaligned)
   //@Param({"4", "8", "64", "1024", "1048576", "1048577", "6710884", "6710883"})
@@ -55,6 +56,8 @@ public class UnsignedBytesBenchmark {
     ba4[ba1.length - 1] = (byte) 42;
 
     javaImpl = UnsignedBytes.lexicographicalComparatorJavaImpl();
+    unsafeImpl =
+        UnsignedBytes.LexicographicalComparatorHolder.UnsafeComparator.INSTANCE;
   }
 
   @Benchmark void longEqualJava(int reps) {
@@ -65,9 +68,25 @@ public class UnsignedBytesBenchmark {
     }
   }
 
+  @Benchmark void longEqualUnsafe(int reps) {
+    for (int i = 0; i < reps; ++i) {
+      if (unsafeImpl.compare(ba1, ba2) != 0) {
+        throw new Error(); // deoptimization
+      }
+    }
+  }
+
   @Benchmark void diffLastJava(int reps) {
     for (int i = 0; i < reps; ++i) {
       if (javaImpl.compare(ba3, ba4) == 0) {
+        throw new Error(); // deoptimization
+      }
+    }
+  }
+
+  @Benchmark void diffLastUnsafe(int reps) {
+    for (int i = 0; i < reps; ++i) {
+      if (unsafeImpl.compare(ba3, ba4) == 0) {
         throw new Error(); // deoptimization
       }
     }

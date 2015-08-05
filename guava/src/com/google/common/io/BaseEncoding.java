@@ -147,7 +147,7 @@ public abstract class BaseEncoding {
     }
 
     DecodingException(Throwable cause) {
-      initCause(cause);
+      super(cause);
     }
   }
 
