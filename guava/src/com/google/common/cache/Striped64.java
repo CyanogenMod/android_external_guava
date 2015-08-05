@@ -12,6 +12,8 @@
 package com.google.common.cache;
 
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 /**
  * A package-local class holding common representation and mechanics
@@ -91,29 +93,19 @@ abstract class Striped64 extends Number {
      * form of CAS here, if it were provided.
      */
     static final class Cell {
+        @SuppressWarnings("UnusedDeclaration")
         volatile long p0, p1, p2, p3, p4, p5, p6;
         volatile long value;
+        @SuppressWarnings("UnusedDeclaration")
         volatile long q0, q1, q2, q3, q4, q5, q6;
         Cell(long x) { value = x; }
 
         final boolean cas(long cmp, long val) {
-            return UNSAFE.compareAndSwapLong(this, valueOffset, cmp, val);
+            return valueUpdater.compareAndSet(this, cmp, val);
         }
 
-        // Unsafe mechanics
-        private static final sun.misc.Unsafe UNSAFE;
-        private static final long valueOffset;
-        static {
-            try {
-                UNSAFE = getUnsafe();
-                Class<?> ak = Cell.class;
-                valueOffset = UNSAFE.objectFieldOffset
-                    (ak.getDeclaredField("value"));
-            } catch (Exception e) {
-                throw new Error(e);
-            }
-        }
-
+        private static final AtomicLongFieldUpdater<Cell> valueUpdater =
+            AtomicLongFieldUpdater.newUpdater(Cell.class, "value");
     }
 
     /**
@@ -158,14 +150,14 @@ abstract class Striped64 extends Number {
      * CASes the base field.
      */
     final boolean casBase(long cmp, long val) {
-        return UNSAFE.compareAndSwapLong(this, baseOffset, cmp, val);
+        return baseUpdater.compareAndSet(this, cmp, val);
     }
 
     /**
      * CASes the busy field from 0 to 1 to acquire lock.
      */
     final boolean casBusy() {
-        return UNSAFE.compareAndSwapInt(this, busyOffset, 0, 1);
+       return busyUpdater.compareAndSet(this, 0, 1);
     }
 
     /**
@@ -238,8 +230,7 @@ abstract class Striped64 extends Number {
                     try {
                         if (cells == as) {      // Expand table unless stale
                             Cell[] rs = new Cell[n << 1];
-                            for (int i = 0; i < n; ++i)
-                                rs[i] = as[i];
+                            System.arraycopy(as, 0, rs, 0, n);
                             cells = rs;
                         }
                     } finally {
@@ -280,59 +271,15 @@ abstract class Striped64 extends Number {
         Cell[] as = cells;
         base = initialValue;
         if (as != null) {
-            int n = as.length;
-            for (int i = 0; i < n; ++i) {
-                Cell a = as[i];
+            for (Cell a : as) {
                 if (a != null)
-                    a.value = initialValue;
+                  a.value = initialValue;
             }
         }
     }
 
-    // Unsafe mechanics
-    private static final sun.misc.Unsafe UNSAFE;
-    private static final long baseOffset;
-    private static final long busyOffset;
-    static {
-        try {
-            UNSAFE = getUnsafe();
-            Class<?> sk = Striped64.class;
-            baseOffset = UNSAFE.objectFieldOffset
-                (sk.getDeclaredField("base"));
-            busyOffset = UNSAFE.objectFieldOffset
-                (sk.getDeclaredField("busy"));
-        } catch (Exception e) {
-            throw new Error(e);
-        }
-    }
-
-    /**
-     * Returns a sun.misc.Unsafe.  Suitable for use in a 3rd party package.
-     * Replace with a simple call to Unsafe.getUnsafe when integrating
-     * into a jdk.
-     *
-     * @return a sun.misc.Unsafe
-     */
-    private static sun.misc.Unsafe getUnsafe() {
-        try {
-            return sun.misc.Unsafe.getUnsafe();
-        } catch (SecurityException tryReflectionInstead) {}
-        try {
-            return java.security.AccessController.doPrivileged
-            (new java.security.PrivilegedExceptionAction<sun.misc.Unsafe>() {
-                public sun.misc.Unsafe run() throws Exception {
-                    Class<sun.misc.Unsafe> k = sun.misc.Unsafe.class;
-                    for (java.lang.reflect.Field f : k.getDeclaredFields()) {
-                        f.setAccessible(true);
-                        Object x = f.get(null);
-                        if (k.isInstance(x))
-                            return k.cast(x);
-                    }
-                    throw new NoSuchFieldError("the Unsafe");
-                }});
-        } catch (java.security.PrivilegedActionException e) {
-            throw new RuntimeException("Could not initialize intrinsics",
-                                       e.getCause());
-        }
-    }
+    private static final AtomicLongFieldUpdater<Striped64> baseUpdater =
+        AtomicLongFieldUpdater.newUpdater(Striped64.class, "base");
+    private static final AtomicIntegerFieldUpdater<Striped64> busyUpdater =
+        AtomicIntegerFieldUpdater.newUpdater(Striped64.class, "busy");
 }
