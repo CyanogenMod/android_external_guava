@@ -28,5 +28,6 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(call all-java-files-under, guava/src)
 LOCAL_MODULE := guavalib
 LOCAL_STATIC_JAVA_LIBRARIES := jsr305lib
+LOCAL_JAVA_LANGUAGE_VERSION := 1.7
 
 include $(BUILD_HOST_JAVA_LIBRARY)
